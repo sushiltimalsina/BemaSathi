@@ -171,6 +171,6 @@ class PdfTest extends TestCase
 
         $this->assertInstanceOf(Response::class, $response);
         $this->assertNotEmpty($response->getContent());
-        $this->assertEquals(1424, strlen($response->getContent()));
+        $this->assertEquals(1424, strlen((string) $response->getContent()));
     }
 }
