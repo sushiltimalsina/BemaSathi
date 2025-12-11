@@ -338,14 +338,7 @@ const MyProfile = () => {
           <div className="rounded-md border-l-4 border-red-600 bg-white p-3 shadow-sm 
                 dark:border-red-400 dark:bg-red-900/30">
   <div className="flex items-start gap-2">
-    <svg
-      className="mt-0.5 h-5 w-5 text-red-700 dark:text-red-200"
-      viewBox="0 0 20 20"
-      fill="currentColor"
-      aria-hidden="true"
-    >
-      <path d="M8.257 3.099c.76-1.36 2.725-1.36 3.485 0l6.518 11.66c.75 1.342-.205 3.041-1.742 3.041H3.481c-1.537 0-2.492-1.7-1.742-3.041L8.257 3.1zM11 14a1 1 0 10-2 0 1 1 0 002 0zm-1-2a1 1 0 01-1-1V8a1 1 0 112 0v3a1 1 0 01-1 1z"/>
-    </svg>
+    <span className="text-red-700 dark:text-red-200 text-lg">⚠️</span>
     <p className="text-xs leading-relaxed text-red-800 dark:text-red-100">
       <strong>Important Notice:</strong> Please ensure all information provided is accurate. 
       Submitting false or incorrect details may result in claim rejection or loss of policy benefits.

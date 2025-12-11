@@ -436,6 +436,8 @@ const KycPage = () => {
           KYC Verification
         </h1>
 
+
+
         {/* STATUS */}
         <div className="p-5 rounded-xl shadow bg-card-light dark:bg-card-dark border mb-8 border-border-light dark:border-border-dark">
           <div className="flex justify-between items-center">
@@ -456,9 +458,25 @@ const KycPage = () => {
             </span>
           </div>
         </div>
+                {/* IMPORTANT NOTICE WHEN NOT SUBMITTED */}
+        {(kycStatus === "not_submitted" || kycStatus === "rejected") && (
+          <div className="rounded-md border-l-4 border-red-200 bg-white p-3 shadow-sm 
+                          dark:border-red-200 dark:bg-red-900/30">
+            <div className="flex items-start gap-2">
+              <span className="text-red-700 dark:text-red-200 text-lg">⚠️</span>
+              <p className="text-xs leading-relaxed text-red-800 dark:text-red-900">
+                <strong>Important Notice:</strong> Please ensure all information provided is accurate. 
+                Submitting false or incorrect details may result in claim rejection or loss of policy benefits.
+              </p>
+              <br></br>
+            </div>
+          </div>
+          
 
+        )}
         {/* FORM */}
         <form
+        
           onSubmit={handleSubmit}
           className="p-6 rounded-xl shadow bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark space-y-8"
         >
@@ -466,6 +484,7 @@ const KycPage = () => {
           
           {/* USER INFO */}
           <div>
+            <br></br>
             <h3 className="text-lg font-semibold mb-4">Your Information</h3>
 
             <div className="grid md:grid-cols-2 gap-5">
@@ -693,4 +712,3 @@ const KycPage = () => {
 };
 
 export default KycPage;
-
