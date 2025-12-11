@@ -1,0 +1,57 @@
+import React from "react";
+import { BrowserRouter } from "react-router-dom";
+import AppRoutes from "./routes";
+
+// Providers
+import { AdminAuthProvider } from "./admin/context/AdminAuthContext";
+import { ToastProvider } from "./admin/context/ToastContext";
+import { ThemeProvider } from "./context/ThemeContext";
+import { CompareProvider } from "./context/CompareContext";
+
+// Global components
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
+import CompareBar from "./user/client/components/CompareBar";
+
+const AppFrame = () => {
+  return (
+    <div
+      className="
+        min-h-screen 
+        bg-background-light dark:bg-background-dark
+        text-text-light dark:text-text-dark
+        transition-colors duration-300
+      "
+    >
+      <ToastProvider>
+        <AdminAuthProvider>
+          <BrowserRouter>
+            {/* Global Navbar */}
+            <Navbar />
+
+            {/* Client compare bar */}
+            <CompareBar />
+
+            {/* Routes */}
+            <AppRoutes />
+
+            {/* Footer */}
+            <Footer />
+          </BrowserRouter>
+        </AdminAuthProvider>
+      </ToastProvider>
+    </div>
+  );
+};
+
+function App() {
+  return (
+    <CompareProvider>
+      <ThemeProvider>
+        <AppFrame />
+      </ThemeProvider>
+    </CompareProvider>
+  );
+}
+
+export default App;

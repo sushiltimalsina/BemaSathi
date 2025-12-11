@@ -1,0 +1,337 @@
+import React, { useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Bars3Icon, XMarkIcon, BellIcon } from "@heroicons/react/24/outline";
+import ThemeToggle from "./ThemeDropdown";
+
+const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const dropdownRef = useRef(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const loadUser = () => {
+      const u = localStorage.getItem("client_user");
+      setUser(u ? JSON.parse(u) : null);
+    };
+
+    loadUser();
+    const handler = () => loadUser();
+    window.addEventListener("storage", handler);
+
+    return () => window.removeEventListener("storage", handler);
+  }, []);
+
+  const avatar = user?.name ? user.name.charAt(0).toUpperCase() : "U";
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const closeMobile = () => setMobileOpen(false);
+
+  const primaryLinks = [
+    { to: "/client/dashboard", label: "Dashboard" },
+    { to: "/client/policies", label: "All Policies" },
+    { to: "/client/compare", label: "Compare" },
+  ];
+
+  const accountLinks = [
+    { to: "/client/profile", label: "My Profile" },
+    { to: "/client/saved", label: "Saved Policies" },
+    { to: "/client/buy-requests", label: "My Buy Requests" },
+  ];
+const [unreadCount, setUnreadCount] = useState(0);
+
+useEffect(() => {
+  const fetchNotifications = async () => {
+    try {
+      const token = localStorage.getItem("client_token");
+      if (!token) return;
+
+      const res = await fetch("http://localhost:5173/api/notifications", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await res.json();
+      if (data?.data) {
+        const unread = data.data.filter((n) => !n.is_read).length;
+        setUnreadCount(unread);
+      }
+    } catch (err) {
+      console.log("Notification fetch error:", err);
+    }
+  };
+
+  fetchNotifications();
+
+  // Auto-refresh every 20 seconds
+  const interval = setInterval(fetchNotifications, 20000);
+
+  return () => clearInterval(interval);
+}, []);
+
+  return (
+    <nav
+      className="
+        sticky top-0 z-50
+        backdrop-blur-md
+        border-b border-border-light dark:border-border-dark
+        bg-nav-light/80 dark:bg-nav-dark/80
+        text-text-light dark:text-text-dark
+        transition
+      "
+    >
+      <div className="max-w-6xl mx-auto px-6 py-3 flex items-center gap-4">
+
+        {/* Logo */}
+        <Link
+          to="/"
+          className="text-2xl font-bold text-primary-light dark:text-primary-dark flex items-center space-x-2"
+        >
+          <img src="/logo.png" alt="BeemaSathi Logo" className="h-8 w-8" />
+          <span>BemaSathi</span>
+        </Link>
+
+        {/* Desktop Menu */}
+        <div className="hidden md:flex items-center space-x-6 font-medium ml-auto">
+
+          {/* Primary Links */}
+          {primaryLinks.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              className="hover:text-primary-light dark:hover:text-primary-dark"
+            >
+              {item.label}
+            </Link>
+          ))}
+
+          {/* Notifications Icon */}
+          <button
+  onClick={() => navigate("/client/notifications")}
+  className="
+    relative p-2 rounded-lg
+    hover:bg-hover-light dark:hover:bg-hover-dark
+    border border-border-light dark:border-border-dark
+    text-text-light dark:text-text-dark
+    transition
+  "
+>
+  <BellIcon className="w-6 h-6" />
+
+  {/* UNREAD BADGE */}
+              {unreadCount > 0 && (
+                <span
+                  className="
+                    absolute -top-1.5 -right-1.5
+                    w-5 h-5 rounded-full
+                    flex items-center justify-center
+                    text-xs font-bold
+                    bg-red-600 text-white
+                    dark:bg-red-500 dark:text-white
+                    shadow
+                  "
+                >
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </button>
+
+
+          {/* PROFILE DROPDOWN */}
+          <div className="relative" ref={dropdownRef}>
+                {/* OUTER CIRCLE */}
+                <div
+                  className="
+                    w-12 h-12 rounded-full
+                    bg-primary-light/25 dark:bg-primary-dark/25
+                    flex items-center justify-center
+                    border border-primary-light/40 dark:border-primary-dark/40
+                  "
+                >
+                  {/* INNER CIRCLE (Avatar itself) */}
+                  <button
+                    onClick={() => setProfileOpen(!profileOpen)}
+                    className="
+                      w-10 h-10 rounded-full
+                      bg-primary-light/20 dark:bg-primary-dark/30
+                      flex items-center justify-center
+                      font-bold text-primary-light dark:text-primary-dark
+                      border border-primary-light/40 dark:border-primary-dark/40
+                      hover:opacity-90 transition
+                    "
+                  >
+                    {avatar}
+                  </button>
+                </div>
+
+
+            {/* DROPDOWN */}
+            {profileOpen && (
+              <div
+                className="
+                  absolute right-0 mt-2 w-52
+                  bg-card-light dark:bg-card-dark
+                  rounded-xl shadow-lg border
+                  border-border-light dark:border-border-dark
+                  py-2 z-50
+                "
+              >
+                {/* THEME TOGGLE inside dropdown */}
+                <div className="px-4 py-2 border-b border-border-light dark:border-border-dark">
+                  <ThemeToggle mode={mode} isDark={isDark} onToggle={onToggleMode} />
+                </div>
+
+                {/* Profile + other links */}
+                {accountLinks.map((item) => (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className="block px-4 py-2 hover:bg-hover-light dark:hover:bg-hover-dark"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+
+                {/* Logout */}
+                <button
+  onClick={() => {
+    onLogout();
+    setProfileOpen(false);
+  }}
+  className="
+    w-full text-left px-4 py-2 font-semibold
+    text-red-600 dark:text-red-400
+    hover:bg-red-100 dark:hover:bg-red-900/40
+    hover:text-red-700 dark:hover:text-red-300
+    transition
+  "
+>
+  Logout
+</button>
+
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* MOBILE MENU BUTTON */}
+        <div className="md:hidden ml-auto flex items-center gap-2">
+          {/* Notification Icon */}
+          <button
+            onClick={() => navigate("/client/notifications")}
+            className="
+              p-2 rounded-lg border
+              border-border-light dark:border-border-dark
+              hover:bg-hover-light dark:hover:bg-hover-dark
+            "
+          >
+            <BellIcon className="w-5 h-5" />
+          </button>
+
+          <button
+            onClick={() => setMobileOpen((prev) => !prev)}
+            className="
+              p-2 rounded-lg border border-border-light dark:border-border-dark
+              bg-card-light dark:bg-card-dark
+            "
+          >
+            {mobileOpen ? (
+              <XMarkIcon className="w-5 h-5" />
+            ) : (
+              <Bars3Icon className="w-5 h-5" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* MOBILE MENU */}
+      {mobileOpen && (
+        <div className="md:hidden border-t border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark">
+          <div className="px-6 py-4 space-y-3">
+
+            {/* Avatar */}
+            <div className="flex items-center gap-3">
+              <div
+                className="
+                  w-12 h-12 rounded-full 
+                  bg-primary-light/20 dark:bg-primary-dark/20
+                  border border-primary-light/40 dark:border-primary-dark/40
+                  flex items-center justify-center
+                  text-xl font-bold text-primary-light dark:text-primary-dark
+                "
+              >
+                {avatar}
+              </div>
+
+              <div className="text-sm">
+                <div className="font-semibold">{user?.name || "Guest"}</div>
+                <div className="opacity-70">{user?.email}</div>
+              </div>
+            </div>
+
+            {/* Primary Links */}
+            <div className="pt-2 space-y-2">
+              {primaryLinks.map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={closeMobile}
+                  className="block py-2 text-sm hover:text-primary-light dark:hover:text-primary-dark"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+
+            {/* Account Links */}
+            <div className="pt-2 space-y-2 border-t border-border-light dark:border-border-dark">
+              {accountLinks.map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={closeMobile}
+                  className="block py-2 text-sm hover:text-primary-light dark:hover:text-primary-dark"
+                >
+                  {item.label}
+                </Link>
+              ))}
+
+              {/* Theme Toggle */}
+              <div className="pt-2">
+                <ThemeToggle mode={mode} isDark={isDark} onToggle={onToggleMode} />
+              </div>
+
+              {/* Logout */}
+              <button
+                onClick={() => {
+                  onLogout();
+                  closeMobile();
+                }}
+                className="w-full text-left px-4 py-2 font-semibold
+    text-red-600 dark:text-red-400
+    hover:bg-red-100 dark:hover:bg-red-900/40
+    hover:text-red-700 dark:hover:text-red-300
+    transition"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </nav>
+  );
+};
+
+export default ClientNavbar;

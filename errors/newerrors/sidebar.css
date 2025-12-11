@@ -1,0 +1,52 @@
+/* Sidebar layout */
+.admin-sidebar {
+  position: sticky;
+  top: 84px;
+  align-self: start;
+  width: 100%;
+  max-width: 240px;
+  background: linear-gradient(180deg, var(--panel-strong) 0%, var(--panel) 100%);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 16px;
+  color: var(--text);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.28);
+}
+
+.admin-sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-sidebar a {
+  color: var(--muted);
+  text-decoration: none;
+  padding: 10px 12px;
+  border-radius: 10px;
+  transition: 0.2s;
+  font-size: 15px;
+  display: block;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+}
+
+.admin-sidebar a:hover {
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--text);
+}
+
+.admin-sidebar a.active-link {
+  background: linear-gradient(120deg, #2563eb, #1d4ed8);
+  color: #fff;
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.35);
+}
+
+/* Navbar (overrides kept for backward compatibility) */
+.admin-navbar {
+  background: var(--navbar-bg);
+  box-shadow: none;
+}

@@ -1,0 +1,168 @@
+@import "tailwindcss";
+
+/* -----------------------------------------------------------
+   GLOBAL CSS VARIABLES
+----------------------------------------------------------- */
+:root {
+  --background-light: #f8fafc;
+  --background-dark: #0f172a;
+
+  --card-light: #ffffff;
+  --card-dark: #0b1324;
+
+  --border-light: #e2e8f0;
+  --border-dark: #1f2937;
+
+  --hover-light: #f1f5f9;
+  --hover-dark: #1e293b;
+
+  --text-light: #0f172a;
+  --text-dark: #e5e7eb;
+
+  --primary-light: #2563eb;
+  --primary-dark: #60a5fa;
+
+  --success-light: #16a34a;
+  --success-dark: #34d399;
+}
+
+/* -----------------------------------------------------------
+   CUSTOM UTILITY CLASSES MAPPING COLORS
+----------------------------------------------------------- */
+.bg-background-light { background-color: var(--background-light); }
+.bg-background-dark { background-color: var(--background-dark); }
+
+.bg-card-light { background-color: var(--card-light); }
+.bg-card-dark { background-color: var(--card-dark); }
+
+.bg-hover-light { background-color: var(--hover-light); }
+.bg-hover-dark { background-color: var(--hover-dark); }
+
+.text-text-light { color: var(--text-light); }
+.text-text-dark { color: var(--text-dark); }
+
+.text-primary-light { color: var(--primary-light); }
+.text-primary-dark { color: var(--primary-dark); }
+
+.text-success-light { color: var(--success-light); }
+.text-success-dark { color: var(--success-dark); }
+
+.border-border-light { border-color: var(--border-light); }
+.border-border-dark { border-color: var(--border-dark); }
+
+/* -----------------------------------------------------------
+   DARK MODE OVERRIDES
+----------------------------------------------------------- */
+.dark .bg-background-light { background-color: var(--background-dark); }
+.dark .bg-card-light { background-color: var(--card-dark); }
+.dark .bg-hover-light { background-color: var(--hover-dark); }
+
+.dark .text-text-light { color: var(--text-dark); }
+.dark .text-primary-light { color: var(--primary-dark); }
+.dark .text-success-light { color: var(--success-dark); }
+
+.dark .border-border-light { border-color: var(--border-dark); }
+
+/* -----------------------------------------------------------
+   GLOBAL RESET
+----------------------------------------------------------- */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  background-color: var(--background-light);
+  color: var(--text-light);
+}
+
+/* DO NOT FORCE BROWSER DARK INPUTS */
+.dark body {
+  background-color: var(--background-dark);
+  color: var(--text-dark);
+  /* ❌ Removed color-scheme: dark — this is what broke inputs/buttons */
+}
+
+/* -----------------------------------------------------------
+   FORM ELEMENT FIXES (LIGHT + DARK MODE)
+----------------------------------------------------------- */
+input,
+select,
+textarea {
+  appearance: none; /* removes browser auto dark mode */
+  background-color: white;
+  color: var(--text-light);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 10px 12px;
+  transition: 0.2s ease;
+}
+
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: #1e293b; /* slate-800 */
+  color: var(--text-dark);
+  border: 1px solid var(--border-dark);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+}
+
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
+  border-color: var(--primary-dark);
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.35);
+}
+
+/* -----------------------------------------------------------
+   BUTTON FIXES (THE MAIN ISSUE YOU HAD)
+----------------------------------------------------------- */
+
+/* Let Tailwind control buttons */
+button {
+  background-color: transparent;
+  color: inherit;
+  border: none;
+}
+
+/* Buttons MUST NOT follow input colors */
+button:focus {
+  outline: none;
+}
+
+/* Primary buttons */
+.bg-primary-light {
+  background-color: var(--primary-light) !important;
+  color: white !important;
+}
+
+.bg-primary-dark {
+  background-color: var(--primary-dark) !important;
+  color: white !important;
+}
+
+/* Tailwind standard color buttons */
+button[class*="bg-blue"] { color: white !important; }
+button[class*="bg-red"] { color: white !important; }
+button[class*="bg-green"] { color: white !important; }
+
+/* -----------------------------------------------------------
+   FILE UPLOAD FIXES
+----------------------------------------------------------- */
+input[type="file"] {
+  background-color: transparent !important;
+  padding: 0;
+  border: none;
+  color: inherit;
+}
+
+.dark input[type="file"] {
+  background-color: transparent !important;
+  color: var(--text-dark);
+}
