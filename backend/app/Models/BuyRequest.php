@@ -21,9 +21,18 @@ class BuyRequest extends Model
         'is_smoker',
         'health_score',
         'calculated_premium',
+        'billing_cycle',
+        'cycle_amount',
+        'next_renewal_date',
+        'renewal_status',
     ];
 
     protected $dates = ['deleted_at'];
+
+    protected $casts = [
+        'cycle_amount' => 'float',
+        'next_renewal_date' => 'date',
+    ];
 
     public function user()
     {

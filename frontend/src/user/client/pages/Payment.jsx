@@ -28,6 +28,22 @@ const PaymentPage = () => {
   const fmt = (n) =>
     Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
 
+  const computeCycleAmount = (br) => {
+    if (!br) return 0;
+    if (br.cycle_amount) return br.cycle_amount;
+    const base = br.calculated_premium || 0;
+    switch (br.billing_cycle) {
+      case "monthly":
+        return base / 12;
+      case "quarterly":
+        return base / 4;
+      case "half_yearly":
+        return base / 2;
+      default:
+        return base;
+    }
+  };
+
   const redirectToEsewa = (redirectUrl, payload) => {
     const form = document.createElement("form");
     form.method = "POST";
@@ -62,8 +78,8 @@ const PaymentPage = () => {
 
   const loadRequestByBuyRequest = async (reqId) => {
     try {
-      const res = await API.get("/my-requests");
-      const req = res.data.find((r) => r.id === Number(reqId));
+        const res = await API.get("/my-requests");
+        const req = res.data.find((r) => r.id === Number(reqId));
 
       if (!req) {
         setError("Request not found.");
@@ -71,8 +87,8 @@ const PaymentPage = () => {
         return;
       }
 
-      setBuyRequest(req);
-      setPolicy(req.policy);
+        setBuyRequest(req);
+        setPolicy(req.policy);
     } catch (err) {
       console.error(err);
       setError("Unable to load payment details.");
@@ -108,6 +124,7 @@ const PaymentPage = () => {
     try {
       const res = await API.post("/payments/esewa", {
         buy_request_id: buyRequest.id,
+        billing_cycle: buyRequest.billing_cycle,
       });
 
       const { redirect_url, payload } = res.data || {};
@@ -121,6 +138,32 @@ const PaymentPage = () => {
     } catch (err) {
       console.error(err);
       setError("Payment initiation failed. Try again.");
+    }
+
+    setPaying(false);
+  };
+
+  const handleKhaltiPayment = async () => {
+    setPaying(true);
+    setError("");
+    setSuccessMsg("");
+
+    try {
+      const res = await API.post("/payments/khalti", {
+        buy_request_id: buyRequest.id,
+        billing_cycle: buyRequest.billing_cycle,
+      });
+
+      if (res.data?.payment_url) {
+        setSuccessMsg("Redirecting to Khalti...");
+        window.location.href = res.data.payment_url;
+      } else {
+        setError("Payment initiation failed. Try again.");
+      }
+    } catch (err) {
+      console.error(err);
+      const apiMsg = err?.response?.data?.message;
+      setError(apiMsg || "Payment initiation failed. Try again.");
     }
 
     setPaying(false);
@@ -162,10 +205,15 @@ const PaymentPage = () => {
         <p className="text-sm opacity-80 mb-2">Company: {policy.company_name}</p>
 
         <div className="mt-4 p-4 rounded-lg bg-hover-light dark:bg-hover-dark border border-border-light dark:border-border-dark">
-          <p className="text-sm">Total Premium:</p>
+          <p className="text-sm">Amount to Pay Now:</p>
           <p className="text-2xl font-bold mt-1">
-            Rs. {fmt(buyRequest.calculated_premium)}
+            Rs. {fmt(computeCycleAmount(buyRequest))}
           </p>
+          {buyRequest.billing_cycle && (
+            <p className="text-xs opacity-70 mt-1">
+              Billing Cycle: {buyRequest.billing_cycle.replace("_", " ")}
+            </p>
+          )}
         </div>
 
         <div className="mt-4 flex items-center justify-between text-sm">
@@ -187,16 +235,27 @@ const PaymentPage = () => {
       )}
 
       {/* PAY BUTTON */}
-      <button
-        onClick={handlePayment}
-        disabled={paying}
-        className={`w-full py-3 rounded-lg text-white font-semibold flex items-center justify-center gap-2 transition ${
-          paying ? "bg-primary-light/50 cursor-not-allowed" : "bg-primary-light hover:opacity-90"
-        }`}
-      >
-        <BanknotesIcon className="w-5 h-5" />
-        {paying ? "Processing..." : "Pay with eSewa"}
-      </button>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <button
+          onClick={handlePayment}
+          disabled={paying}
+          className={`w-full py-3 rounded-lg text-white font-semibold flex items-center justify-center gap-2 transition
+            ${paying ? "bg-green-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"}`}
+        >
+          <BanknotesIcon className="w-5 h-5" />
+          {paying ? "Processing..." : "Pay with eSewa"}
+        </button>
+
+        <button
+          onClick={handleKhaltiPayment}
+          disabled={paying}
+          className={`w-full py-3 rounded-lg text-white font-semibold flex items-center justify-center gap-2 transition
+            ${paying ? "bg-rose-400 cursor-not-allowed" : "bg-rose-600 hover:bg-rose-700"}`}
+        >
+          <BanknotesIcon className="w-5 h-5" />
+          {paying ? "Processing..." : "Pay with Khalti"}
+        </button>
+      </div>
     </div>
   );
 };

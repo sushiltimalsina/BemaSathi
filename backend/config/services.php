@@ -41,4 +41,10 @@ return [
         'secret_key'    => env('ESEWA_SECRET_KEY', '8gBm/:&EnhH.1/q'),
     ],
 
+    'khalti' => [
+        'public_key' => env('KHALTI_PUBLIC_KEY', '0a72abfa6016420d8ca6fb4a139e4a5f'),
+        'secret_key' => env('KHALTI_SECRET_KEY', '6a781cba055c48ce984b5284abf0277f'),
+        'base_url'   => env('KHALTI_BASE_URL', 'https://a.khalti.com/api/v2'),
+    ],
+
 ];

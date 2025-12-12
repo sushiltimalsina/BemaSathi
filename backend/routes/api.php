@@ -58,6 +58,8 @@ Route::post('/premium/quote', [PremiumQuoteController::class, 'quote']);
 // eSewa callbacks (must be public for gateway)
 Route::match(['GET', 'POST'], '/payments/{payment}/success', [PaymentController::class, 'success']);
 Route::match(['GET', 'POST'], '/payments/{payment}/failed',  [PaymentController::class, 'failed']);
+// Khalti return (public)
+Route::match(['GET', 'POST'], '/payments/khalti/return/{payment}', [PaymentController::class, 'khaltiReturn']);
 
 // Admin Login (PUBLIC)
 Route::post('/admin/login', [AdminAuthController::class, 'login'])->name('login');
@@ -95,12 +97,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/buy', [BuyRequestController::class, 'store']);
     Route::get('/my-requests', [BuyRequestController::class, 'userRequests']);
+    Route::post('/buy/preview', [BuyRequestController::class, 'preview']);
+
 
     // Payments (authenticated creation and view)
     Route::get('/payments/{payment}', [PaymentController::class, 'show']);
     Route::post('/payments', [PaymentController::class, 'create']);
     Route::post('/payments/{payment}/status', [PaymentController::class, 'updateStatus']);
     Route::post('/payments/esewa', [PaymentController::class, 'create']);
+    Route::post('/payments/khalti', [PaymentController::class, 'createKhalti']);
+    Route::post('/payments/khalti/verify', [PaymentController::class, 'verifyKhalti']);
 
 
     // Notifications

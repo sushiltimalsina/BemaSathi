@@ -16,6 +16,9 @@ class PaymentController extends Controller
     private string $merchantCode;
     private string $secretKey;
     private string $environment;
+    private string $khaltiBase;
+    private string $khaltiSecret;
+    private string $khaltiPublic;
 
     public function __construct()
     {
@@ -30,6 +33,21 @@ class PaymentController extends Controller
         $this->environment   = strtolower(env('ESEWA_ENV', 'rc'));
         $this->esewaEndpoint = "https://rc-epay.esewa.com.np/api/epay/main/v2/form";
         $this->verifyEndpoint = "https://rc-epay.esewa.com.np/api/epay/transaction/status/";
+
+        // Khalti config (auto-pick base by key prefix if not provided)
+        $this->khaltiSecret = trim(config('services.khalti.secret_key', env('KHALTI_SECRET_KEY', '')));
+        $this->khaltiPublic = trim(config('services.khalti.public_key', env('KHALTI_PUBLIC_KEY', '')));
+
+        $baseFromEnv = config('services.khalti.base_url', env('KHALTI_BASE_URL'));
+        if ($baseFromEnv) {
+            $base = $baseFromEnv;
+        } else {
+            $base = str_starts_with($this->khaltiSecret, 'live_')
+                ? 'https://khalti.com/api/v2'
+                : 'https://a.khalti.com/api/v2';
+        }
+
+        $this->khaltiBase = rtrim($base, '/');
     }
 
     public function show(Payment $payment)
@@ -39,13 +57,14 @@ class PaymentController extends Controller
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
-        return response()->json($payment->load('policy', 'buyRequest'));
+        return response()->json($payment->load('policy', 'buyRequest', 'buyRequest.policy'));
     }
 
     public function create(Request $request)
     {
         $data = $request->validate([
-            'buy_request_id' => 'required|exists:buy_requests,id'
+            'buy_request_id' => 'required|exists:buy_requests,id',
+            'billing_cycle'  => 'nullable|in:monthly,quarterly,half_yearly,yearly',
         ]);
 
         $br = BuyRequest::with('policy')->findOrFail($data['buy_request_id']);
@@ -54,7 +73,17 @@ class PaymentController extends Controller
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
-        $amount = $br->calculated_premium ?? $br->policy?->premium_amt;
+        $cycle = $data['billing_cycle'] ?? $br->billing_cycle;
+
+        $amount = $this->resolveAmount($br, $cycle);
+
+        // ensure buy request carries the latest cycle + amount
+        if (!$br->cycle_amount || $cycle !== $br->billing_cycle) {
+            $br->update([
+                'billing_cycle' => $cycle ?? 'yearly',
+                'cycle_amount'  => $amount,
+            ]);
+        }
 
         if (!$amount || $amount <= 0) {
             return response()->json(['message' => 'Invalid amount for this policy'], 422);
@@ -159,8 +188,145 @@ class PaymentController extends Controller
         return redirect()->away($failureRedirect);
     }
 
+    public function createKhalti(Request $request)
+    {
+        $data = $request->validate([
+            'buy_request_id' => 'required|exists:buy_requests,id',
+            'billing_cycle'  => 'nullable|in:monthly,quarterly,half_yearly,yearly',
+        ]);
+
+        $br = BuyRequest::with('policy')->findOrFail($data['buy_request_id']);
+
+        if ($br->user_id !== $request->user()?->id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $cycle = $data['billing_cycle'] ?? $br->billing_cycle;
+        $amount = $this->resolveAmount($br, $cycle);
+
+        if (!$br->cycle_amount || $cycle !== $br->billing_cycle) {
+            $br->update([
+                'billing_cycle' => $cycle ?? 'yearly',
+                'cycle_amount'  => $amount,
+            ]);
+        }
+
+        if (!$amount || $amount <= 0) {
+            return response()->json(['message' => 'Invalid amount for this policy'], 422);
+        }
+
+        if (!$this->khaltiSecret || !$this->khaltiBase) {
+            return response()->json(['message' => 'Khalti configuration missing.'], 500);
+        }
+
+        $payment = Payment::create([
+            'user_id'       => $br->user_id,
+            'policy_id'     => $br->policy_id,
+            'buy_request_id'=> $br->id,
+            'amount'        => $amount,
+            'currency'      => 'NPR',
+            'method'        => 'khalti',
+            'provider'      => 'Khalti',
+            'status'        => 'pending',
+        ]);
+
+        $payload = [
+            'return_url'         => url("/api/payments/khalti/return/{$payment->id}"),
+            'website_url'        => $this->frontendBase(),
+            'amount'             => (int) round($amount * 100), // paisa
+            'purchase_order_id'  => (string) $payment->id,
+            'purchase_order_name'=> $br->policy?->policy_name ?? 'Policy Purchase',
+            'customer_info'      => [
+                'name'  => $br->name,
+                'email' => $br->email ?: $request->user()?->email,
+                'phone' => $br->phone,
+            ],
+        ];
+
+        $resp = Http::withHeaders([
+            'Authorization' => 'Key ' . $this->khaltiSecret,
+            'Accept'        => 'application/json',
+            'Content-Type'  => 'application/json',
+        ])->asJson()->post("{$this->khaltiBase}/epayment/initiate/", $payload);
+
+        if (!$resp->ok() || !$resp->json('payment_url')) {
+            $payment->update([
+                'status' => 'failed',
+                'meta' => [
+                    'reason'   => 'khalti_initiate_failed',
+                    'response' => $resp->json(),
+                ],
+            ]);
+            return response()->json([
+                'message' => $resp->json('detail') ?? $resp->json('message') ?? 'Unable to initiate Khalti payment.',
+                'errors'  => $resp->json(),
+            ], 502);
+        }
+
+        $pidx = $resp->json('pidx');
+        $payment->update([
+            'provider_reference' => $pidx,
+            'meta' => array_merge($payment->meta ?? [], [
+                'pidx' => $pidx,
+                'khalti_init' => $resp->json(),
+            ]),
+        ]);
+
+        return response()->json([
+            'payment_id'  => $payment->id,
+            'payment_url' => $resp->json('payment_url'),
+            'pidx'        => $pidx,
+            'return_url'  => $payload['return_url'],
+        ]);
+    }
+
+    public function khaltiReturn(Request $request, Payment $payment)
+    {
+        $pidx = $request->query('pidx') ?? $request->input('pidx') ?? $payment->meta['pidx'] ?? $payment->provider_reference;
+
+        if (!$pidx) {
+            return response()->json(['message' => 'Missing pidx'], 400);
+        }
+
+        $lookup = Http::withHeaders([
+            'Authorization' => 'Key ' . $this->khaltiSecret,
+            'Accept'        => 'application/json',
+        ])->post("{$this->khaltiBase}/epayment/lookup/", ['pidx' => $pidx]);
+
+        $status = $lookup->json('status');
+
+        if (!$lookup->ok() || $status !== 'Completed') {
+            $payment->update([
+                'status' => 'failed',
+                'meta'   => array_merge($payment->meta ?? [], ['pidx' => $pidx, 'khalti_status' => $status]),
+            ]);
+
+            return redirect()->away($this->frontendBase() . "/client/payment-failure?payment={$payment->id}");
+        }
+
+        try {
+            $payment->update([
+                'status' => 'completed',
+                'provider_reference' => $pidx,
+                'paid_at' => now(),
+                'meta' => array_merge($payment->meta ?? [], ['pidx' => $pidx, 'khalti_status' => $status]),
+            ]);
+        } catch (QueryException $e) {
+            // ignore
+        }
+
+        try {
+            $payment->buyRequest?->update(['status' => 'completed']);
+        } catch (QueryException $e) {
+            // ignore
+        }
+
+        return redirect()->away($this->frontendBase() . "/client/payment-success?payment={$payment->id}");
+    }
+
     private function buildEsewaPayload(Payment $payment): array
     {
+        // Use plain numeric string (no thousands separator) so gateway amount matches cycle charge
         $amount = number_format($payment->amount, 2, '.', '');
 
         $transactionUuid = $payment->meta['transaction_uuid'] ?? (string) Str::uuid();
@@ -176,12 +342,37 @@ class PaymentController extends Controller
             'success_url'             => url("/api/payments/{$payment->id}/success"),
             'failure_url'             => url("/api/payments/{$payment->id}/failed"),
             'signed_field_names'      => 'total_amount,transaction_uuid,product_code',
+            // explicit fields eSewa expects for UI amount display
+            'amount_breakdown'        => [
+                'actual_amount' => $amount,
+                'display_amount'=> $amount,
+            ],
         ];
 
         $signatureString = "total_amount={$payload['total_amount']},transaction_uuid={$payload['transaction_uuid']},product_code={$payload['product_code']}";
         $payload['signature'] = base64_encode(hash_hmac('sha256', $signatureString, $this->secretKey, true));
 
         return $payload;
+    }
+
+    /**
+     * Safely resolve payable amount using cycle_amount or billing_cycle.
+     */
+    private function resolveAmount(BuyRequest $br, ?string $overrideCycle = null): float
+    {
+        if ($br->cycle_amount) {
+            return (float) $br->cycle_amount;
+        }
+
+        $base = $br->calculated_premium ?? $br->policy?->premium_amt ?? 0;
+        $cycle = $overrideCycle ?? $br->billing_cycle ?? 'yearly';
+
+        return match ($cycle) {
+            'monthly'     => round($base / 12, 2),
+            'quarterly'   => round($base / 4, 2),
+            'half_yearly' => round($base / 2, 2),
+            default       => (float) $base,
+        };
     }
 
     /**

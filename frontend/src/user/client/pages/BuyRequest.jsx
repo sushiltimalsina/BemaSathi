@@ -10,7 +10,10 @@ import {
 const BuyRequest = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const query = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const query = useMemo(
+    () => new URLSearchParams(location.search),
+    [location.search]
+  );
   const policyId = query.get("policy");
 
   const token = localStorage.getItem("client_token");
@@ -19,11 +22,14 @@ const BuyRequest = () => {
   const [policy, setPolicy] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const [kycData, setKycData] = useState(null);
   const [kycStatus, setKycStatus] = useState(null);
 
   const [error, setError] = useState("");
-  const [paying, setPaying] = useState(false);
+  const [payingEsewa, setPayingEsewa] = useState(false);
+  const [payingKhalti, setPayingKhalti] = useState(false);
+
+  const [billingCycle, setBillingCycle] = useState("yearly");
+  const [cyclePremium, setCyclePremium] = useState(null);
 
   const [form, setForm] = useState({
     name: "",
@@ -32,16 +38,34 @@ const BuyRequest = () => {
   });
 
   const fmt = (n) => Number(n || 0).toLocaleString("en-IN");
-  
+  const basePremium = policy?.personalized_premium || policy?.premium_amt || 0;
+
+  const computeCycleAmount = (cycle) => {
+    switch (cycle) {
+      case "monthly":
+        return basePremium / 12;
+      case "quarterly":
+        return basePremium / 4;
+      case "half_yearly":
+        return basePremium / 2;
+      default:
+        return basePremium;
+    }
+  };
+
   const Row = ({ label, value, highlight }) => (
     <div className="flex justify-between">
       <span className="opacity-70">{label}</span>
-      <span className={`font-semibold ${highlight ? "text-primary-light dark:text-primary-dark" : ""}`}>
+      <span
+        className={`font-semibold ${
+          highlight ? "text-primary-light dark:text-primary-dark" : ""
+        }`}
+      >
         {value}
       </span>
     </div>
   );
-  
+
   const Input = ({ label, value, onChange }) => (
     <div>
       <label className="text-xs font-semibold">{label}</label>
@@ -57,16 +81,17 @@ const BuyRequest = () => {
       />
     </div>
   );
-  
-    // FORCE LOGIN
+
+  // FORCE LOGIN
   useEffect(() => {
     if (!isClient) {
       const redirect = encodeURIComponent(location.pathname + location.search);
       navigate(`/login?redirect=${redirect}`);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // FETCH POLICY
+  // Fetch policy
   useEffect(() => {
     const load = async () => {
       try {
@@ -77,23 +102,22 @@ const BuyRequest = () => {
       }
       setLoading(false);
     };
-    load();
+    if (policyId) load();
   }, [policyId]);
 
-  // FETCH USER & KYC
+  // Fetch user + KYC
   useEffect(() => {
     const loadUser = async () => {
       try {
         const me = await API.get("/me");
         const user = me.data;
 
-        const res = await API.get("/kyc/me");
-        const list = res.data?.data || [];
+        const k = await API.get("/kyc/me");
+        const list = k.data?.data || [];
 
         const latest = list.length ? list[0] : null;
 
         setKycStatus(latest?.status || "not_submitted");
-        setKycData(latest);
 
         setForm({
           name: latest?.full_name || user.name || "",
@@ -108,7 +132,28 @@ const BuyRequest = () => {
     loadUser();
   }, []);
 
-  // REDIRECT HANDLER FOR ESEWA
+  // Preview premium when billing cycle changes
+  useEffect(() => {
+    const loadPreview = async () => {
+      try {
+        if (!policyId) return;
+
+        const res = await API.post("/buy/preview", {
+          policy_id: Number(policyId),
+          billing_cycle: billingCycle,
+        });
+
+        setCyclePremium(res.data.cycle_amount ?? computeCycleAmount(billingCycle));
+      } catch (err) {
+        console.log("Preview error:", err.response?.data || err.message);
+        setCyclePremium(computeCycleAmount(billingCycle));
+      }
+    };
+
+    loadPreview();
+  }, [billingCycle, policyId]);
+
+  // eSewa Redirect helper
   const postRedirect = (url, payload = {}) => {
     const f = document.createElement("form");
     f.method = "POST";
@@ -128,37 +173,41 @@ const BuyRequest = () => {
     f.remove();
   };
 
-  // AUTO SUBMIT + PAY
+  // Create buy request with billing_cycle
+  const createBuyRequest = async () => {
+    const res = await API.post("/buy", {
+      policy_id: Number(policyId),
+      name: form.name.trim(),
+      phone: form.phone.trim(),
+      email: form.email.trim() || undefined,
+      billing_cycle: billingCycle,
+    });
+
+    const buy_request_id =
+      res.data?.buy_request_id ||
+      res.data?.data?.id ||
+      res.data?.buy_request?.id;
+
+    if (!buy_request_id) {
+      throw new Error(res.data?.message || "Could not create request.");
+    }
+
+    return buy_request_id;
+  };
+
+  // Pay via eSewa
   const handlePayNow = async () => {
     if (kycStatus !== "approved") {
       setError("Your KYC must be approved before you can purchase a policy.");
       return;
     }
 
-    setPaying(true);
+    setPayingEsewa(true);
     setError("");
 
     try {
-      // STEP 1 → Create BuyRequest automatically
-      const res = await API.post("/buy", {
-        policy_id: Number(policyId),
-        name: form.name.trim(),
-        phone: form.phone.trim(),
-        email: form.email.trim() || undefined,
-      });
+      const buy_request_id = await createBuyRequest();
 
-      const buy_request_id =
-        res.data?.buy_request_id ||
-        res.data?.data?.id ||
-        res.data?.buy_request?.id;
-
-      if (!buy_request_id) {
-        setError(res.data?.message || "Could not create request.");
-        setPaying(false);
-        return;
-      }
-
-      // STEP 2 → INITIATE ESEWA PAYMENT
       const payRes = await API.post("/payments/esewa", {
         buy_request_id,
       });
@@ -172,10 +221,41 @@ const BuyRequest = () => {
 
       setError("Payment could not be started.");
     } catch (err) {
-      const msg = err?.response?.data?.message;
+      const msg = err?.response?.data?.message || err?.message;
       setError(msg || "Something went wrong while creating payment.");
     } finally {
-      setPaying(false);
+      setPayingEsewa(false);
+    }
+  };
+
+  // Pay via Khalti
+  const handlePayKhalti = async () => {
+    if (kycStatus !== "approved") {
+      setError("Your KYC must be approved before you can purchase a policy.");
+      return;
+    }
+
+    setPayingKhalti(true);
+    setError("");
+
+    try {
+      const buy_request_id = await createBuyRequest();
+
+      const payRes = await API.post("/payments/khalti", {
+        buy_request_id,
+      });
+
+      if (payRes.data?.payment_url) {
+        window.location.href = payRes.data.payment_url;
+        return;
+      }
+
+      setError("Payment could not be started.");
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message;
+      setError(msg || "Something went wrong while creating payment.");
+    } finally {
+      setPayingKhalti(false);
     }
   };
 
@@ -238,17 +318,25 @@ const BuyRequest = () => {
           <p className="text-sm mt-4 opacity-80">{policy.policy_description}</p>
 
           <div className="mt-6 space-y-3 text-sm">
-            <Row label="Base Premium" value={`Rs. ${fmt(policy.premium_amt)}`} />
+            {/* YEARLY PREMIUM */}
+            <Row
+              label="Yearly Premium"
+              value={`Rs. ${fmt(policy.premium_amt)}`}
+            />
 
-            {policy.personalized_premium && (
+            {/* CYCLE PREMIUM */}
+            {cyclePremium && (
               <Row
-                label="Your Premium"
-                value={`Rs. ${fmt(policy.personalized_premium)}`}
+                label={`Premium (${billingCycle.replace("_", " ")})`}
+                value={`Rs. ${fmt(cyclePremium)}`}
                 highlight
               />
             )}
 
-            <Row label="Coverage Limit" value={`Rs. ${fmt(policy.coverage_limit)}`} />
+            <Row
+              label="Coverage Limit"
+              value={`Rs. ${fmt(policy.coverage_limit)}`}
+            />
 
             {policy.company_rating && (
               <Row
@@ -274,8 +362,6 @@ const BuyRequest = () => {
         >
           <h3 className="text-lg font-bold mb-4">Your Details</h3>
 
-          {/* ===================== KYC WARNING / UPDATE BOX ===================== */}
-
           <div className="space-y-4">
             <Input
               label="Full Name"
@@ -292,43 +378,156 @@ const BuyRequest = () => {
               value={form.email}
               onChange={(v) => setForm({ ...form, email: v })}
             />
+
+            {/* BILLING CYCLE */}
+            <div>
+              <label className="text-xs font-semibold">Billing Cycle</label>
+              <select
+                className="
+                  w-full mt-1 px-3 py-2 border rounded-lg 
+                  bg-white dark:bg-slate-900 
+                  border-border-light dark:border-border-dark 
+                  text-sm
+                "
+                value={billingCycle}
+                onChange={(e) => setBillingCycle(e.target.value)}
+              >
+                <option value="monthly">Monthly</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="half_yearly">Half-Yearly (6 months)</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
           </div>
 
+          {/* ERROR BOX */}
           {error && (
             <div className="mt-4 p-3 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg text-sm text-red-600 dark:text-red-400">
               {error}
             </div>
           )}
 
-<button
-  type="button"
-  disabled={paying || kycStatus !== "approved"}
-  onClick={handlePayNow}
-  className="
-    w-full mt-6 px-4 py-3 rounded-lg font-semibold
-    shadow-sm disabled:opacity-60 disabled:cursor-not-allowed
-    transition-all
-  "
-  style={{
-    backgroundColor:
-      paying || kycStatus !== "approved" ? "#4CAF50AA" : "#4CAF50",
-    color: "#ffffff",
-    transition: "0.2s",
-    border: "none",
-  }}
-  onMouseEnter={(e) => {
-    if (!paying && kycStatus === "approved") {
-      e.target.style.backgroundColor = "#43A047"; // hover leaf green
-    }
-  }}
-  onMouseLeave={(e) => {
-    if (!paying && kycStatus === "approved") {
-      e.target.style.backgroundColor = "#4CAF50"; // normal leaf green
-    }
-  }}
->
-  {paying ? "Redirecting..." : "Pay via eSewa"}
-</button>
+          {/* TOTAL PAYING AMOUNT */}
+          {cyclePremium && (
+            <div className="mt-6 p-4 rounded-xl bg-primary-light/10 dark:bg-primary-dark/20 border border-primary-light/30 dark:border-primary-dark/30">
+              <p className="text-sm opacity-70">Total Amount To Pay Now</p>
+              <p className="text-2xl font-bold text-primary-light dark:text-primary-dark">
+                Rs. {fmt(cyclePremium)}
+              </p>
+              <p className="text-xs opacity-60 mt-1">
+                Billing Cycle: {billingCycle.replace("_", " ")}
+              </p>
+            </div>
+          )}
+
+          {/* PAYMENT BUTTONS */}
+         <div className="grid gap-5 mt-10 sm:grid-cols-2">
+
+  {/* ==================== eSewa Ultra Premium Button ==================== */}
+                <button
+                  type="button"
+                  disabled={payingEsewa || kycStatus !== "approved"}
+                  onClick={handlePayNow}
+                  className={`
+                    relative group w-full py-3 px-5 rounded-2xl font-semibold overflow-hidden
+                    flex items-center justify-center gap-3
+                    transition-all duration-300 active:scale-95
+
+                    ${payingEsewa
+                      ? "cursor-not-allowed opacity-60"
+                      : "cursor-pointer"
+                    }
+                  `}
+                >
+
+                  {/* Gradient Border Layer */}
+                  <span className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#3CB043] via-[#49d157] to-[#2f8a37] p-[2px] group-hover:from-[#49d157] group-hover:to-[#3CB043] transition-all duration-500"></span>
+
+                  {/* Inner Glass Card */}
+                  <span className="
+                    absolute inset-[2px] rounded-2xl 
+                    bg-white/10 dark:bg-black/20 
+                    backdrop-blur-xl 
+                    shadow-[0_8px_20px_rgba(0,0,0,0.3)]
+                    group-hover:shadow-[0_12px_28px_rgba(0,0,0,0.45)]
+                    transition-all duration-300
+                  ">
+                    <img
+                      src="/esewa.png"
+                      alt="eSewa"
+                      className="h z-100 opacity-10"
+                    />
+                  </span>
+
+                  {/* Text */}
+                  <span className="relative z-10 text-base tracking-wide text-black dark:text-white">
+                    {payingEsewa ? "Processing..." : "Pay via eSewa"}
+                  </span>
+
+                  {/* Glow Pulse */}
+                  {!payingEsewa && (
+                    <span className="
+                      absolute inset-0 rounded-2xl
+                      bg-[#3CB043]/40 blur-xl opacity-0 
+                      group-hover:opacity-50 transition duration-500
+                    "></span>
+                  )}
+                </button>
+
+
+                {/* ==================== Khalti Ultra Premium Button ==================== */}
+                <button
+                  type="button"
+                  disabled={payingKhalti || kycStatus !== "approved"}
+                  onClick={handlePayKhalti}
+                  className={`
+                    relative group w-full py-3 px-5 rounded-2xl font-semibold overflow-hidden
+                    flex items-center justify-center gap-3
+                    transition-all duration-300 active:scale-95
+
+                    ${payingKhalti
+                      ? "cursor-not-allowed opacity-60"
+                      : "cursor-pointer"
+                    }
+                  `}
+                >
+
+                  {/* Gradient Border Layer */}
+                  <span className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#8B0000] via-[#a30f0f] to-[#600000] p-[2px] group-hover:from-[#a30f0f] group-hover:to-[#8B0000] transition-all duration-500"></span>
+
+                  {/* Inner Glass Card */}
+                  <span className="
+                    absolute inset-[2px] rounded-2xl 
+                    bg-white/10 dark:bg-black/20 
+                    backdrop-blur-xl 
+                    shadow-[0_8px_20px_rgba(0,0,0,0.3)]
+                    group-hover:shadow-[0_12px_28px_rgba(0,0,0,0.45)]
+                    transition-all duration-300
+                  ">
+                    <img
+                      src="/khalti.png"
+                      alt="Khalti"
+                      className="relative z-10 opacity-10"
+                    />
+                  </span>
+
+                  {/* Text */}
+                  <span className="relative z-10 text-base tracking-wide text-black dark:text-white">
+                    {payingKhalti ? "Processing..." : "Pay via Khalti"}
+                  </span>
+
+                  {/* Glow Pulse */}
+                  {!payingKhalti && (
+                    <span className="
+                      absolute inset-0 rounded-2xl
+                      bg-[#8B0000]/35 blur-xl opacity-0 
+                      group-hover:opacity-50 transition duration-500
+                    "></span>
+                  )}
+                </button>
+
+
+</div>
 
         </div>
       </div>
