@@ -9,18 +9,22 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-   public function up()
-{
-    Schema::table('purchase_requests', function (Blueprint $table) {
-        $table->softDeletes();
-    });
-}
+    public function up()
+    {
+        Schema::table('purchase_requests', function (Blueprint $table) {
+            if (!Schema::hasColumn('purchase_requests', 'deleted_at')) {
+                $table->softDeletes();
+            }
+        });
+    }
 
-public function down()
-{
-    Schema::table('purchase_requests', function (Blueprint $table) {
-        $table->dropSoftDeletes();
-    });
-}
+    public function down()
+    {
+        Schema::table('purchase_requests', function (Blueprint $table) {
+            if (Schema::hasColumn('purchase_requests', 'deleted_at')) {
+                $table->dropSoftDeletes();
+            }
+        });
+    }
 
 };

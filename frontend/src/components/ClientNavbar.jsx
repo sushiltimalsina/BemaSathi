@@ -46,38 +46,40 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
 
   const accountLinks = [
     { to: "/client/profile", label: "My Profile" },
+    { to: "/client/my-policies", label: "My Policies" },
     { to: "/client/saved", label: "Saved Policies" },
     { to: "/client/buy-requests", label: "My Buy Requests" },
   ];
-const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-useEffect(() => {
-  const fetchNotifications = async () => {
-    try {
-      const token = localStorage.getItem("client_token");
-      if (!token) return;
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const token = localStorage.getItem("client_token");
+        if (!token) return;
 
-      const res = await fetch("http://localhost:5173/api/notifications", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        const res = await fetch("http://localhost:5173/api/notifications", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-      const data = await res.json();
-      if (data?.data) {
-        const unread = data.data.filter((n) => !n.is_read).length;
-        setUnreadCount(unread);
+        const data = await res.json();
+        if (data?.data) {
+          const unread = data.data.filter((n) => !n.is_read).length;
+          setUnreadCount(unread);
+        }
+      } catch (err) {
+        console.log("Notification fetch error:", err);
       }
-    } catch (err) {
-      console.log("Notification fetch error:", err);
-    }
-  };
+    };
 
-  fetchNotifications();
+    fetchNotifications();
 
-  // Auto-refresh every 20 seconds
-  const interval = setInterval(fetchNotifications, 20000);
+    // Auto-refresh every 20 seconds
+    const interval = setInterval(fetchNotifications, 20000);
 
-  return () => clearInterval(interval);
-}, []);
+    return () => clearInterval(interval);
+  }, []);
+
 
   return (
     <nav

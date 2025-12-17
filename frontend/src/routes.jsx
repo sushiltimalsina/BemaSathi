@@ -54,6 +54,7 @@ import MyProfile from "./user/client/pages/MyProfile";
 import ResetPassword from "./auth/ResetPassword";
 import Notifications from "./user/client/pages/Notifications";
 import MyBuyRequests from "./user/client/pages/MyBuyRequests";
+import MyPolicies from "./user/client/pages/MyPolicies";
 
 
 
@@ -188,6 +189,17 @@ const AppRoutes = () => {
     </ProtectedClientRoute>
   }
 />
+<Route
+  path="/client/my-policies"
+  element={
+    <ProtectedClientRoute>
+      <ClientLayout>
+        <MyPolicies />
+      </ClientLayout>
+    </ProtectedClientRoute>
+  }
+/>
+
 
 <Route
   path="/client/compare"
