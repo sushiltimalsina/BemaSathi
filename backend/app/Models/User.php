@@ -31,6 +31,7 @@ class User extends Authenticatable implements CanResetPasswordContract
     'budget_range',
     'coverage_type',
     'pre_existing_conditions',
+    'password',
 ];
 
 
