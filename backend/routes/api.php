@@ -101,6 +101,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     // Payments (authenticated creation and view)
+    Route::get('/my-payments', [PaymentController::class, 'myPayments']);
     Route::get('/payments/{payment}', [PaymentController::class, 'show']);
     Route::post('/payments', [PaymentController::class, 'create']);
     Route::post('/payments/{payment}/status', [PaymentController::class, 'updateStatus']);

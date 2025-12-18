@@ -324,6 +324,21 @@ class PaymentController extends Controller
         return redirect()->away($this->frontendBase() . "/client/payment-success?payment={$payment->id}");
     }
 
+    /**
+     * Return authenticated user's payments with related policy + buy request.
+     */
+    public function myPayments(Request $request)
+    {
+        $payments = Payment::with([
+            'buyRequest.policy',
+        ])
+            ->where('user_id', $request->user()?->id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        return response()->json($payments);
+    }
+
     private function buildEsewaPayload(Payment $payment): array
     {
         // Use plain numeric string (no thousands separator) so gateway amount matches cycle charge

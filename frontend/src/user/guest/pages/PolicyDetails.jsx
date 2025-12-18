@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import API from "../../../api/api";
 import {
   ShieldCheckIcon,
@@ -13,6 +13,7 @@ import {
 
 const PolicyDetails = () => {
   const { id } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
 
   const [policy, setPolicy] = useState(null);
@@ -22,10 +23,38 @@ const PolicyDetails = () => {
 
   const token = localStorage.getItem("client_token");
   const isClient = !!token;
+  const query = new URLSearchParams(location.search);
+  const [ownedRequestId, setOwnedRequestId] = useState(
+    location.state?.buyRequestId || query.get("buyRequest") || null
+  );
+  const ownedFlag =
+    Boolean(location.state?.owned) || query.get("owned") === "1";
+  const isOwned = ownedFlag || Boolean(ownedRequestId);
 
   useEffect(() => {
     fetchPolicy();
   }, [id]);
+
+  // If user is logged in but no owned request passed, check if they already bought this policy.
+  useEffect(() => {
+    if (!isClient || ownedRequestId) return;
+
+    const checkOwned = async () => {
+      try {
+        const res = await API.get("/my-requests");
+        const match = (res.data || []).find(
+          (r) => String(r.policy_id) === String(id)
+        );
+        if (match) {
+          setOwnedRequestId(match.id);
+        }
+      } catch (err) {
+        console.error("Owned policy check failed", err);
+      }
+    };
+
+    checkOwned();
+  }, [id, isClient, ownedRequestId]);
 
   // Fetch KYC status for logged-in users so we can gate buying
   useEffect(() => {
@@ -101,6 +130,18 @@ const PolicyDetails = () => {
       return;
     }
     navigate(`/client/buy?policy=${policy.id}`);
+  };
+
+  const handleRenewClick = () => {
+    if (!isClient) {
+      navigate("/login");
+      return;
+    }
+    if (!ownedRequestId) {
+      handleBuyClick();
+      return;
+    }
+    navigate(`/client/payment?request=${ownedRequestId}`);
   };
 
   return (
@@ -322,16 +363,20 @@ const PolicyDetails = () => {
             Compare with another policy
           </button>
 
-          {/* BUY */}
+          {/* PRIMARY ACTION: BUY or RENEW */}
           <button
-            onClick={handleBuyClick}
+            onClick={isOwned ? handleRenewClick : handleBuyClick}
             className="
               flex-1 px-5 py-3 rounded-lg
               bg-primary-light text-white font-semibold
               hover:opacity-90 transition
             "
           >
-            {isClient ? "Buy / Request Callback" : "Login to buy"}
+            {isOwned
+              ? "Renew Now"
+              : isClient
+              ? "Buy / Request Callback"
+              : "Login to buy"}
           </button>
         </div>
       </div>

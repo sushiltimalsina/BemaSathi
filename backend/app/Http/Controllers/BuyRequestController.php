@@ -86,6 +86,21 @@ class BuyRequestController extends Controller
         ]);
     }
 
+    /**
+     * List authenticated user's buy requests with policy + renewal data.
+     */
+    public function userRequests(Request $request)
+    {
+        $user = $request->user();
+
+        $requests = BuyRequest::with('policy')
+            ->where('user_id', $user?->id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        return response()->json($requests);
+    }
+
     private function calculateBillingInterval(string $cycle, float $basePremium): array
     {
         return match ($cycle) {

@@ -42,6 +42,7 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
     { to: "/client/dashboard", label: "Dashboard" },
     { to: "/client/policies", label: "All Policies" },
     { to: "/client/compare", label: "Compare" },
+    { to: "/client/payments", label: "Payments" },
   ];
 
   const accountLinks = [
@@ -202,7 +203,10 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
                     onClick={() => setProfileOpen(false)}
                   >
                     {item.label}
+
+                    
                   </Link>
+                  
                 ))}
 
                 {/* Logout */}

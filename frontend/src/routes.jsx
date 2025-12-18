@@ -50,6 +50,7 @@ import KycPage from "./user/client/pages/KycPage";
 import PaymentPage from "./user/client/pages/Payment";
 import PaymentSuccess from "./user/client/pages/PaymentSuccess";
 import PaymentFailure from "./user/client/pages/PaymentFailure";
+import PaymentHistory from "./user/client/pages/PaymentHistory";
 import MyProfile from "./user/client/pages/MyProfile";
 import ResetPassword from "./auth/ResetPassword";
 import Notifications from "./user/client/pages/Notifications";
@@ -244,6 +245,17 @@ const AppRoutes = () => {
     </ProtectedClientRoute>
   }
 />
+<Route
+  path="/client/payments"
+  element={
+    <ProtectedClientRoute>
+      <ClientLayout>
+        <PaymentHistory />
+      </ClientLayout>
+    </ProtectedClientRoute>
+  }
+/>
+
 
 
       {/* ----- ADMIN ROUTES (UNCHANGED) ----- */}

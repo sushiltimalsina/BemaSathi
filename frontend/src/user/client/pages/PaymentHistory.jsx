@@ -31,26 +31,29 @@ const PaymentHistory = () => {
   }, []);
 
   const statusBadge = (status) => {
-    switch (status) {
-      case "success":
-        return (
-          <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
-            <CheckCircleIcon className="w-4 h-4" /> Success
-          </span>
-        );
-      case "failed":
-        return (
-          <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
-            <XCircleIcon className="w-4 h-4" /> Failed
-          </span>
-        );
-      default:
-        return (
-          <span className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400">
-            <ClockIcon className="w-4 h-4" /> Pending
-          </span>
-        );
+    const normalized = (status || "").toLowerCase();
+
+    if (normalized === "success" || normalized === "completed") {
+      return (
+        <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+          <CheckCircleIcon className="w-4 h-4" /> Completed
+        </span>
+      );
     }
+
+    if (normalized === "failed") {
+      return (
+        <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
+          <XCircleIcon className="w-4 h-4" /> Failed
+        </span>
+      );
+    }
+
+    return (
+      <span className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400">
+        <ClockIcon className="w-4 h-4" /> Pending
+      </span>
+    );
   };
 
   if (loading)
@@ -113,7 +116,7 @@ const PaymentHistory = () => {
                 <td className="px-4 py-3 capitalize">
                   <span className="flex items-center gap-1">
                     <BanknotesIcon className="w-4 h-4 opacity-70" />
-                    {p.payment_method}
+                    {p.method || p.payment_method || "-"}
                   </span>
                 </td>
 

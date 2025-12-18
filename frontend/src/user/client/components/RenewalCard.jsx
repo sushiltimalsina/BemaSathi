@@ -14,6 +14,17 @@ const RenewalCard = ({ request }) => {
   const renewalDate = request.next_renewal_date;
   const amount = request.cycle_amount;
   const status = request.renewal_status;
+  const isRenewable = status === "active" || status === "due";
+  const formatDate = (value) => {
+    if (!value) return "-";
+    const dt = new Date(value);
+    if (Number.isNaN(dt.getTime())) return value;
+    return dt.toLocaleDateString("en-GB", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
 
   const daysLeft = () => {
     if (!renewalDate) return null;
@@ -24,6 +35,14 @@ const RenewalCard = ({ request }) => {
 
   const handleRenew = () => {
     navigate(`/client/payment?request=${request.id}`);
+  };
+
+  const handleDetails = () => {
+    if (!request.policy_id) return;
+    navigate(
+      `/policy/${request.policy_id}?owned=1&buyRequest=${request.id}`,
+      { state: { owned: true, buyRequestId: request.id } }
+    );
   };
 
   // STATUS BADGE COLORS
@@ -87,7 +106,7 @@ const RenewalCard = ({ request }) => {
             <ClockIcon className="w-4 h-4" />
             Next Renewal Date:
           </span>
-          <span className="font-semibold">{renewalDate || "-"}</span>
+          <span className="font-semibold">{formatDate(renewalDate)}</span>
         </div>
 
         {/* AMOUNT */}
@@ -111,19 +130,41 @@ const RenewalCard = ({ request }) => {
         </div>
       </div>
 
-      {/* RENEW BUTTON */}
-      {(status === "active" || status === "due") && (
+      {/* ACTIONS */}
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
         <button
           onClick={handleRenew}
+          disabled={!isRenewable}
           className="
-            mt-6 w-full py-3 rounded-xl font-semibold text-white 
+            w-full py-3 rounded-xl font-semibold text-white 
             bg-gradient-to-r from-primary-light to-primary-dark
-            hover:opacity-90 active:scale-95 shadow-md transition
+            shadow-[0_8px_20px_rgba(0,0,0,0.15)]
+            hover:translate-y-[-1px] hover:shadow-[0_12px_28px_rgba(0,0,0,0.22)]
+            active:translate-y-0
+            transition
+            disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none
           "
         >
           Renew Now
         </button>
-      )}
+
+        <button
+          onClick={handleDetails}
+          disabled={!request.policy_id}
+          className="
+            w-full py-3 rounded-xl font-semibold
+            border border-border-light dark:border-border-dark
+            bg-card-light dark:bg-card-dark
+            shadow-inner
+            hover:bg-hover-light dark:hover:bg-hover-dark
+            hover:shadow-[0_8px_20px_rgba(0,0,0,0.12)]
+            transition
+            disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none
+          "
+        >
+          Details
+        </button>
+      </div>
 
       {/* EXPIRED NOTICE */}
       {status === "expired" && (
