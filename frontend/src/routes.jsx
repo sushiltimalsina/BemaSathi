@@ -101,6 +101,9 @@ import PolicyForm from "./admin/policies/PolicyForm";
   <Route path="policies/:id/edit" element={<PolicyForm />} />
 </Route>
 
+import NotificationCenter from "./admin/notifications/NotificationCenter";
+
+<Route path="/admin/notifications" element={<NotificationCenter />} />
 
 const AppRoutes = () => {
   return (

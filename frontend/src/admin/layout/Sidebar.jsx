@@ -22,6 +22,12 @@ const navItems = [
   { name: "Buy Requests", path: "/admin/buy-requests", icon: ShoppingBagIcon },
   { name: "KYC", path: "/admin/kyc", icon: IdentificationIcon },
   { name: "Profile", path: "/admin/profile", icon: UserCircleIcon },
+  {
+  name: "Notifications",
+  path: "/admin/notifications",
+  icon: BellIcon,
+}
+
 ];
 
 const Sidebar = () => {
