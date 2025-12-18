@@ -1,4 +1,5 @@
 import React from "react";
+import Charts from "./Charts";
 import {
   UsersIcon,
   ShieldCheckIcon,
@@ -73,5 +74,7 @@ const Dashboard = () => {
     </div>
   );
 };
+<Charts />
+
 
 export default Dashboard;

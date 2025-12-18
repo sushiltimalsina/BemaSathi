@@ -91,6 +91,15 @@ import PolicyList from "./admin/policies/PolicyList";
   <Route path="policies" element={<PolicyList />} />
 </Route>
 
+import UserList from "./admin/users/UserList";
+
+<Route path="users" element={<UserList />} />
+import PolicyForm from "./admin/policies/PolicyForm";
+
+<Route path="/admin" element={<AdminLayout />}>
+  <Route path="policies/create" element={<PolicyForm />} />
+  <Route path="policies/:id/edit" element={<PolicyForm />} />
+</Route>
 
 
 const AppRoutes = () => {

@@ -171,6 +171,22 @@ const PolicyList = () => {
                     </span>
                   )}
                 </td>
+                <td className="px-4 py-3 flex gap-2">
+  <button
+    onClick={() => navigate(`/admin/policies/${p.id}/edit`)}
+    className="text-xs font-semibold px-3 py-1 rounded-lg border border-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+  >
+    Edit
+  </button>
+
+  <button
+    onClick={() => toggleStatus(p)}
+    className="text-xs font-semibold px-3 py-1 rounded-lg border border-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+  >
+    {p.is_active ? "Disable" : "Enable"}
+  </button>
+</td>
+
 
                 <td className="px-4 py-3">
                   <button
