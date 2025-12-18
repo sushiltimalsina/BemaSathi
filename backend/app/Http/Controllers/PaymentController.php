@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Str;
+use App\Services\NotificationService;
 
 class PaymentController extends Controller
 {
@@ -19,9 +20,11 @@ class PaymentController extends Controller
     private string $khaltiBase;
     private string $khaltiSecret;
     private string $khaltiPublic;
+    private NotificationService $notifier;
 
-    public function __construct()
+    public function __construct(NotificationService $notifier)
     {
+        $this->notifier = $notifier;
         $merchant = config('services.esewa.merchant_code');
         $secret   = config('services.esewa.secret_key');
 
@@ -145,6 +148,7 @@ class PaymentController extends Controller
                 'provider_reference' => $transactionUuid,
                 'paid_at' => now(),
             ]);
+            $this->notifyPayment($payment, 'completed');
         } catch (QueryException $e) {
             // If status enum mismatches existing schema, keep flow moving and continue to redirect
         }
@@ -178,6 +182,7 @@ class PaymentController extends Controller
             'status' => 'failed',
             'meta'   => ['reason' => 'User cancelled or payment rejected', 'transaction_uuid' => $transactionUuid]
         ]);
+        $this->notifyPayment($payment, 'failed');
 
         $failureRedirect = $this->frontendBase() . "/client/payment-failure?payment={$payment->id}";
 
@@ -300,6 +305,7 @@ class PaymentController extends Controller
                 'status' => 'failed',
                 'meta'   => array_merge($payment->meta ?? [], ['pidx' => $pidx, 'khalti_status' => $status]),
             ]);
+            $this->notifyPayment($payment, 'failed');
 
             return redirect()->away($this->frontendBase() . "/client/payment-failure?payment={$payment->id}");
         }
@@ -311,6 +317,7 @@ class PaymentController extends Controller
                 'paid_at' => now(),
                 'meta' => array_merge($payment->meta ?? [], ['pidx' => $pidx, 'khalti_status' => $status]),
             ]);
+            $this->notifyPayment($payment, 'completed');
         } catch (QueryException $e) {
             // ignore
         }
@@ -436,5 +443,40 @@ class PaymentController extends Controller
             ?? url('/'),
             '/'
         );
+    }
+
+    /**
+     * Notify user about payment status changes.
+     */
+    private function notifyPayment(Payment $payment, string $status): void
+    {
+        $payment->loadMissing('user', 'policy', 'buyRequest.policy');
+        $user = $payment->user;
+        if (!$user) {
+            return;
+        }
+
+        $policyName = $payment->policy?->policy_name
+            ?? $payment->buyRequest?->policy?->policy_name
+            ?? 'your policy';
+
+        $title = match ($status) {
+            'completed', 'success' => 'Payment Completed',
+            'failed' => 'Payment Failed',
+            default => 'Payment Update',
+        };
+
+        $message = match ($status) {
+            'completed', 'success' => "Your payment for {$policyName} was completed successfully.",
+            'failed' => "Your payment for {$policyName} did not complete. Please try again.",
+            default => "Your payment status for {$policyName} is {$status}.",
+        };
+
+        $context = [
+            'buy_request_id' => $payment->buy_request_id,
+            'policy_id' => $payment->policy_id,
+        ];
+
+        $this->notifier->notify($user, $title, $message, $context);
     }
 }

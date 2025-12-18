@@ -25,6 +25,18 @@ class NotificationController extends Controller
         return response()->json(['message' => 'Marked as read']);
     }
 
+    // Mark all notifications as read for the authenticated user
+    public function markAllRead(Request $request)
+    {
+        Notification::where('user_id', $request->user()?->id)
+            ->where(function ($q) {
+                $q->whereNull('is_read')->orWhere('is_read', false);
+            })
+            ->update(['is_read' => true]);
+
+        return response()->json(['message' => 'All notifications marked as read']);
+    }
+
     // Admin creates manual notifications
     public function adminCreate(Request $request)
     {

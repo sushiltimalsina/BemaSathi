@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Bars3Icon, XMarkIcon, BellIcon } from "@heroicons/react/24/outline";
 import ThemeToggle from "./ThemeDropdown";
+import API from "../api/api";
 
 const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
   const [profileOpen, setProfileOpen] = useState(false);
@@ -37,6 +38,10 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
   }, []);
 
   const closeMobile = () => setMobileOpen(false);
+  const goNotifications = () => {
+    closeMobile();
+    navigate("/client/notifications");
+  };
 
   const primaryLinks = [
     { to: "/client/dashboard", label: "Dashboard" },
@@ -59,17 +64,13 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
         const token = localStorage.getItem("client_token");
         if (!token) return;
 
-        const res = await fetch("http://localhost:5173/api/notifications", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        const data = await res.json();
-        if (data?.data) {
-          const unread = data.data.filter((n) => !n.is_read).length;
-          setUnreadCount(unread);
-        }
+        const res = await API.get("/notifications");
+        const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
+        const unread = list.filter((n) => !n.is_read).length;
+        setUnreadCount(unread);
       } catch (err) {
         console.log("Notification fetch error:", err);
+        setUnreadCount(0);
       }
     };
 
@@ -120,34 +121,28 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
 
           {/* Notifications Icon */}
           <button
-  onClick={() => navigate("/client/notifications")}
-  className="
-    relative p-2 rounded-lg
-    hover:bg-hover-light dark:hover:bg-hover-dark
-    border border-border-light dark:border-border-dark
-    text-text-light dark:text-text-dark
-    transition
-  "
->
-  <BellIcon className="w-6 h-6" />
+            onClick={goNotifications}
+            className="relative hover:text-primary-light dark:hover:text-primary-dark"
+          >
+            <BellIcon className="w-6 h-6" />
 
-  {/* UNREAD BADGE */}
-              {unreadCount > 0 && (
-                <span
-                  className="
-                    absolute -top-1.5 -right-1.5
-                    w-5 h-5 rounded-full
-                    flex items-center justify-center
-                    text-xs font-bold
-                    bg-red-600 text-white
-                    dark:bg-red-500 dark:text-white
-                    shadow
-                  "
-                >
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
-            </button>
+            {/* UNREAD BADGE */}
+            {unreadCount > 0 && (
+              <span
+                className="
+                  absolute -top-1.5 -right-1.5
+                  w-5 h-5 rounded-full
+                  flex items-center justify-center
+                  text-xs font-bold
+                  bg-red-600 text-white
+                  dark:bg-red-500 dark:text-white
+                  shadow
+                "
+              >
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </button>
 
 
           {/* PROFILE DROPDOWN */}
@@ -235,14 +230,29 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
         <div className="md:hidden ml-auto flex items-center gap-2">
           {/* Notification Icon */}
           <button
-            onClick={() => navigate("/client/notifications")}
+            onClick={goNotifications}
             className="
-              p-2 rounded-lg border
+              relative p-2 rounded-lg border
               border-border-light dark:border-border-dark
               hover:bg-hover-light dark:hover:bg-hover-dark
             "
           >
             <BellIcon className="w-5 h-5" />
+            {unreadCount > 0 && (
+              <span
+                className="
+                  absolute -top-1.5 -right-1.5
+                  w-5 h-5 rounded-full
+                  flex items-center justify-center
+                  text-xs font-bold
+                  bg-red-600 text-white
+                  dark:bg-red-500 dark:text-white
+                  shadow
+                "
+              >
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
           </button>
 
           <button

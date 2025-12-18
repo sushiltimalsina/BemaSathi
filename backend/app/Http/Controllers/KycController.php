@@ -5,9 +5,14 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\KycDocument;
 use Illuminate\Support\Facades\Auth;
+use App\Services\NotificationService;
 
 class KycController extends Controller
 {
+    public function __construct(private NotificationService $notifier)
+    {
+    }
+
     public function submit(Request $request)
     {
         $user = Auth::user();
@@ -105,6 +110,24 @@ class KycController extends Controller
         $kyc->remarks = $request->remarks;
         $kyc->verified_at = now();
         $kyc->save();
+
+        // Notify user about verification result (with email if available)
+        $kyc->loadMissing('user');
+        if ($kyc->user) {
+            $title = $kyc->status === 'approved'
+                ? 'KYC Approved'
+                : 'KYC Rejected';
+
+            $msg = $kyc->status === 'approved'
+                ? 'Your KYC has been verified. You can now continue with purchases.'
+                : 'Your KYC was rejected. Please review the remarks and resubmit.';
+
+            if ($kyc->remarks) {
+                $msg .= ' Remarks: ' . $kyc->remarks;
+            }
+
+            $this->notifier->notify($kyc->user, $title, $msg, []);
+        }
 
         return response()->json([
             'success' => true,

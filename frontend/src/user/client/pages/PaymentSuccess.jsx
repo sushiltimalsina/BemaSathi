@@ -142,7 +142,8 @@ const PaymentSuccess = () => {
           <Detail
             label="Payment Method"
             value={
-              (payment.method ||
+              (
+                payment.method ||
                 payment.payment_method ||
                 payment.provider ||
                 ""
@@ -164,16 +165,10 @@ const PaymentSuccess = () => {
             className="
               w-full py-3 rounded-xl font-semibold text-white
               bg-linear-to-r from-primary-light to-primary-dark
-              shadow-[0_8px_20px_rgba(0,0,0,0.2)]
-              hover:-translate-y-px hover:shadow-[0_10px_25px_rgba(0,0,0,0.25)]
-              active:translate-y-0
-              transition
+              hover:opacity-90 transition
             "
           >
-            <span className="flex items-center justify-center gap-2">
-              Go to My Policies
-              <ArrowRightIcon className="w-5 h-5" />
-            </span>
+            Go to My Policies
           </button>
 
           <button
@@ -181,17 +176,10 @@ const PaymentSuccess = () => {
             className="
               w-full py-3 rounded-xl font-semibold
               border border-border-light dark:border-border-dark
-              bg-card-light dark:bg-card-dark
-              shadow-inner
-              hover:bg-hover-light dark:hover:bg-hover-dark
-              hover:shadow-[0_8px_20px_rgba(0,0,0,0.12)]
-              transition
+              hover:bg-hover-light dark:hover:bg-hover-dark transition
             "
           >
-            <span className="flex items-center justify-center gap-2">
-              View Payments
-              <DocumentTextIcon className="w-5 h-5" />
-            </span>
+            View Payments
           </button>
         </div>
       </div>
