@@ -18,14 +18,27 @@ const Notifications = () => {
     () => items.filter((n) => !isRead(n)).length,
     [items]
   );
+  const realCount = useMemo(
+    () => items.filter((n) => !isReminder(getId(n))).length,
+    [items]
+  );
 
   const load = async () => {
     setLoading(true);
     setError("");
     try {
-      const res = await API.get("/notifications");
-      const data = res.data?.data ?? res.data ?? [];
-      setItems(Array.isArray(data) ? data : []);
+      const [notifRes, requestsRes] = await Promise.all([
+        API.get("/notifications"),
+        API.get("/my-requests"),
+      ]);
+
+      const notifData = notifRes.data?.data ?? notifRes.data ?? [];
+      const reminders = buildRenewalReminders(requestsRes.data || []);
+
+      setItems([
+        ...reminders,
+        ...(Array.isArray(notifData) ? notifData : []),
+      ]);
     } catch (e) {
       console.error(e);
       setError("Unable to load notifications.");
@@ -40,6 +53,16 @@ const Notifications = () => {
   }, []);
 
   const markOneRead = async (id) => {
+    // Synthetic reminder notifications are local-only
+    if (isReminder(id)) {
+      setItems((prev) =>
+        prev.map((n) =>
+          getId(n) === id ? { ...n, is_read: true, read_at: new Date().toISOString() } : n
+        )
+      );
+      return;
+    }
+
     setWorking(true);
     try {
       try {
@@ -128,20 +151,22 @@ const Notifications = () => {
             Refresh
           </button>
 
-          <button
-            onClick={markAllRead}
-            disabled={working || unreadCount === 0}
-            className="
-              px-4 py-2 rounded-xl text-sm font-semibold text-white
-              bg-linear-to-r from-primary-light to-primary-dark
-              hover:opacity-90 transition
-              disabled:opacity-60 disabled:cursor-not-allowed
-              inline-flex items-center gap-2
-            "
-          >
-            <CheckCircleIcon className="w-4 h-4" />
-            Mark all read
-          </button>
+          {realCount > 1 && (
+            <button
+              onClick={markAllRead}
+              disabled={working || unreadCount === 0}
+              className="
+                px-4 py-2 rounded-xl text-sm font-semibold text-white
+                bg-gradient-to-r from-primary-light to-primary-dark
+                hover:opacity-90 transition
+                disabled:opacity-60 disabled:cursor-not-allowed
+                inline-flex items-center gap-2
+              "
+            >
+              <CheckCircleIcon className="w-4 h-4" />
+              Mark all read
+            </button>
+          )}
         </div>
       </div>
 
@@ -247,16 +272,8 @@ function getId(n) {
 }
 
 function isRead(n) {
-  // support: read_at datetime OR boolean/numeric/string flags
-  return (
-    Boolean(n.read_at) ||
-    n.is_read === true ||
-    n.is_read === 1 ||
-    n.is_read === "1" ||
-    n.read === true ||
-    n.read === 1 ||
-    n.read === "1"
-  );
+  // Only trust the explicit is_read flag; avoid accidental auto-read from other fields
+  return n.is_read === true || n.is_read === 1 || n.is_read === "1";
 }
 
 function getTitle(n) {
@@ -280,6 +297,36 @@ function formatWhen(dt) {
   const d = new Date(dt);
   if (Number.isNaN(d.getTime())) return "";
   return d.toLocaleString();
+}
+
+function isReminder(id) {
+  return String(id).startsWith("reminder-");
+}
+
+// Build renewal reminders for policies expiring within 5 days
+function buildRenewalReminders(requests) {
+  const now = new Date();
+  const soon = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
+
+  return (requests || [])
+    .filter((r) => r.next_renewal_date)
+    .map((r) => ({
+      raw: r,
+      date: new Date(r.next_renewal_date),
+    }))
+    .filter(({ date }) => !Number.isNaN(date) && date >= now && date <= soon)
+    .map(({ raw, date }) => ({
+      id: `reminder-${raw.id}`,
+      title: "Renewal Reminder",
+      message: `Your policy ${raw.policy?.policy_name || ""} renews on ${date.toLocaleDateString()}.`,
+      created_at: raw.next_renewal_date,
+      is_read: false,
+      meta: {
+        policy: raw.policy?.policy_name,
+        company: raw.policy?.company_name,
+        next_renewal_date: raw.next_renewal_date,
+      },
+    }));
 }
 
 export default Notifications;
