@@ -75,6 +75,13 @@ import RenewalList from "./admin/renewals/RenewalList";
   <Route path="renewals" element={<RenewalList />} />
 </Route>
 
+import PaymentList from "./admin/payments/PaymentList";
+
+<Route path="/admin" element={<AdminLayout />}>
+  <Route path="dashboard" element={<Dashboard />} />
+  <Route path="renewals" element={<RenewalList />} />
+  <Route path="payments" element={<PaymentList />} />
+</Route>
 
 
 
