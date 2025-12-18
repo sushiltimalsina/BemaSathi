@@ -163,10 +163,10 @@ const PaymentSuccess = () => {
             onClick={() => navigate("/client/my-policies")}
             className="
               w-full py-3 rounded-xl font-semibold text-white
-              bg-gradient-to-r from-primary-light to-primary-dark
+              bg-linear-to-r from-primary-light to-primary-dark
               shadow-[0_8px_20px_rgba(0,0,0,0.2)]
-              hover:translate-y-[-1px] hover:shadow-[0_10px_25px_rgba(0,0,0,0.25)]
-              active:translate-y-[0px]
+              hover:-translate-y-px hover:shadow-[0_10px_25px_rgba(0,0,0,0.25)]
+              active:translate-y-0
               transition
             "
           >

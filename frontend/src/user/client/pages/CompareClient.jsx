@@ -17,6 +17,7 @@ const CompareClient = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [typeMismatch, setTypeMismatch] = useState(false);
+  const [ownedMap, setOwnedMap] = useState({});
   const { clearCompare } = useCompare();
 
   const navigate = useNavigate();
@@ -40,6 +41,7 @@ const CompareClient = () => {
     }
     fetchUser();
     fetchPolicies();
+    fetchOwned();
     clearCompare();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p1, p2]);
@@ -78,6 +80,21 @@ const CompareClient = () => {
     }
 
     setLoading(false);
+  };
+
+  const fetchOwned = async () => {
+    try {
+      const res = await API.get("/my-requests");
+      const map = {};
+      (res.data || []).forEach((r) => {
+        if (r.policy_id) {
+          map[r.policy_id] = r.id;
+        }
+      });
+      setOwnedMap(map);
+    } catch (err) {
+      console.error("Owned requests fetch failed", err);
+    }
   };
 
   const adj1 =
@@ -361,6 +378,7 @@ const CompareClient = () => {
             coveredCount={covered1}
             totalConditions={totalConditions}
             metrics={metrics1}
+            ownedRequestId={ownedMap?.[policy1?.id]}
           />
           <PolicyCard
             policy={policy2}
@@ -369,6 +387,7 @@ const CompareClient = () => {
             coveredCount={covered2}
             totalConditions={totalConditions}
             metrics={metrics2}
+            ownedRequestId={ownedMap?.[policy2?.id]}
           />
         </div>
       </div>
@@ -383,7 +402,17 @@ const PolicyCard = ({
   coveredCount,
   totalConditions,
   metrics,
+  ownedRequestId,
 }) => {
+  const owned = Boolean(ownedRequestId);
+  const detailTo = owned
+    ? {
+        pathname: `/policy/${policy.id}`,
+        search: `?owned=1&buyRequest=${ownedRequestId}`,
+        state: { owned: true, buyRequestId: ownedRequestId },
+      }
+    : { pathname: `/policy/${policy.id}` };
+
   return (
     <div
       className="
@@ -478,7 +507,7 @@ const PolicyCard = ({
 
       <div className="mt-5 flex flex-wrap gap-3">
         <Link
-          to={`/policy/${policy.id}`}
+          to={detailTo}
           className="
             text-sm font-semibold 
             text-text-light dark:text-text-dark 
@@ -498,15 +527,27 @@ const PolicyCard = ({
         >
           View Agent
         </Link>
-        <Link
-          to={`/client/buy?policy=${policy.id}`}
-          className="
-            px-4 py-2 rounded-lg text-sm font-semibold
-            bg-primary-light text-white hover:opacity-90 shadow
-          "
-        >
-          Buy this Policy
-        </Link>
+        {owned ? (
+          <Link
+            to={`/client/payment?request=${ownedRequestId}`}
+            className="
+              px-4 py-2 rounded-lg text-sm font-semibold
+              bg-primary-light text-white hover:opacity-90 shadow
+            "
+          >
+            Renew Now
+          </Link>
+        ) : (
+          <Link
+            to={`/client/buy?policy=${policy.id}`}
+            className="
+              px-4 py-2 rounded-lg text-sm font-semibold
+              bg-primary-light text-white hover:opacity-90 shadow
+            "
+          >
+            Buy this Policy
+          </Link>
+        )}
       </div>
     </div>
   );
