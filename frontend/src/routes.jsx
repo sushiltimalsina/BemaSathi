@@ -56,7 +56,24 @@ import ResetPassword from "./auth/ResetPassword";
 import Notifications from "./user/client/pages/Notifications";
 import MyBuyRequests from "./user/client/pages/MyBuyRequests";
 import MyPolicies from "./user/client/pages/MyPolicies";
+import Dashboard from "./admin/dashboard/Dashboard";
 
+<Route path="/admin" element={<AdminLayout />}>
+  <Route path="dashboard" element={<Dashboard />} />
+  <Route path="policies" element={<div>Policies</div>} />
+  <Route path="renewals" element={<div>Renewals</div>} />
+  <Route path="payments" element={<div>Payments</div>} />
+  <Route path="users" element={<div>Users</div>} />
+  <Route path="settings" element={<div>Settings</div>} />
+</Route>
+
+
+import RenewalList from "./admin/renewals/RenewalList";
+
+<Route path="/admin" element={<AdminLayout />}>
+  <Route path="dashboard" element={<Dashboard />} />
+  <Route path="renewals" element={<RenewalList />} />
+</Route>
 
 
 
