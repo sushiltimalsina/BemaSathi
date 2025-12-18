@@ -104,6 +104,13 @@ import PolicyForm from "./admin/policies/PolicyForm";
 import NotificationCenter from "./admin/notifications/NotificationCenter";
 
 <Route path="/admin/notifications" element={<NotificationCenter />} />
+import Settings from "./admin/settings/Settings";
+
+<Route path="/admin/settings" element={<Settings />} />
+import CompanyList from "./admin/companies/CompanyList";
+import CompanyForm from "./admin/companies/CompanyForm";
+
+<><Route path="companies" element={<CompanyList />} /><Route path="companies/create" element={<CompanyForm />} /><Route path="companies/:id/edit" element={<CompanyForm />} /></>
 
 const AppRoutes = () => {
   return (
