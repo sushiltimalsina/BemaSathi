@@ -12,6 +12,7 @@ import {
   ChartBarSquareIcon,
   ClipboardDocumentListIcon,
   Cog6ToothIcon,
+  LifebuoyIcon,
 } from "@heroicons/react/24/outline";
 
 const navItems = [
@@ -26,6 +27,7 @@ const navItems = [
   { name: "Reports", path: "/admin/reports", icon: ChartBarSquareIcon },
   { name: "Audit Log", path: "/admin/audit", icon: ClipboardDocumentListIcon },
   { name: "Settings", path: "/admin/settings", icon: Cog6ToothIcon },
+  { name: "Support", path: "/admin/support", icon: LifebuoyIcon },
 ];
 
 const Sidebar = () => {

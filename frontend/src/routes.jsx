@@ -21,6 +21,8 @@ import NotificationCenter from "./admin/notifications/NotificationCenter";
 import Reports from "./admin/reports/Reports";
 import AuditLog from "./admin/audit/AuditLog";
 import Settings from "./admin/settings/Settings";
+import SupportList from "./admin/support/SupportList";
+import SupportView from "./admin/support/SupportView";
 
 /* -------- Guest Pages -------- */
 import Home from "./user/guest/pages/Home";
@@ -51,6 +53,12 @@ import MyProfile from "./user/client/pages/MyProfile";
 import Notifications from "./user/client/pages/Notifications";
 import MyBuyRequests from "./user/client/pages/MyBuyRequests";
 import MyPolicies from "./user/client/pages/MyPolicies";
+import MyTickets from "./client/support/MyTickets";
+import NewTicket from "./client/support/NewTicket";
+import SupportChat from "./client/support/SupportChat";
+
+
+
 
 const AppRoutes = () => {
   return (
@@ -93,6 +101,10 @@ const AppRoutes = () => {
           </ProtectedClientRoute>
         }
       />
+      <Route path="/client/support" element={<MyTickets />} />
+<Route path="/client/support/new" element={<NewTicket />} />
+<Route path="/client/support/:id" element={<SupportChat />} />
+
       <Route
         path="/client/my-profile"
         element={
@@ -263,6 +275,8 @@ const AppRoutes = () => {
         <Route path="reports" element={<Reports />} />
         <Route path="audit" element={<AuditLog />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="support" element={<SupportList />} />
+        <Route path="support/:id" element={<SupportView />} />
       </Route>
     </Routes>
   );

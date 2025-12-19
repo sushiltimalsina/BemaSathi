@@ -1,0 +1,144 @@
+import React, { useEffect, useState } from "react";
+import API from "../utils/adminApi";
+import { useParams } from "react-router-dom";
+import {
+  PaperAirplaneIcon,
+  ChatBubbleOvalLeftIcon,
+  ClockIcon,
+} from "@heroicons/react/24/outline";
+
+const SupportView = () => {
+  const { id } = useParams();
+
+  const [ticket, setTicket] = useState(null);
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    try {
+      const res = await API.get(`/admin/support/${id}`);
+      setTicket(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const sendReply = async () => {
+    if (!message.trim()) return;
+
+    try {
+      await API.post(`/admin/support/${id}/reply`, { message });
+      setMessage("");
+      load();
+    } catch (e) {
+      alert("Failed to reply");
+    }
+  };
+
+  const updateStatus = async (status) => {
+    try {
+      await API.post(`/admin/support/${id}/status`, { status });
+      load();
+    } catch (e) {
+      alert("Failed to update status");
+    }
+  };
+
+  if (loading) return <p className="opacity-70">Loading ticket...</p>;
+
+  return (
+    <div className="space-y-6 max-w-3xl">
+
+      {/* HEADER */}
+      <div>
+        <h1 className="text-2xl font-bold">{ticket.subject}</h1>
+        <p className="text-sm opacity-70">
+          From: {ticket.user?.name} ({ticket.user?.email})
+        </p>
+      </div>
+
+      {/* STATUS BUTTONS */}
+      <div className="flex gap-3">
+        <button
+          onClick={() => updateStatus("open")}
+          className="px-3 py-1 rounded-lg bg-blue-600 text-white"
+        >
+          Open
+        </button>
+
+        <button
+          onClick={() => updateStatus("in_progress")}
+          className="px-3 py-1 rounded-lg bg-yellow-500 text-white"
+        >
+          In Progress
+        </button>
+
+        <button
+          onClick={() => updateStatus("resolved")}
+          className="px-3 py-1 rounded-lg bg-green-600 text-white"
+        >
+          Resolved
+        </button>
+
+        <button
+          onClick={() => updateStatus("closed")}
+          className="px-3 py-1 rounded-lg bg-gray-600 text-white"
+        >
+          Closed
+        </button>
+      </div>
+
+      {/* CHAT */}
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-300 dark:border-slate-700 p-5 space-y-5 max-h-[60vh] overflow-y-auto">
+
+        {ticket.messages.map((m, i) => (
+          <div
+            key={i}
+            className={`
+              max-w-[80%] p-3 rounded-lg
+              ${m.is_admin ? "ml-auto bg-primary-light text-white" : "bg-slate-200 dark:bg-slate-800"}
+            `}
+          >
+            <p className="text-sm">{m.message}</p>
+            <div className="text-[10px] opacity-70 mt-1 flex items-center gap-1">
+              <ClockIcon className="w-3 h-3" />
+              {new Date(m.created_at).toLocaleString()}
+            </div>
+          </div>
+        ))}
+
+      </div>
+
+      {/* REPLY BOX */}
+      <div className="flex items-center gap-2">
+        <input
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="Type your reply..."
+          className="
+            flex-1 px-4 py-2 rounded-lg border
+            bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700
+          "
+        />
+
+        <button
+          onClick={sendReply}
+          className="
+            px-4 py-2 rounded-lg bg-primary-light text-white hover:bg-primary-dark
+            flex items-center gap-1
+          "
+        >
+          <PaperAirplaneIcon className="w-5 h-5" /> Send
+        </button>
+      </div>
+
+    </div>
+  );
+};
+
+export default SupportView;
