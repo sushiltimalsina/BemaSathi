@@ -32,7 +32,12 @@ const UserDetails = ({ user, onClose }) => {
   };
 
   const updateKyc = async (status) => {
-    if (kyc?.status === "approved" && status === "rejected") {
+    if (kyc?.status !== "pending") {
+      addToast({
+        type: "warning",
+        title: "KYC finalized",
+        message: "User must resubmit KYC before it can be updated.",
+      });
       return;
     }
     if (status === "rejected") {
@@ -165,7 +170,7 @@ const UserDetails = ({ user, onClose }) => {
               <div className="flex gap-3 mt-4">
                 <button
                   onClick={() => updateKyc("approved")}
-                  disabled={kyc?.status === "approved"}
+                  disabled={kyc?.status !== "pending"}
                   className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   Approve
@@ -173,7 +178,7 @@ const UserDetails = ({ user, onClose }) => {
 
                 <button
                   onClick={() => updateKyc("rejected")}
-                  disabled={kyc?.status === "approved"}
+                  disabled={kyc?.status !== "pending"}
                   className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   Reject

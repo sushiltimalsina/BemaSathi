@@ -68,6 +68,12 @@ class AdminUserController extends Controller
             return response()->json(['message' => 'KYC not found'], 404);
         }
 
+        if ($kyc->status !== 'pending') {
+            return response()->json([
+                'message' => 'KYC already finalized. User must resubmit.',
+            ], 422);
+        }
+
         $kyc->update(['status' => $data['status']]);
 
         return response()->json(['message' => 'KYC updated', 'kyc' => $kyc]);
