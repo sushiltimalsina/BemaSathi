@@ -33,6 +33,7 @@ class SupportController extends Controller
             'category' => $data['category'] ?? 'general',
             'priority' => $data['priority'] ?? 'normal',
             'status' => 'open',
+            'is_admin_seen' => false,
         ]);
 
         SupportMessage::create([
@@ -40,7 +41,11 @@ class SupportController extends Controller
             'user_id' => $request->user()->id,
             'message' => $data['message'],
             'is_admin' => false,
+            'is_user_seen' => true,
         ]);
+
+        $ticket->update(['is_admin_seen' => false]);
+        $ticket->touch();
 
         return response()->json($ticket, 201);
     }
@@ -54,6 +59,10 @@ class SupportController extends Controller
         $ticket->load(['user', 'messages' => function ($query) {
             $query->orderBy('created_at');
         }]);
+
+        SupportMessage::where('ticket_id', $ticket->id)
+            ->where('is_admin', true)
+            ->update(['is_user_seen' => true]);
 
         return response()->json($ticket);
     }
@@ -73,8 +82,46 @@ class SupportController extends Controller
             'user_id' => $request->user()->id,
             'message' => $data['message'],
             'is_admin' => false,
+            'is_user_seen' => true,
         ]);
 
+        $ticket->update(['is_admin_seen' => false]);
+        $ticket->touch();
+
         return response()->json(['message' => 'Reply sent']);
+    }
+
+    public function markSeen(Request $request, SupportTicket $ticket)
+    {
+        if ($ticket->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        SupportMessage::where('ticket_id', $ticket->id)
+            ->where('is_admin', true)
+            ->update(['is_user_seen' => true]);
+
+        return response()->json(['message' => 'Messages marked as seen']);
+    }
+
+    public function unreadCount(Request $request)
+    {
+        $userId = $request->user()->id;
+
+        $baseQuery = SupportMessage::where('is_admin', true)
+            ->where('is_user_seen', false)
+            ->whereHas('ticket', function ($query) use ($userId) {
+                $query->where('user_id', $userId)
+                    ->where('status', '!=', 'closed');
+            });
+
+        $latest = $baseQuery->orderByDesc('created_at')->first();
+
+        return response()->json([
+            'count' => $baseQuery->count(),
+            'latest_unread_at' => $latest?->created_at,
+            'latest_unread_message' => $latest?->message,
+            'latest_unread_ticket_id' => $latest?->ticket_id,
+        ]);
     }
 }

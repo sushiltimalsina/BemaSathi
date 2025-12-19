@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { Link } from "react-router-dom";
 import {
   ShieldCheckIcon,
@@ -22,6 +22,12 @@ const Home = () => {
   const heroBg = dark
     ? "bg-gradient-to-br from-background-dark via-slate-900 to-slate-800 text-text-dark"
     : "bg-gradient-to-br from-background-light via-blue-50 to-indigo-50 text-text-light";
+
+  const tintBg = {
+    blue: "bg-blue-50 dark:bg-blue-900/30",
+    purple: "bg-purple-50 dark:bg-purple-900/30",
+    emerald: "bg-emerald-50 dark:bg-emerald-900/30",
+  };
 
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark transition-colors">
@@ -120,9 +126,9 @@ const Home = () => {
 
               <div className="space-y-4 text-sm">
                 {[
-                  { name: "Health Insurance", detail: "From 4 providers", price: "रु. 12,500+/year" },
-                  { name: "Term Life", detail: "Long-term security", price: "रु. 8,000+/year" },
-                  { name: "Whole Life", detail: "Lifetime coverage", price: "रु. 9,300+/year" },
+                  { name: "Health Insurance", detail: "From 4 providers", price: "Rs. 12,500+/year" },
+                  { name: "Term Life", detail: "Long-term security", price: "Rs. 8,000+/year" },
+                  { name: "Whole Life", detail: "Lifetime coverage", price: "Rs. 9,300+/year" },
                 ].map((item, i) => (
                   <div
                     key={i}
@@ -201,7 +207,7 @@ const Home = () => {
                 border border-border-light dark:border-border-dark
               "
             >
-              <div className={`w-10 h-10 rounded-xl bg-${item.tint}-50 dark:bg-${item.tint}-900/30 flex items-center justify-center mb-4`}>
+              <div className={`w-10 h-10 rounded-xl ${tintBg[item.tint]} flex items-center justify-center mb-4`}>
                 <item.icon className={`w-6 h-6 ${item.theme}`} />
               </div>
 
@@ -309,3 +315,4 @@ const Home = () => {
 };
 
 export default Home;
+

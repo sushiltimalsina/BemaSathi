@@ -40,6 +40,22 @@ class AdminSettingsController extends Controller
         return response()->json(array_merge($defaults, $content));
     }
 
+    public function public()
+    {
+        if (Storage::disk('local')->exists($this->file)) {
+            $content = json_decode(Storage::disk('local')->get($this->file), true);
+        } else {
+            $content = [];
+        }
+
+        return response()->json([
+            'default_billing_cycle' => $content['default_billing_cycle']
+                ?? env('DEFAULT_BILLING_CYCLE', 'yearly'),
+            'renewal_grace_days' => $content['renewal_grace_days']
+                ?? (int) env('RENEWAL_GRACE_DAYS', 7),
+        ]);
+    }
+
     public function update(Request $request)
     {
         $data = $request->validate([

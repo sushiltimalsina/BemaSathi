@@ -248,7 +248,7 @@ const ClientDashboard = () => {
           </h2>
 
           {loadingPolicies ? (
-            <p className="opacity-60">Loading recommendations…</p>
+            <p className="opacity-60">Loading recommendations...</p>
           ) : recommended.length === 0 ? (
             <p className="opacity-70">{recError || "No policies found."}</p>
           ) : (

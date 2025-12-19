@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SupportTicket;
 use App\Models\SupportMessage;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AdminSupportController extends Controller
 {
@@ -24,6 +25,8 @@ class AdminSupportController extends Controller
             $query->orderBy('created_at');
         }]);
 
+        $ticket->update(['is_admin_seen' => true]);
+
         return response()->json($ticket);
     }
 
@@ -38,7 +41,11 @@ class AdminSupportController extends Controller
             'admin_id' => $request->user()?->id,
             'message' => $data['message'],
             'is_admin' => true,
+            'is_user_seen' => false,
         ]);
+
+        $ticket->update(['is_admin_seen' => true]);
+        $ticket->touch();
 
         return response()->json(['message' => 'Reply sent']);
     }
@@ -49,8 +56,39 @@ class AdminSupportController extends Controller
             'status' => 'required|in:open,in_progress,resolved,closed',
         ]);
 
-        $ticket->update(['status' => $data['status']]);
+        $update = ['status' => $data['status']];
+        if ($data['status'] === 'closed') {
+            $update['is_admin_seen'] = true;
+        }
+        $ticket->update($update);
 
         return response()->json(['message' => 'Status updated', 'ticket' => $ticket]);
+    }
+
+    public function unreadCount()
+    {
+        $query = SupportTicket::where('is_admin_seen', false)
+            ->where('status', '!=', 'closed');
+        $count = $query->count();
+        $latestTicket = $query->with('user')->orderByDesc('updated_at')->first();
+        $latestMessage = null;
+        if ($latestTicket) {
+            $latestMessage = $latestTicket->messages()
+                ->orderByDesc('created_at')
+                ->value('message');
+        }
+
+        return response()->json([
+            'count' => $count,
+            'latest_unread_at' => $latestTicket?->updated_at,
+            'latest_unread_user' => $latestTicket?->user?->name,
+            'latest_unread_message' => $latestMessage,
+        ]);
+    }
+
+    public function markSeen(SupportTicket $ticket)
+    {
+        $ticket->update(['is_admin_seen' => true]);
+        return response()->json(['message' => 'Ticket marked as seen']);
     }
 }

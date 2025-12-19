@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   LineChart,
   Line,
@@ -11,25 +11,27 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const Charts = () => {
-  // TEMP MOCK DATA (replace with API later)
-  const revenueData = [
-    { month: "Jan", revenue: 30000 },
-    { month: "Feb", revenue: 42000 },
-    { month: "Mar", revenue: 38000 },
-    { month: "Apr", revenue: 50000 },
-    { month: "May", revenue: 61000 },
-    { month: "Jun", revenue: 55000 },
-  ];
+const Charts = ({ monthlyPayments = [], monthlyUsers = [] }) => {
+  const formatMonth = (value) => {
+    if (!value) return "";
+    const [year, month] = value.split("-");
+    const date = new Date(Number(year), Number(month) - 1, 1);
+    return date.toLocaleString("en-US", { month: "short" });
+  };
 
-  const usersData = [
-    { month: "Jan", users: 120 },
-    { month: "Feb", users: 170 },
-    { month: "Mar", users: 140 },
-    { month: "Apr", users: 210 },
-    { month: "May", users: 260 },
-    { month: "Jun", users: 300 },
-  ];
+  const revenueData = useMemo(() => {
+    return monthlyPayments.map((item) => ({
+      month: formatMonth(item.month),
+      revenue: Number(item.total || 0),
+    }));
+  }, [monthlyPayments]);
+
+  const usersData = useMemo(() => {
+    return monthlyUsers.map((item) => ({
+      month: formatMonth(item.month),
+      users: Number(item.total || 0),
+    }));
+  }, [monthlyUsers]);
 
   return (
     <div className="grid lg:grid-cols-2 gap-6 mt-10">

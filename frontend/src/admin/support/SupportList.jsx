@@ -22,6 +22,7 @@ const SupportList = () => {
     try {
       const res = await API.get("/admin/support");
       setTickets(res.data || []);
+      window.dispatchEvent(new Event("support:refresh"));
     } catch (e) {
       console.error("Failed to load tickets");
     }
@@ -149,7 +150,11 @@ const SupportList = () => {
             {filtered.map((t) => (
               <tr
                 key={t.id}
-                className="border-t border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/40"
+                className={`border-t border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/40 ${
+                  t.is_admin_seen === false
+                    ? "bg-yellow-50/60 dark:bg-yellow-900/20"
+                    : ""
+                }`}
               >
                 <td className="px-4 py-3">
                   <div className="font-medium">{t.user?.name}</div>
@@ -181,7 +186,15 @@ const SupportList = () => {
 
                 <td className="px-4 py-3">
                   <button
-                    onClick={() => navigate(`/admin/support/${t.id}`)}
+                    onClick={async () => {
+                      try {
+                        await API.post(`/admin/support/${t.id}/mark-seen`);
+                        window.dispatchEvent(new Event("support:refresh"));
+                      } catch (e) {
+                        // ignore
+                      }
+                      navigate(`/admin/support/${t.id}`);
+                    }}
                     className="
                       flex items-center gap-2 px-3 py-1 rounded-lg text-xs border
                       border-slate-300 dark:border-slate-700

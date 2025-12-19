@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ClockIcon,
@@ -197,7 +197,7 @@ const RenewalCard = ({ request }) => {
       {/* EXPIRED NOTICE */}
       {status === "expired" && (
         <p className="mt-4 text-red-500 text-sm font-semibold text-center">
-          Policy expired — renewal unavailable.
+          Policy expired - renewal unavailable.
         </p>
       )}
     </div>
@@ -205,3 +205,4 @@ const RenewalCard = ({ request }) => {
 };
 
 export default RenewalCard;
+

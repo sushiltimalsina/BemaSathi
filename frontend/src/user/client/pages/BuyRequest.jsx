@@ -105,6 +105,22 @@ const BuyRequest = () => {
     if (policyId) load();
   }, [policyId]);
 
+  // Load default billing cycle from settings
+  useEffect(() => {
+    const loadDefaults = async () => {
+      try {
+        const res = await API.get("/settings/public");
+        const cycle = res.data?.default_billing_cycle;
+        if (cycle) {
+          setBillingCycle(cycle);
+        }
+      } catch (err) {
+        // ignore - fallback to local default
+      }
+    };
+    loadDefaults();
+  }, []);
+
   // Fetch user + KYC
   useEffect(() => {
     const loadUser = async () => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import API from "../../../api/api";
 import { useParams } from "react-router-dom";
 import { PaperAirplaneIcon, ClockIcon } from "@heroicons/react/24/outline";
@@ -9,11 +9,19 @@ const SupportChat = () => {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const chatRef = useRef(null);
 
   const load = async () => {
     try {
       const res = await API.get(`/support/${id}`);
       setTicket(res.data);
+      const hasUnread = res.data?.messages?.some(
+        (msg) => msg.is_admin && msg.is_user_seen === false
+      );
+      if (hasUnread) {
+        await API.post(`/support/${id}/mark-seen`);
+        window.dispatchEvent(new Event("support:client-refresh"));
+      }
     } catch (e) {
       alert("Unable to load ticket.");
     }
@@ -25,6 +33,19 @@ const SupportChat = () => {
     const interval = setInterval(load, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!chatRef.current) return;
+    chatRef.current.scrollTop = chatRef.current.scrollHeight;
+  }, [ticket?.messages?.length]);
+
+  useEffect(() => {
+    if (!chatRef.current) return;
+    const frame = requestAnimationFrame(() => {
+      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [id, loading]);
 
   const sendReply = async () => {
     if (!message.trim() || ticket?.status === "closed") return;
@@ -54,14 +75,17 @@ const SupportChat = () => {
       </div>
 
       {/* Chat Area */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-300 dark:border-slate-700 p-5 space-y-4 max-h-[65vh] overflow-y-auto">
+      <div
+        ref={chatRef}
+        className="bg-white dark:bg-slate-900 rounded-xl border border-slate-300 dark:border-slate-700 p-5 space-y-4 max-h-[65vh] overflow-y-auto"
+      >
 
         {ticket.messages.map((m, i) => (
           <div
             key={i}
             className={`
-              max-w-[80%] p-3 rounded-lg
-              ${m.is_admin ? "bg-slate-200 dark:bg-slate-800 ml-auto" : "bg-primary-light text-white"}
+              max-w-[80%] w-fit p-3 rounded-lg
+              ${m.is_admin ? "bg-slate-200 dark:bg-slate-800 mr-auto" : "bg-primary-light text-white ml-auto"}
             `}
           >
             <p className="text-sm">{m.message}</p>
@@ -79,6 +103,12 @@ const SupportChat = () => {
         <input
           value={message}
           onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              sendReply();
+            }
+          }}
           placeholder="Type your message..."
           disabled={ticket.status === "closed" || sending}
           className="flex-1 px-4 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 disabled:opacity-60 disabled:cursor-not-allowed"

@@ -1,8 +1,13 @@
 import React from "react";
 
-const StatCard = ({ title, value, subtitle, icon: Icon, trend }) => {
+const StatCard = ({ title, value, subtitle, icon: Icon, trend, onClick }) => {
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm hover:shadow-md transition">
+    <div
+      onClick={onClick}
+      className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm transition ${
+        onClick ? "cursor-pointer hover:shadow-md" : ""
+      }`}
+    >
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-slate-500 dark:text-slate-400">

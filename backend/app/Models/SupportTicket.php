@@ -12,6 +12,11 @@ class SupportTicket extends Model
         'category',
         'priority',
         'status',
+        'is_admin_seen',
+    ];
+
+    protected $casts = [
+        'is_admin_seen' => 'boolean',
     ];
 
     public function user()

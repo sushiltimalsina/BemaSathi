@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import API from "../utils/adminApi";
 import { useParams } from "react-router-dom";
 import {
@@ -18,6 +18,7 @@ const SupportView = () => {
   const [sending, setSending] = useState(false);
   const { addToast } = useAdminToast();
   const confirm = useAdminConfirm();
+  const chatRef = useRef(null);
 
   const load = async () => {
     try {
@@ -34,6 +35,23 @@ const SupportView = () => {
     const interval = setInterval(load, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!chatRef.current) return;
+    chatRef.current.scrollTop = chatRef.current.scrollHeight;
+  }, [ticket?.messages?.length]);
+
+  useEffect(() => {
+    const markSeen = async () => {
+      try {
+        await API.post(`/admin/support/${id}/mark-seen`);
+        window.dispatchEvent(new Event("support:refresh"));
+      } catch (e) {
+        // ignore
+      }
+    };
+    markSeen();
+  }, [id]);
 
   const sendReply = async () => {
     if (!message.trim() || ticket?.status === "closed") return;
@@ -92,7 +110,10 @@ const SupportView = () => {
       </div>
 
       {/* CHAT */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-300 dark:border-slate-700 p-5 space-y-5 max-h-[60vh] overflow-y-auto">
+      <div
+        ref={chatRef}
+        className="bg-white dark:bg-slate-900 rounded-xl border border-slate-300 dark:border-slate-700 p-5 space-y-5 max-h-[60vh] overflow-y-auto"
+      >
 
         {ticket.messages.map((m, i) => (
           <div
@@ -117,6 +138,12 @@ const SupportView = () => {
         <input
           value={message}
           onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              sendReply();
+            }
+          }}
           placeholder="Type your reply..."
           disabled={ticket.status === "closed" || sending}
           className="

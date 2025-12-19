@@ -72,6 +72,7 @@ Route::match(['GET', 'POST'], '/payments/khalti/return/{payment}', [PaymentContr
 
 // Admin Login (PUBLIC)
 Route::post('/admin/login', [AdminAuthController::class, 'login'])->name('login');
+Route::get('/settings/public', [AdminSettingsController::class, 'public']);
 
 /*
 |--------------------------------------------------------------------------
@@ -130,7 +131,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Support (Client)
     Route::get('/support/my-tickets', [SupportController::class, 'myTickets']);
     Route::post('/support/create', [SupportController::class, 'create']);
+    Route::get('/support/unread-count', [SupportController::class, 'unreadCount']);
     Route::get('/support/{ticket}', [SupportController::class, 'show']);
+    Route::post('/support/{ticket}/mark-seen', [SupportController::class, 'markSeen']);
     Route::post('/support/{ticket}/reply', [SupportController::class, 'reply']);
 
 
@@ -276,9 +279,11 @@ Route::middleware('auth:sanctum')->group(function () {
         |-------------------------
         */
         Route::get('/support', [AdminSupportController::class, 'index']);
+        Route::get('/support/unread-count', [AdminSupportController::class, 'unreadCount']);
         Route::get('/support/{ticket}', [AdminSupportController::class, 'show']);
         Route::post('/support/{ticket}/reply', [AdminSupportController::class, 'reply']);
         Route::post('/support/{ticket}/status', [AdminSupportController::class, 'updateStatus']);
+        Route::post('/support/{ticket}/mark-seen', [AdminSupportController::class, 'markSeen']);
 
     });
 });
