@@ -18,6 +18,7 @@ class Payment extends Model
         'status',
         'meta',
         'paid_at',
+        'billing_cycle',
     ];
 
     protected $casts = [

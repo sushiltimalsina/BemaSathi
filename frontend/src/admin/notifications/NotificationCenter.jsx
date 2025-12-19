@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import API from "../../../api/api";
+import API from "../utils/adminApi";
 import {
   BellIcon,
   FunnelIcon,

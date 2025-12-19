@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import API from "../../../api/api";
+import API from "../utils/adminApi";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   CheckCircleIcon,

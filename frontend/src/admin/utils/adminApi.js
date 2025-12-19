@@ -64,3 +64,4 @@ export const updateKycStatus = (id, payload) =>
 
 // export axios instance
 export { API as adminApi };
+export default API;

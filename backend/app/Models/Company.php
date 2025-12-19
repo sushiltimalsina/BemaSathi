@@ -13,6 +13,11 @@ class Company extends Model
         'address',
         'description',
         'agent_id',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
     ];
 
     public function agent()
@@ -20,4 +25,3 @@ class Company extends Model
         return $this->belongsTo(\App\Models\Agent::class, 'agent_id');
     }
 }
-

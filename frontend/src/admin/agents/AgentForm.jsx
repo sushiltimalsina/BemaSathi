@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
 import API from "../utils/adminApi";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
-const CompanyForm = () => {
-  const navigate = useNavigate();
+const AgentForm = () => {
   const { id } = useParams();
-
+  const navigate = useNavigate();
   const isEdit = Boolean(id);
 
   const [loading, setLoading] = useState(isEdit);
@@ -15,26 +14,26 @@ const CompanyForm = () => {
     name: "",
     email: "",
     phone: "",
-    address: "",
+    password: "",
     is_active: true,
   });
 
   useEffect(() => {
-    if (isEdit) loadCompany();
+    if (isEdit) loadAgent();
   }, [id]);
 
-  const loadCompany = async () => {
+  const loadAgent = async () => {
     try {
-      const res = await API.get(`/admin/companies/${id}`);
+      const res = await API.get(`/admin/agents/${id}`);
       setForm(res.data || {});
     } catch (e) {
-      alert("Failed to load company.");
+      alert("Failed to load agent.");
     }
     setLoading(false);
   };
 
-  const update = (key, val) => {
-    setForm((prev) => ({ ...prev, [key]: val }));
+  const update = (key, value) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
   };
 
   const save = async () => {
@@ -42,13 +41,14 @@ const CompanyForm = () => {
 
     try {
       if (isEdit) {
-        await API.put(`/admin/companies/${id}`, form);
+        await API.put(`/admin/agents/${id}`, form);
       } else {
-        await API.post("/admin/companies", form);
+        await API.post("/admin/agents", form);
       }
-      navigate("/admin/companies");
+
+      navigate("/admin/agents");
     } catch (e) {
-      alert("Failed to save company.");
+      alert("Failed to save agent.");
     }
 
     setSaving(false);
@@ -57,10 +57,11 @@ const CompanyForm = () => {
   if (loading) return <p>Loading...</p>;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-8">
+      {/* HEADER */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">
-          {isEdit ? "Edit Company" : "Add Company"}
+          {isEdit ? "Edit Agent" : "Add Agent"}
         </h1>
 
         <button
@@ -76,11 +77,22 @@ const CompanyForm = () => {
         </button>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-6">
-        <Input label="Company Name" value={form.name} onChange={(e) => update("name", e.target.value)} />
+      {/* FORM */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-6 space-y-6">
+        <Input label="Full Name" value={form.name} onChange={(e) => update("name", e.target.value)} />
+
         <Input label="Email" value={form.email} onChange={(e) => update("email", e.target.value)} />
-        <Input label="Phone" value={form.phone} onChange={(e) => update("phone", e.target.value)} />
-        <Input label="Address" value={form.address} onChange={(e) => update("address", e.target.value)} />
+
+        <Input label="Phone Number" value={form.phone} onChange={(e) => update("phone", e.target.value)} />
+
+        {!isEdit && (
+          <Input
+            label="Password"
+            type="password"
+            value={form.password}
+            onChange={(e) => update("password", e.target.value)}
+          />
+        )}
 
         <div className="flex items-center gap-2">
           <input
@@ -88,7 +100,7 @@ const CompanyForm = () => {
             checked={form.is_active}
             onChange={(e) => update("is_active", e.target.checked)}
           />
-          <label>Active Company</label>
+          <label>Active Agent</label>
         </div>
       </div>
     </div>
@@ -102,12 +114,11 @@ const Input = ({ label, ...props }) => (
       {...props}
       className="
         w-full px-4 py-2 rounded-lg border
-        bg-white dark:bg-slate-900
-        border-slate-200 dark:border-slate-800
+        bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700
         focus:outline-none
       "
     />
   </div>
 );
 
-export default CompanyForm;
+export default AgentForm;

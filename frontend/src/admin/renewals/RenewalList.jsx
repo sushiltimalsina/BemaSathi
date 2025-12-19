@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import API from "../../../api/api";
+import API from "../utils/adminApi";
 import {
   ArrowPathIcon,
   ExclamationTriangleIcon,

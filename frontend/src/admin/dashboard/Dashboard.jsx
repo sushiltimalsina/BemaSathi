@@ -59,22 +59,21 @@ const Dashboard = () => {
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6">
           <h2 className="font-semibold mb-4">Recent Payments</h2>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             (Will show latest payments here)
           </p>
         </div>
 
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6">
           <h2 className="font-semibold mb-4">Upcoming Renewals</h2>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             (Will show renewals due soon)
           </p>
         </div>
       </div>
+
+      <Charts />
     </div>
   );
 };
-<Charts />
-
-
 export default Dashboard;

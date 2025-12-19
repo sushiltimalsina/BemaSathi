@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import API from "../../../api/api";
+import { useNavigate } from "react-router-dom";
+import API from "../utils/adminApi";
 import {
   ShieldCheckIcon,
   BuildingOfficeIcon,
@@ -11,6 +12,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 const PolicyList = () => {
+  const navigate = useNavigate();
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -77,6 +79,7 @@ const PolicyList = () => {
             inline-flex items-center gap-2 px-4 py-2 rounded-lg
             bg-primary-light text-white hover:opacity-90 transition
           "
+          onClick={() => navigate("/admin/policies/create")}
         >
           <PlusIcon className="w-4 h-4" />
           Add Policy
@@ -172,30 +175,16 @@ const PolicyList = () => {
                   )}
                 </td>
                 <td className="px-4 py-3 flex gap-2">
-  <button
-    onClick={() => navigate(`/admin/policies/${p.id}/edit`)}
-    className="text-xs font-semibold px-3 py-1 rounded-lg border border-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-  >
-    Edit
-  </button>
+                  <button
+                    onClick={() => navigate(`/admin/policies/${p.id}/edit`)}
+                    className="text-xs font-semibold px-3 py-1 rounded-lg border border-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    Edit
+                  </button>
 
-  <button
-    onClick={() => toggleStatus(p)}
-    className="text-xs font-semibold px-3 py-1 rounded-lg border border-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-  >
-    {p.is_active ? "Disable" : "Enable"}
-  </button>
-</td>
-
-
-                <td className="px-4 py-3">
                   <button
                     onClick={() => toggleStatus(p)}
-                    className="
-                      text-xs font-semibold px-3 py-1 rounded-lg
-                      border border-slate-200 dark:border-slate-700
-                      hover:bg-slate-100 dark:hover:bg-slate-800 transition
-                    "
+                    className="text-xs font-semibold px-3 py-1 rounded-lg border border-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
                   >
                     {p.is_active ? "Disable" : "Enable"}
                   </button>

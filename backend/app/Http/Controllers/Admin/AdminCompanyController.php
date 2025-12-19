@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class AdminCompanyController extends Controller
 {
@@ -65,5 +66,17 @@ class AdminCompanyController extends Controller
             'message' => 'Company deleted successfully'
         ]);
     }
-}
 
+    public function toggle(Company $company)
+    {
+        if (Schema::hasColumn('companies', 'is_active')) {
+            $company->is_active = !($company->is_active ?? true);
+            $company->save();
+        }
+
+        return response()->json([
+            'message' => 'Company status updated',
+            'company' => $company,
+        ]);
+    }
+}

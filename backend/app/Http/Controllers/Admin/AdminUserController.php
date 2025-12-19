@@ -1,0 +1,75 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Models\KycDocument;
+use Illuminate\Http\Request;
+
+class AdminUserController extends Controller
+{
+    public function index()
+    {
+        $users = User::with('kycDocuments')
+            ->select('id', 'name', 'email', 'phone', 'created_at')
+            ->get()
+            ->map(function ($user) {
+                $latestKyc = $user->kycDocuments()->latest()->first();
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'created_at' => $user->created_at,
+                    'kyc_status' => $latestKyc?->status ?? 'pending',
+                ];
+            });
+
+        return response()->json($users);
+    }
+
+    public function kyc(User $user)
+    {
+        $kyc = $user->kycDocuments()->latest()->first();
+        if (!$kyc) {
+            return response()->json(['message' => 'KYC not found'], 404);
+        }
+
+        $frontUrl = $kyc->front_path ? url('/storage/' . ltrim($kyc->front_path, '/')) : null;
+        $backUrl = $kyc->back_path ? url('/storage/' . ltrim($kyc->back_path, '/')) : null;
+
+        return response()->json([
+            'id' => $kyc->id,
+            'user_id' => $kyc->user_id,
+            'full_name' => $kyc->full_name,
+            'dob' => $kyc->dob,
+            'address' => $kyc->address,
+            'phone' => $kyc->phone,
+            'document_type' => $kyc->document_type,
+            'document_number' => $kyc->document_number,
+            'status' => $kyc->status,
+            'remarks' => $kyc->remarks,
+            'verified_at' => $kyc->verified_at,
+            'front_image' => $frontUrl,
+            'back_image' => $backUrl,
+            'main_image' => $frontUrl,
+        ]);
+    }
+
+    public function updateKycStatus(Request $request, User $user)
+    {
+        $data = $request->validate([
+            'status' => 'required|in:approved,rejected,pending',
+        ]);
+
+        $kyc = $user->kycDocuments()->latest()->first();
+        if (!$kyc) {
+            return response()->json(['message' => 'KYC not found'], 404);
+        }
+
+        $kyc->update(['status' => $data['status']]);
+
+        return response()->json(['message' => 'KYC updated', 'kyc' => $kyc]);
+    }
+}

@@ -7,6 +7,7 @@ use App\Models\Agent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Schema;
 
 class AdminAgentController extends Controller
 {
@@ -63,6 +64,19 @@ class AdminAgentController extends Controller
 
         return response()->json([
             'message' => 'Agent deleted successfully'
+        ]);
+    }
+
+    public function toggle(Agent $agent)
+    {
+        if (Schema::hasColumn('agents', 'is_active')) {
+            $agent->is_active = !($agent->is_active ?? true);
+            $agent->save();
+        }
+
+        return response()->json([
+            'message' => 'Agent status updated',
+            'agent' => $agent,
         ]);
     }
 }

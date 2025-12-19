@@ -12,10 +12,15 @@ class Agent extends Model
         'email',
         'password',
         'company_id',
+        'is_active',
     ];
 
     protected $hidden = [
         'password'
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
     ];
 
     public function company()

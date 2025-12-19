@@ -13,6 +13,13 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\Admin\AdminPaymentController;
+use App\Http\Controllers\Admin\AdminRenewalController;
+use App\Http\Controllers\Admin\AdminNotificationController;
+use App\Http\Controllers\Admin\AdminReportController;
+use App\Http\Controllers\Admin\AdminAuditController;
+use App\Http\Controllers\Admin\AdminSettingsController;
+use App\Http\Controllers\Admin\AdminUserController;
 
 // Admin Controllers
 use App\Http\Controllers\Admin\AdminPolicyController;
@@ -151,6 +158,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/policies/{policy}',  [AdminPolicyController::class, 'show']);
         Route::put('/policies/{policy}',  [AdminPolicyController::class, 'update']);
         Route::delete('/policies/{policy}', [AdminPolicyController::class, 'destroy']);
+        Route::post('/policies/{policy}/toggle', [AdminPolicyController::class, 'toggle']);
 
         /*
         |-------------------------
@@ -162,6 +170,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/agents/{agent}',  [AdminAgentController::class, 'show']);
         Route::put('/agents/{agent}',  [AdminAgentController::class, 'update']);
         Route::delete('/agents/{agent}', [AdminAgentController::class, 'destroy']);
+        Route::post('/agents/{agent}/toggle', [AdminAgentController::class, 'toggle']);
 
         /*
         |-------------------------
@@ -173,6 +182,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/companies/{company}',   [AdminCompanyController::class, 'show']);
         Route::put('/companies/{company}',   [AdminCompanyController::class, 'update']);
         Route::delete('/companies/{company}', [AdminCompanyController::class, 'destroy']);
+        Route::post('/companies/{company}/toggle', [AdminCompanyController::class, 'toggle']);
 
         /*
         |-------------------------
@@ -207,6 +217,48 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/kyc', [KycController::class, 'index']);
         Route::patch('/kyc/{id}/status', [KycController::class, 'updateStatus']);
         Route::get('/admin/kyc', [KycController::class, 'index']);
+
+        /*
+        |-------------------------
+        | Renewals & Payments
+        |-------------------------
+        */
+        Route::get('/renewals', [AdminRenewalController::class, 'index']);
+        Route::get('/payments', [AdminPaymentController::class, 'index']);
+
+        /*
+        |-------------------------
+        | Users & KYC detail
+        |-------------------------
+        */
+        Route::get('/users', [AdminUserController::class, 'index']);
+        Route::get('/users/{user}/kyc', [AdminUserController::class, 'kyc']);
+        Route::post('/users/{user}/kyc-update', [AdminUserController::class, 'updateKycStatus']);
+
+        /*
+        |-------------------------
+        | Notifications
+        |-------------------------
+        */
+        Route::get('/notifications', [AdminNotificationController::class, 'index']);
+        Route::post('/notifications/send', [AdminNotificationController::class, 'send']);
+
+        /*
+        |-------------------------
+        | Reports & Audit Logs
+        |-------------------------
+        */
+        Route::post('/reports/export', [AdminReportController::class, 'export']);
+        Route::get('/audit-logs', [AdminAuditController::class, 'index']);
+        Route::get('/audit-logs/export', [AdminAuditController::class, 'export']);
+
+        /*
+        |-------------------------
+        | Settings
+        |-------------------------
+        */
+        Route::get('/settings', [AdminSettingsController::class, 'show']);
+        Route::post('/settings', [AdminSettingsController::class, 'update']);
 
     });
 });

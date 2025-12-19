@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import API from "../utils/adminApi";
 import {
-  BuildingOfficeIcon,
+  UserCircleIcon,
   CheckCircleIcon,
   XCircleIcon,
   FunnelIcon,
@@ -9,82 +9,78 @@ import {
 } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 
-const CompanyList = () => {
+const AgentList = () => {
   const navigate = useNavigate();
-  const [items, setItems] = useState([]);
+  const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
+  const [error, setError] = useState("");
+
+  const load = async () => {
+    try {
+      const res = await API.get("/admin/agents");
+      setAgents(res.data || []);
+    } catch (e) {
+      console.error(e);
+      setError("Unable to load agents.");
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
     load();
   }, []);
 
-  const load = async () => {
-    try {
-      const res = await API.get("/admin/companies");
-      setItems(res.data || []);
-    } catch (e) {
-      console.error(e);
-      setError("Unable to load companies.");
-    }
-    setLoading(false);
-  };
-
   const filtered = useMemo(() => {
-    return items.filter((c) => {
+    return agents.filter((a) => {
       const q = search.toLowerCase();
+      const matchSearch =
+        a.name?.toLowerCase().includes(q) ||
+        a.email?.toLowerCase().includes(q) ||
+        a.phone?.toLowerCase().includes(q);
 
       const matchStatus =
         status === "all" ||
-        (status === "active" && c.is_active) ||
-        (status === "inactive" && !c.is_active);
+        (status === "active" && a.is_active) ||
+        (status === "inactive" && !a.is_active);
 
-      const matchSearch =
-        c.name?.toLowerCase().includes(q) ||
-        c.email?.toLowerCase().includes(q) ||
-        c.phone?.toLowerCase().includes(q);
-
-      return matchStatus && matchSearch;
+      return matchSearch && matchStatus;
     });
-  }, [items, search, status]);
+  }, [agents, search, status]);
 
-  const toggleStatus = async (company) => {
+  const toggleStatus = async (agent) => {
     try {
-      await API.post(`/admin/companies/${company.id}/toggle`);
+      await API.post(`/admin/agents/${agent.id}/toggle`);
       load();
     } catch (e) {
-      alert("Failed to update status.");
+      alert("Failed to update agent status.");
     }
   };
 
-  if (loading)
-    return <p className="opacity-70">Loading companies...</p>;
-
-  if (error)
-    return <p className="text-red-500">{error}</p>;
+  if (loading) return <p className="opacity-70">Loading agents...</p>;
+  if (error) return <p className="text-red-500">{error}</p>;
 
   return (
     <div className="space-y-6">
       {/* HEADER */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Companies</h1>
+          <h1 className="text-2xl font-bold">Agents</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Manage partner insurance companies
+            Manage insurance agents
           </p>
         </div>
 
         <button
-          onClick={() => navigate("/admin/companies/create")}
+          onClick={() => navigate("/admin/agents/create")}
           className="
-            inline-flex items-center gap-2 px-4 py-2 rounded-lg
+            flex items-center gap-2 px-4 py-2 rounded-lg
             bg-primary-light text-white hover:bg-primary-dark transition
           "
         >
           <PlusIcon className="w-4 h-4" />
-          Add Company
+          Add Agent
         </button>
       </div>
 
@@ -92,14 +88,12 @@ const CompanyList = () => {
       <div className="flex flex-col sm:flex-row gap-4">
         <input
           type="text"
-          placeholder="Search name, email, phone"
+          placeholder="Search agent..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="
             flex-1 px-4 py-2 rounded-lg border
-            bg-white dark:bg-slate-900
-            border-slate-200 dark:border-slate-800
-            focus:outline-none
+            bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700
           "
         />
 
@@ -110,8 +104,7 @@ const CompanyList = () => {
             onChange={(e) => setStatus(e.target.value)}
             className="
               px-3 py-2 rounded-lg border
-              bg-white dark:bg-slate-900
-              border-slate-200 dark:border-slate-800
+              bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700
             "
           >
             <option value="all">All</option>
@@ -122,51 +115,55 @@ const CompanyList = () => {
       </div>
 
       {/* TABLE */}
-      <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+      <div className="overflow-x-auto rounded-xl border border-slate-300 dark:border-slate-700">
         <table className="w-full text-sm">
           <thead className="bg-slate-100 dark:bg-slate-800">
             <tr>
-              <th className="px-4 py-3 text-left">Company</th>
+              <th className="px-4 py-3 text-left">Agent</th>
               <th className="px-4 py-3 text-left">Contact</th>
               <th className="px-4 py-3 text-left">Status</th>
-              <th className="px-4 py-3 text-left">Action</th>
+              <th className="px-4 py-3 text-left">Actions</th>
             </tr>
           </thead>
 
           <tbody>
-            {filtered.map((c) => (
+            {filtered.map((a) => (
               <tr
-                key={c.id}
-                className="border-t border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/40"
+                key={a.id}
+                className="border-t border-slate-300 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/40"
               >
+                {/* AGENT NAME */}
                 <td className="px-4 py-3 font-medium flex items-center gap-2">
-                  <BuildingOfficeIcon className="w-4 h-4 opacity-70" />
-                  {c.name}
+                  <UserCircleIcon className="w-5 h-5 opacity-60" />
+                  {a.name}
                 </td>
 
+                {/* CONTACT */}
                 <td className="px-4 py-3">
-                  <div>{c.email}</div>
-                  <div className="text-xs opacity-70">{c.phone}</div>
+                  <div>{a.email}</div>
+                  <div className="text-xs opacity-70">{a.phone}</div>
                 </td>
 
+                {/* STATUS */}
                 <td className="px-4 py-3">
-                  {c.is_active ? (
-                    <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 text-xs font-semibold">
+                  {a.is_active ? (
+                    <span className="text-xs text-green-600 dark:text-green-400 font-semibold flex items-center gap-1">
                       <CheckCircleIcon className="w-4 h-4" /> ACTIVE
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 text-xs font-semibold">
+                    <span className="text-xs text-red-600 dark:text-red-400 font-semibold flex items-center gap-1">
                       <XCircleIcon className="w-4 h-4" /> INACTIVE
                     </span>
                   )}
                 </td>
 
+                {/* ACTIONS */}
                 <td className="px-4 py-3 flex gap-2">
                   <button
-                    onClick={() => navigate(`/admin/companies/${c.id}/edit`)}
+                    onClick={() => navigate(`/admin/agents/${a.id}/edit`)}
                     className="
-                      text-xs font-semibold px-3 py-1 rounded-lg
-                      border border-slate-300 dark:border-slate-700
+                      text-xs font-semibold px-3 py-1 rounded-lg border
+                      border-slate-300 dark:border-slate-700
                       hover:bg-slate-100 dark:hover:bg-slate-800 transition
                     "
                   >
@@ -174,14 +171,14 @@ const CompanyList = () => {
                   </button>
 
                   <button
-                    onClick={() => toggleStatus(c)}
+                    onClick={() => toggleStatus(a)}
                     className="
-                      text-xs font-semibold px-3 py-1 rounded-lg
-                      border border-slate-300 dark:border-slate-700
+                      text-xs font-semibold px-3 py-1 rounded-lg border
+                      border-slate-300 dark:border-slate-700
                       hover:bg-slate-100 dark:hover:bg-slate-800 transition
                     "
                   >
-                    {c.is_active ? "Disable" : "Enable"}
+                    {a.is_active ? "Disable" : "Enable"}
                   </button>
                 </td>
               </tr>
@@ -193,4 +190,4 @@ const CompanyList = () => {
   );
 };
 
-export default CompanyList;
+export default AgentList;

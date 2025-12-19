@@ -26,6 +26,7 @@ class Policy extends Model
         'copay_percent',
         'exclusions',
         'claim_settlement_ratio',
+        'is_active',
     ];
 
     protected $casts = [
@@ -35,6 +36,7 @@ class Policy extends Model
         'waiting_period_days' => 'integer',
         'copay_percent' => 'integer',
         'claim_settlement_ratio' => 'decimal:2',
+        'is_active' => 'boolean',
     ];
 
     public function agent()

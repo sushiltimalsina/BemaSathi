@@ -5,11 +5,13 @@ import {
   ShieldCheckIcon,
   UsersIcon,
   BuildingOffice2Icon,
+  ArrowPathIcon,
+  BanknotesIcon,
   UserGroupIcon,
-  ChatBubbleLeftRightIcon,
-  ShoppingBagIcon,
-  IdentificationIcon,
-  UserCircleIcon,
+  BellIcon,
+  ChartBarSquareIcon,
+  ClipboardDocumentListIcon,
+  Cog6ToothIcon,
 } from "@heroicons/react/24/outline";
 
 const navItems = [
@@ -17,17 +19,13 @@ const navItems = [
   { name: "Policies", path: "/admin/policies", icon: ShieldCheckIcon },
   { name: "Agents", path: "/admin/agents", icon: UsersIcon },
   { name: "Companies", path: "/admin/companies", icon: BuildingOffice2Icon },
-  { name: "Clients", path: "/admin/clients", icon: UserGroupIcon },
-  { name: "Inquiries", path: "/admin/inquiries", icon: ChatBubbleLeftRightIcon },
-  { name: "Buy Requests", path: "/admin/buy-requests", icon: ShoppingBagIcon },
-  { name: "KYC", path: "/admin/kyc", icon: IdentificationIcon },
-  { name: "Profile", path: "/admin/profile", icon: UserCircleIcon },
-  {
-  name: "Notifications",
-  path: "/admin/notifications",
-  icon: BellIcon,
-}
-
+  { name: "Renewals", path: "/admin/renewals", icon: ArrowPathIcon },
+  { name: "Payments", path: "/admin/payments", icon: BanknotesIcon },
+  { name: "Users", path: "/admin/users", icon: UserGroupIcon },
+  { name: "Notifications", path: "/admin/notifications", icon: BellIcon },
+  { name: "Reports", path: "/admin/reports", icon: ChartBarSquareIcon },
+  { name: "Audit Log", path: "/admin/audit", icon: ClipboardDocumentListIcon },
+  { name: "Settings", path: "/admin/settings", icon: Cog6ToothIcon },
 ];
 
 const Sidebar = () => {

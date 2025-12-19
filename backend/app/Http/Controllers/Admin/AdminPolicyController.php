@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Policy;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Schema;
 
 class AdminPolicyController extends Controller
 {
@@ -80,6 +81,19 @@ class AdminPolicyController extends Controller
 
         return response()->json([
             'message' => 'Policy deleted successfully'
+        ]);
+    }
+
+    public function toggle(Policy $policy)
+    {
+        if (Schema::hasColumn('policies', 'is_active')) {
+            $policy->is_active = !($policy->is_active ?? true);
+            $policy->save();
+        }
+
+        return response()->json([
+            'message' => 'Policy status updated',
+            'policy' => $policy,
         ]);
     }
 }
