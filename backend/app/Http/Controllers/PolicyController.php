@@ -6,6 +6,7 @@ use App\Models\Policy;
 use App\Services\PremiumCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Schema;
 
 class PolicyController extends Controller
 {
@@ -14,7 +15,11 @@ class PolicyController extends Controller
     public function index(Request $request)
     {
         $user = auth('sanctum')->user();
-        $policies = Policy::all();
+        $policies = Policy::query()
+            ->when(Schema::hasColumn('policies', 'is_active'), function ($query) {
+                $query->where('is_active', true);
+            })
+            ->get();
 
         $profile = $user ? $this->resolveProfile($user) : null;
 
@@ -42,7 +47,11 @@ class PolicyController extends Controller
 
     public function show(Request $request, $id)
     {
-        $policy = Policy::findOrFail($id);
+        $policyQuery = Policy::query();
+        if (Schema::hasColumn('policies', 'is_active')) {
+            $policyQuery->where('is_active', true);
+        }
+        $policy = $policyQuery->findOrFail($id);
         $user = auth('sanctum')->user();
 
         $profile = $user ? $this->resolveProfile($user) : null;

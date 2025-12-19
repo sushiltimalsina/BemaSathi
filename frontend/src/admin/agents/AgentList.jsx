@@ -171,14 +171,25 @@ const AgentList = () => {
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => toggleStatus(a)}
-                    className="
-                      text-xs font-semibold px-3 py-1 rounded-lg border
-                      border-slate-300 dark:border-slate-700
-                      hover:bg-slate-100 dark:hover:bg-slate-800 transition
-                    "
+                    className={`text-xs font-semibold px-3 py-1 rounded-lg transition inline-flex items-center gap-1 cursor-pointer ${
+                      a.is_active
+                        ? "bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
+                        : "bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600"
+                    }`}
                   >
-                    {a.is_active ? "Disable" : "Enable"}
+                    {a.is_active ? (
+                      <>
+                        <XCircleIcon className="w-4 h-4" />
+                        Disable
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircleIcon className="w-4 h-4" />
+                        Enable
+                      </>
+                    )}
                   </button>
                 </td>
               </tr>

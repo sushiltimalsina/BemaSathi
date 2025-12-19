@@ -16,6 +16,7 @@ const SupportList = () => {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [priority, setPriority] = useState("all");
+  const [category, setCategory] = useState("all");
 
   const load = async () => {
     try {
@@ -45,9 +46,17 @@ const SupportList = () => {
       const matchPriority =
         priority === "all" || t.priority === priority;
 
-      return matchSearch && matchStatus && matchPriority;
+      const normalizedCategory = (t.category || "")
+        .toLowerCase()
+        .replace(/\s+/g, "_");
+      const matchCategory =
+        category === "all" ||
+        normalizedCategory === category ||
+        normalizedCategory.startsWith(`${category}_`);
+
+      return matchSearch && matchStatus && matchPriority && matchCategory;
     });
-  }, [tickets, search, status, priority]);
+  }, [tickets, search, status, priority, category]);
 
   if (loading) return <p className="opacity-70">Loading support tickets...</p>;
 
@@ -102,6 +111,24 @@ const SupportList = () => {
           <option value="high">High</option>
         </select>
 
+        {/* Category */}
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="
+            px-3 py-2 rounded-lg border bg-white dark:bg-slate-900
+            border-slate-300 dark:border-slate-700
+          "
+        >
+          <option value="all">All Category</option>
+          <option value="general">General</option>
+          <option value="kyc">KYC Issue</option>
+          <option value="payment">Payment Issue</option>
+          <option value="policy">Policy Issue</option>
+          <option value="renewal">Renewal Issue</option>
+          <option value="technical">Technical Problem</option>
+        </select>
+
       </div>
 
       {/* TABLE */}
@@ -111,6 +138,7 @@ const SupportList = () => {
             <tr>
               <th className="px-4 py-3 text-left">User</th>
               <th className="px-4 py-3 text-left">Subject</th>
+              <th className="px-4 py-3 text-left">Category</th>
               <th className="px-4 py-3 text-left">Priority</th>
               <th className="px-4 py-3 text-left">Status</th>
               <th className="px-4 py-3 text-left"></th>
@@ -129,6 +157,10 @@ const SupportList = () => {
                 </td>
 
                 <td className="px-4 py-3">{t.subject}</td>
+
+                <td className="px-4 py-3 capitalize">
+                  {t.category || "-"}
+                </td>
 
                 <td className="px-4 py-3 capitalize">
                   {t.priority === "high" ? (
@@ -164,7 +196,7 @@ const SupportList = () => {
 
             {!filtered.length && (
               <tr>
-                <td colSpan="5" className="text-center py-6 opacity-70">
+                <td colSpan="6" className="text-center py-6 opacity-70">
                   No tickets found.
                 </td>
               </tr>

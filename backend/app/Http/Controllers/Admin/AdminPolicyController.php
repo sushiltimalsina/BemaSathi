@@ -36,7 +36,16 @@ class AdminPolicyController extends Controller
             'coverage_limit' => 'required|numeric',
             'policy_description' => 'nullable|string',
             'company_rating' => 'nullable|numeric',
+            'waiting_period_days' => 'nullable|integer|min:0',
+            'copay_percent' => 'nullable|integer|min:0|max:100',
+            'claim_settlement_ratio' => 'nullable|numeric|min:0|max:100',
+            'supports_smokers' => 'nullable|boolean',
+            'covered_conditions' => 'nullable|array',
+            'covered_conditions.*' => 'string',
+            'exclusions' => 'nullable|array',
+            'exclusions.*' => 'string',
             'agent_id' => 'nullable|numeric',
+            'is_active' => 'nullable|boolean',
         ]);
 
         $policy = Policy::create($validated);
@@ -64,7 +73,16 @@ class AdminPolicyController extends Controller
             'coverage_limit' => 'sometimes|numeric',
             'policy_description' => 'nullable|string',
             'company_rating' => 'nullable|numeric',
+            'waiting_period_days' => 'nullable|integer|min:0',
+            'copay_percent' => 'nullable|integer|min:0|max:100',
+            'claim_settlement_ratio' => 'nullable|numeric|min:0|max:100',
+            'supports_smokers' => 'nullable|boolean',
+            'covered_conditions' => 'nullable|array',
+            'covered_conditions.*' => 'string',
+            'exclusions' => 'nullable|array',
+            'exclusions.*' => 'string',
             'agent_id' => 'nullable|numeric',
+            'is_active' => 'nullable|boolean',
         ]);
 
         $policy->update($validated);

@@ -28,6 +28,7 @@ class AdminAgentController extends Controller
             'phone' => 'required|string',
             'email' => 'required|email',
             'company_id' => 'nullable|exists:companies,id',
+            'is_active' => 'nullable|boolean',
         ]);
 
         // Agents don't log in; assign a random placeholder password to satisfy DB constraint
@@ -48,6 +49,7 @@ class AdminAgentController extends Controller
             'phone' => 'sometimes|required|string',
             'email' => 'sometimes|required|email',
             'company_id' => 'nullable|exists:companies,id',
+            'is_active' => 'nullable|boolean',
         ]);
 
         $agent->update($validated);

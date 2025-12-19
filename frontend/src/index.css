@@ -105,6 +105,21 @@ textarea {
   border: 1px solid var(--border-dark);
 }
 
+/* Restore native checkboxes/radios and keep them visible in both modes */
+input[type="checkbox"],
+input[type="radio"] {
+  appearance: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  accent-color: var(--primary-light);
+}
+
+.dark input[type="checkbox"],
+.dark input[type="radio"] {
+  accent-color: var(--primary-dark);
+}
+
 input:focus,
 select:focus,
 textarea:focus {
@@ -126,9 +141,7 @@ textarea:focus {
 
 /* Let Tailwind control buttons */
 button {
-  background-color: transparent;
   color: inherit;
-  border: none;
 }
 
 /* Buttons MUST NOT follow input colors */
