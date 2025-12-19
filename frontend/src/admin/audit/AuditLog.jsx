@@ -11,11 +11,13 @@ import {
   MagnifyingGlassIcon,
   UserCircleIcon,
 } from "@heroicons/react/24/outline";
+import { useAdminToast } from "../ui/AdminToast";
 
 const AuditLog = () => {
   const [logs, setLogs] = useState([]);
   const [important, setImportant] = useState([]); // for timeline
   const [loading, setLoading] = useState(true);
+  const { addToast } = useAdminToast();
 
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
@@ -75,7 +77,7 @@ const AuditLog = () => {
       a.download = "audit_logs.csv";
       a.click();
     } catch (error) {
-      alert("Failed to export logs");
+      addToast({ type: "error", title: "Export failed", message: "Failed to export logs." });
     }
   };
 

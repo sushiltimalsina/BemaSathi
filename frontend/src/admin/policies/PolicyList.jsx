@@ -4,20 +4,28 @@ import API from "../utils/adminApi";
 import {
   ShieldCheckIcon,
   BuildingOfficeIcon,
-  CurrencyRupeeIcon,
   CheckCircleIcon,
   XCircleIcon,
   FunnelIcon,
   PlusIcon,
 } from "@heroicons/react/24/outline";
+import { useAdminToast } from "../ui/AdminToast";
 
 const PolicyList = () => {
   const navigate = useNavigate();
+  const { addToast } = useAdminToast();
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("all");
+  const [type, setType] = useState("all");
   const [search, setSearch] = useState("");
+
+  const formatNumber = (value) => {
+    const num = Number(value);
+    if (Number.isNaN(num)) return value ?? "-";
+    return num.toLocaleString("en-IN");
+  };
 
   const loadPolicies = async () => {
     try {
@@ -41,22 +49,35 @@ const PolicyList = () => {
         (status === "active" && p.is_active) ||
         (status === "inactive" && !p.is_active);
 
+      const matchType =
+        type === "all" ||
+        (p.insurance_type || "").toLowerCase() === type;
+
       const q = search.toLowerCase();
       const matchSearch =
         p.policy_name?.toLowerCase().includes(q) ||
         p.company_name?.toLowerCase().includes(q) ||
         p.insurance_type?.toLowerCase().includes(q);
 
-      return matchStatus && matchSearch;
+      return matchStatus && matchType && matchSearch;
     });
-  }, [policies, status, search]);
+  }, [policies, status, type, search]);
+
+  const types = useMemo(() => {
+    const unique = new Set(
+      policies
+        .map((p) => (p.insurance_type || "").toLowerCase())
+        .filter(Boolean)
+    );
+    return Array.from(unique).sort();
+  }, [policies]);
 
   const toggleStatus = async (policy) => {
     try {
       await API.post(`/admin/policies/${policy.id}/toggle`);
       loadPolicies();
     } catch (e) {
-      alert("Failed to update policy status.");
+      addToast({ type: "error", title: "Update failed", message: "Failed to update policy status." });
     }
   };
 
@@ -87,7 +108,7 @@ const PolicyList = () => {
       </div>
 
       {/* FILTER BAR */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <input
           type="text"
           placeholder="Search policy / company / type"
@@ -101,21 +122,43 @@ const PolicyList = () => {
           "
         />
 
-        <div className="flex items-center gap-2">
-          <FunnelIcon className="w-5 h-5 opacity-70" />
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className="
-              px-3 py-2 rounded-lg border
-              bg-white dark:bg-slate-900
-              border-slate-200 dark:border-slate-800
-            "
-          >
-            <option value="all">All</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
+        <div className="flex items-center gap-3 sm:ml-auto">
+          <div className="flex items-center gap-2">
+            <FunnelIcon className="w-5 h-5 opacity-70" />
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="
+                px-3 py-2 rounded-lg border
+                bg-white dark:bg-slate-900
+                border-slate-200 dark:border-slate-800
+              "
+            >
+              <option value="all">All</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <FunnelIcon className="w-5 h-5 opacity-70" />
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              className="
+                px-3 py-2 rounded-lg border
+                bg-white dark:bg-slate-900
+                border-slate-200 dark:border-slate-800
+              "
+            >
+              <option value="all">All Types</option>
+              {types.map((t) => (
+                <option key={t} value={t}>
+                  {t.replace("_", " ")}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -140,36 +183,39 @@ const PolicyList = () => {
                 key={p.id}
                 className="border-t border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/40"
               >
-                <td className="px-4 py-3 font-medium flex items-center gap-2">
-                  <ShieldCheckIcon className="w-4 h-4 opacity-70" />
-                  {p.policy_name}
+                <td className="px-4 py-3 align-middle">
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <ShieldCheckIcon className="w-4 h-4 opacity-70" />
+                    <span className="font-medium">{p.policy_name}</span>
+                  </div>
                 </td>
 
-                <td className="px-4 py-3 flex items-center gap-2">
-                  <BuildingOfficeIcon className="w-4 h-4 opacity-70" />
-                  {p.company_name}
+                <td className="px-4 py-3 align-middle">
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <BuildingOfficeIcon className="w-4 h-4 opacity-70" />
+                    <span>{p.company_name}</span>
+                  </div>
                 </td>
 
                 <td className="px-4 py-3 capitalize">
                   {p.insurance_type}
                 </td>
 
-                <td className="px-4 py-3 font-semibold flex items-center gap-1">
-                  <CurrencyRupeeIcon className="w-4 h-4" />
-                  {p.premium_amt}
+                <td className="px-4 py-3 font-semibold">
+                  {formatNumber(p.premium_amt)}
                 </td>
 
                 <td className="px-4 py-3">
-                  {p.coverage_limit}
+                  {formatNumber(p.coverage_limit)}
                 </td>
 
                 <td className="px-4 py-3">
                   {p.is_active ? (
-                    <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 text-xs font-semibold">
+                    <span className="inline-flex items-center gap-1 text-green-700 dark:text-green-300 text-xs font-semibold">
                       <CheckCircleIcon className="w-4 h-4" /> ACTIVE
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 text-xs font-semibold">
+                    <span className="inline-flex items-center gap-1 text-red-700 dark:text-red-300 text-xs font-semibold">
                       <XCircleIcon className="w-4 h-4" /> INACTIVE
                     </span>
                   )}
@@ -184,7 +230,11 @@ const PolicyList = () => {
 
                   <button
                     onClick={() => toggleStatus(p)}
-                    className="text-xs font-semibold px-3 py-1 rounded-lg border border-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    className={`text-xs font-semibold px-3 py-1 rounded-lg transition ${
+                      p.is_active
+                        ? "bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
+                        : "bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600"
+                    }`}
                   >
                     {p.is_active ? "Disable" : "Enable"}
                   </button>

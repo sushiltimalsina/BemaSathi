@@ -6,6 +6,8 @@ import {
   ChatBubbleOvalLeftIcon,
   ClockIcon,
 } from "@heroicons/react/24/outline";
+import { useAdminToast } from "../ui/AdminToast";
+import { useAdminConfirm } from "../ui/AdminConfirm";
 
 const SupportView = () => {
   const { id } = useParams();
@@ -14,6 +16,8 @@ const SupportView = () => {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const { addToast } = useAdminToast();
+  const confirm = useAdminConfirm();
 
   const load = async () => {
     try {
@@ -40,7 +44,7 @@ const SupportView = () => {
       setMessage("");
       await load();
     } catch (e) {
-      alert("Failed to reply");
+      addToast({ type: "error", title: "Reply failed", message: "Failed to reply." });
     } finally {
       setSending(false);
     }
@@ -49,14 +53,17 @@ const SupportView = () => {
   const updateStatus = async (status) => {
     if (ticket?.status === "closed") return;
     if (status === "closed") {
-      const confirmed = window.confirm("Close this ticket?");
+      const confirmed = await confirm("Close this ticket?", {
+        title: "Close Ticket",
+        confirmText: "Close",
+      });
       if (!confirmed) return;
     }
     try {
       await API.post(`/admin/support/${id}/status`, { status });
       load();
     } catch (e) {
-      alert("Failed to update status");
+      addToast({ type: "error", title: "Update failed", message: "Failed to update status." });
     }
   };
 

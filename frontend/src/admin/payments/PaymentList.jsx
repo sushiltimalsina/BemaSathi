@@ -4,8 +4,10 @@ import API from "../utils/adminApi";
     BanknotesIcon,
     CheckCircleIcon,
     XCircleIcon,
-    FunnelIcon,
-  } from "@heroicons/react/24/outline";
+  FunnelIcon,
+} from "@heroicons/react/24/outline";
+import { useAdminToast } from "../ui/AdminToast";
+import { useAdminConfirm } from "../ui/AdminConfirm";
 
 const PaymentList = () => {
   const [items, setItems] = useState([]);
@@ -13,6 +15,8 @@ const PaymentList = () => {
   const [error, setError] = useState("");
   const [status, setStatus] = useState("all");
   const [search, setSearch] = useState("");
+  const { addToast } = useAdminToast();
+  const confirm = useAdminConfirm();
 
   const fmt = (n) =>
     Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
@@ -97,10 +101,14 @@ const PaymentList = () => {
 
     if (payment.is_verified) return;
 
-    const ok = window.confirm(
+    const ok = await confirm(
       isSuccess
         ? "Verify this payment? This will notify the client."
-        : "Payment failed. Send a repayment notice to the client?"
+        : "Payment failed. Send a repayment notice to the client?",
+      {
+        title: isSuccess ? "Verify Payment" : "Send Repayment Notice",
+        confirmText: isSuccess ? "Verify" : "Send",
+      }
     );
     if (!ok) return;
 
@@ -108,7 +116,7 @@ const PaymentList = () => {
       await API.post(`/admin/payments/${payment.id}/verify`);
       load();
     } catch (e) {
-      alert("Failed to verify payment.");
+      addToast({ type: "error", title: "Verify failed", message: "Failed to verify payment." });
     }
   };
 

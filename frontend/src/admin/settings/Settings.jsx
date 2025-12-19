@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 import API from "../utils/adminApi";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
+import { useAdminToast } from "../ui/AdminToast";
 
 const Settings = () => {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [successMsg, setSuccessMsg] = useState("");
+  const { addToast } = useAdminToast();
 
   const [form, setForm] = useState({
     // Renewal
@@ -58,7 +60,7 @@ const Settings = () => {
       setSuccessMsg("Settings saved successfully.");
     } catch (e) {
       console.error(e);
-      alert("Failed to save settings.");
+      addToast({ type: "error", title: "Save failed", message: "Failed to save settings." });
     }
 
     setSaving(false);

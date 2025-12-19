@@ -29,6 +29,7 @@ class AdminCompanyController extends Controller
             'address'     => 'nullable|string',
             'description' => 'nullable|string',
             'agent_id'    => 'nullable|exists:agents,id',
+            'is_active'   => 'nullable|boolean',
         ]);
 
         $company = Company::create($validated);
@@ -48,6 +49,7 @@ class AdminCompanyController extends Controller
             'address'     => 'nullable|string',
             'description' => 'nullable|string',
             'agent_id'    => 'nullable|exists:agents,id',
+            'is_active'   => 'nullable|boolean',
         ]);
 
         $company->update($validated);

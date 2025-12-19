@@ -7,6 +7,8 @@ import {
   XCircleIcon,
   FunnelIcon,
 } from "@heroicons/react/24/outline";
+import { useAdminToast } from "../ui/AdminToast";
+import { useAdminConfirm } from "../ui/AdminConfirm";
 
 const RenewalList = () => {
   const [items, setItems] = useState([]);
@@ -15,6 +17,8 @@ const RenewalList = () => {
   const [status, setStatus] = useState("all");
   const [search, setSearch] = useState("");
   const [sendingId, setSendingId] = useState(null);
+  const { addToast } = useAdminToast();
+  const confirm = useAdminConfirm();
 
   useEffect(() => {
     const load = async () => {
@@ -92,17 +96,18 @@ const RenewalList = () => {
     const remaining = daysLeft(renewal.next_renewal_date);
     if (remaining === "-" || remaining > 5) return;
 
-    const ok = window.confirm(
-      "Send a renewal reminder to the user?"
-    );
+    const ok = await confirm("Send a renewal reminder to the user?", {
+      title: "Send Reminder",
+      confirmText: "Send",
+    });
     if (!ok) return;
 
     setSendingId(renewal.id);
     try {
       await API.post(`/admin/renewals/${renewal.id}/notify`);
-      alert("Renewal reminder sent.");
+      addToast({ type: "success", title: "Sent", message: "Renewal reminder sent." });
     } catch (e) {
-      alert("Failed to send reminder.");
+      addToast({ type: "error", title: "Send failed", message: "Failed to send reminder." });
     }
     setSendingId(null);
   };

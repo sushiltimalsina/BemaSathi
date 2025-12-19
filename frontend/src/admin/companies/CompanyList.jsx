@@ -8,9 +8,11 @@ import {
   PlusIcon,
 } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
+import { useAdminToast } from "../ui/AdminToast";
 
 const CompanyList = () => {
   const navigate = useNavigate();
+  const { addToast } = useAdminToast();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -55,7 +57,7 @@ const CompanyList = () => {
       await API.post(`/admin/companies/${company.id}/toggle`);
       load();
     } catch (e) {
-      alert("Failed to update status.");
+      addToast({ type: "error", title: "Update failed", message: "Failed to update status." });
     }
   };
 
@@ -151,11 +153,11 @@ const CompanyList = () => {
 
                 <td className="px-4 py-3">
                   {c.is_active ? (
-                    <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 text-xs font-semibold">
+                    <span className="inline-flex items-center gap-1 text-green-700 dark:text-green-300 text-xs font-semibold">
                       <CheckCircleIcon className="w-4 h-4" /> ACTIVE
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 text-xs font-semibold">
+                    <span className="inline-flex items-center gap-1 text-red-700 dark:text-red-300 text-xs font-semibold">
                       <XCircleIcon className="w-4 h-4" /> INACTIVE
                     </span>
                   )}
@@ -175,11 +177,11 @@ const CompanyList = () => {
 
                   <button
                     onClick={() => toggleStatus(c)}
-                    className="
-                      text-xs font-semibold px-3 py-1 rounded-lg
-                      border border-slate-300 dark:border-slate-700
-                      hover:bg-slate-100 dark:hover:bg-slate-800 transition
-                    "
+                    className={`text-xs font-semibold px-3 py-1 rounded-lg transition ${
+                      c.is_active
+                        ? "bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
+                        : "bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600"
+                    }`}
                   >
                     {c.is_active ? "Disable" : "Enable"}
                   </button>

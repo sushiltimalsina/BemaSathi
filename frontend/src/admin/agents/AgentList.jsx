@@ -8,9 +8,11 @@ import {
   PlusIcon,
 } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
+import { useAdminToast } from "../ui/AdminToast";
 
 const AgentList = () => {
   const navigate = useNavigate();
+  const { addToast } = useAdminToast();
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -54,7 +56,7 @@ const AgentList = () => {
       await API.post(`/admin/agents/${agent.id}/toggle`);
       load();
     } catch (e) {
-      alert("Failed to update agent status.");
+      addToast({ type: "error", title: "Update failed", message: "Failed to update agent status." });
     }
   };
 

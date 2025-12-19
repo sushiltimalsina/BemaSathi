@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 import API from "../utils/adminApi";
 import { useParams, useNavigate } from "react-router-dom";
+import { useAdminToast } from "../ui/AdminToast";
 
 const AgentForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEdit = Boolean(id);
+  const { addToast } = useAdminToast();
 
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
@@ -27,7 +29,7 @@ const AgentForm = () => {
       const res = await API.get(`/admin/agents/${id}`);
       setForm(res.data || {});
     } catch (e) {
-      alert("Failed to load agent.");
+      addToast({ type: "error", title: "Load failed", message: "Failed to load agent." });
     }
     setLoading(false);
   };
@@ -48,7 +50,7 @@ const AgentForm = () => {
 
       navigate("/admin/agents");
     } catch (e) {
-      alert("Failed to save agent.");
+      addToast({ type: "error", title: "Save failed", message: "Failed to save agent." });
     }
 
     setSaving(false);

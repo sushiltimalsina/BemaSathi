@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import API from "../utils/adminApi";
 import { useNavigate, useParams } from "react-router-dom";
+import { useAdminToast } from "../ui/AdminToast";
 
 const CompanyForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
 
   const isEdit = Boolean(id);
+  const { addToast } = useAdminToast();
 
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
@@ -28,7 +30,7 @@ const CompanyForm = () => {
       const res = await API.get(`/admin/companies/${id}`);
       setForm(res.data || {});
     } catch (e) {
-      alert("Failed to load company.");
+      addToast({ type: "error", title: "Load failed", message: "Failed to load company." });
     }
     setLoading(false);
   };
@@ -48,7 +50,7 @@ const CompanyForm = () => {
       }
       navigate("/admin/companies");
     } catch (e) {
-      alert("Failed to save company.");
+      addToast({ type: "error", title: "Save failed", message: "Failed to save company." });
     }
 
     setSaving(false);

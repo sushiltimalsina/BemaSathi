@@ -7,11 +7,15 @@ import {
   ExclamationTriangleIcon,
   ArrowsPointingOutIcon,
 } from "@heroicons/react/24/outline";
+import { useAdminToast } from "../ui/AdminToast";
+import { useAdminConfirm } from "../ui/AdminConfirm";
 
 const UserDetails = ({ user, onClose }) => {
   const [kyc, setKyc] = useState(null);
   const [loading, setLoading] = useState(true);
   const [fullImage, setFullImage] = useState("");
+  const { addToast } = useAdminToast();
+  const confirm = useAdminConfirm();
 
   useEffect(() => {
     loadKyc();
@@ -32,8 +36,9 @@ const UserDetails = ({ user, onClose }) => {
       return;
     }
     if (status === "rejected") {
-      const confirmed = window.confirm(
-        "Reject this KYC? The user will need to resubmit."
+      const confirmed = await confirm(
+        "Reject this KYC? The user will need to resubmit.",
+        { title: "Reject KYC", confirmText: "Reject" }
       );
       if (!confirmed) return;
     }
@@ -41,7 +46,7 @@ const UserDetails = ({ user, onClose }) => {
       await API.post(`/admin/users/${user.id}/kyc-update`, { status });
       setKyc((prev) => ({ ...prev, status }));
     } catch (e) {
-      alert("Failed to update KYC.");
+      addToast({ type: "error", title: "Update failed", message: "Failed to update KYC." });
     }
   };
 
