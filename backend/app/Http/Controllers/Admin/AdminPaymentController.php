@@ -78,7 +78,7 @@ class AdminPaymentController extends Controller
             $this->notifier->notify(
                 $payment->user,
                 'Payment verified',
-                "Your payment for {$policyName} has been verified. Your policy is now active.",
+                "Your payment for {$policyName} has been verified. Your policy is now active and policy documents will be sent to you shortly via email.",
                 [
                     'buy_request_id' => $payment->buy_request_id,
                     'policy_id' => $payment->policy_id,

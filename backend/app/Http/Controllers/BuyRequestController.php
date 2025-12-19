@@ -95,6 +95,10 @@ class BuyRequestController extends Controller
 
         $requests = BuyRequest::with('policy')
             ->where('user_id', $user?->id)
+            ->whereHas('payments', function ($query) {
+                $query->where('is_verified', true)
+                    ->whereIn('status', ['success', 'paid', 'completed']);
+            })
             ->orderByDesc('created_at')
             ->get();
 

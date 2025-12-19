@@ -14,6 +14,7 @@ const RenewalList = () => {
   const [error, setError] = useState("");
   const [status, setStatus] = useState("all");
   const [search, setSearch] = useState("");
+  const [sendingId, setSendingId] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -87,6 +88,25 @@ const RenewalList = () => {
     });
   };
 
+  const sendReminder = async (renewal) => {
+    const remaining = daysLeft(renewal.next_renewal_date);
+    if (remaining === "-" || remaining > 5) return;
+
+    const ok = window.confirm(
+      "Send a renewal reminder to the user?"
+    );
+    if (!ok) return;
+
+    setSendingId(renewal.id);
+    try {
+      await API.post(`/admin/renewals/${renewal.id}/notify`);
+      alert("Renewal reminder sent.");
+    } catch (e) {
+      alert("Failed to send reminder.");
+    }
+    setSendingId(null);
+  };
+
   if (loading)
     return <div className="opacity-70">Loading renewals...</div>;
 
@@ -149,6 +169,7 @@ const RenewalList = () => {
               <th className="px-4 py-3 text-left">Next Renewal</th>
               <th className="px-4 py-3 text-left">Days Left</th>
               <th className="px-4 py-3 text-left">Status</th>
+              <th className="px-4 py-3 text-left">Action</th>
             </tr>
           </thead>
 
@@ -187,6 +208,21 @@ const RenewalList = () => {
                 </td>
                 <td className="px-4 py-3">
                   {badge(r.renewal_status)}
+                </td>
+                <td className="px-4 py-3">
+                  {daysLeft(r.next_renewal_date) !== "-" &&
+                  daysLeft(r.next_renewal_date) <= 5 ? (
+                    <button
+                      type="button"
+                      onClick={() => sendReminder(r)}
+                      disabled={sendingId === r.id}
+                      className="text-xs font-semibold px-3 py-1 rounded-lg bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 disabled:opacity-60"
+                    >
+                      {sendingId === r.id ? "Sending..." : "Send Reminder"}
+                    </button>
+                  ) : (
+                    <span className="text-xs opacity-60">-</span>
+                  )}
                 </td>
               </tr>
             ))}

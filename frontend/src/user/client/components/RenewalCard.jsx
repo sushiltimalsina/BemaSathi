@@ -11,26 +11,54 @@ const RenewalCard = ({ request }) => {
   const navigate = useNavigate();
 
   const cycle = request.billing_cycle?.replace("_", " ");
-  const renewalDate = request.next_renewal_date;
+  const renewalDate =
+    request.next_renewal_date ||
+    request.nextRenewalDate ||
+    request.renewal_date ||
+    request.renewalDate ||
+    null;
   const amount = request.cycle_amount;
   const status = request.renewal_status;
   const isRenewable = status === "active" || status === "due";
   const formatDate = (value) => {
-    if (!value) return "-";
-    const dt = new Date(value);
-    if (Number.isNaN(dt.getTime())) return value;
-    return dt.toLocaleDateString("en-GB", {
+    if (!value) return "Not set";
+    const dt = new Date(
+      typeof value === "string" && value.length <= 10
+        ? `${value}T00:00:00`
+        : value
+    );
+    if (Number.isNaN(dt.getTime())) return "Invalid date";
+    return dt.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
-      day: "numeric",
+      day: "2-digit",
     });
   };
 
   const daysLeft = () => {
     if (!renewalDate) return null;
-    const diff =
-      (new Date(renewalDate) - new Date()) / (1000 * 60 * 60 * 24);
+    const today = new Date();
+    const startOfToday = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    );
+    const target = new Date(
+      typeof renewalDate === "string" && renewalDate.length <= 10
+        ? `${renewalDate}T00:00:00`
+        : renewalDate
+    );
+    if (Number.isNaN(target.getTime())) return null;
+    const diff = (target - startOfToday) / (1000 * 60 * 60 * 24);
     return Math.ceil(diff);
+  };
+
+  const daysLeftLabel = () => {
+    const remaining = daysLeft();
+    if (remaining === null) return "-";
+    if (remaining < 0) return `Expired ${Math.abs(remaining)} days ago`;
+    if (remaining === 0) return "Due today";
+    return `${remaining} days left`;
   };
 
   const handleRenew = () => {
@@ -106,7 +134,9 @@ const RenewalCard = ({ request }) => {
             <ClockIcon className="w-4 h-4" />
             Next Renewal Date:
           </span>
-          <span className="font-semibold">{formatDate(renewalDate)}</span>
+          <span className="font-semibold">
+            {formatDate(renewalDate)}
+          </span>
         </div>
 
         {/* AMOUNT */}
@@ -124,9 +154,7 @@ const RenewalCard = ({ request }) => {
             <ExclamationTriangleIcon className="w-4 h-4" />
             Days Left:
           </span>
-          <span className={urgentColor}>
-            {daysLeft() !== null ? `${daysLeft()} days` : "-"}
-          </span>
+          <span className={urgentColor}>{daysLeftLabel()}</span>
         </div>
       </div>
 
