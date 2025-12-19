@@ -40,10 +40,11 @@ const NotificationCenter = () => {
         n.user?.name?.toLowerCase().includes(q) ||
         n.user?.email?.toLowerCase().includes(q);
 
+      const type = n.type || "system";
       const matchCat =
         category === "all" ||
-        (category === "system" && n.type === "system") ||
-        (category === "manual" && n.type === "manual");
+        (category === "system" && type === "system") ||
+        (category === "manual" && type === "manual");
 
       return matchSearch && matchCat;
     });
@@ -138,7 +139,7 @@ const NotificationCenter = () => {
                 <td className="px-4 py-3">{n.message}</td>
 
                 <td className="px-4 py-3 capitalize">
-                  {n.type === "system" ? (
+                  {(n.type || "system") === "system" ? (
                     <span className="text-xs text-blue-600 dark:text-blue-400 font-semibold">
                       SYSTEM
                     </span>

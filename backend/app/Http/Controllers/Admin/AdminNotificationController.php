@@ -37,14 +37,14 @@ class AdminNotificationController extends Controller
 
         if (!empty($data['user_id'])) {
             $user = User::find($data['user_id']);
-            $this->notifier->notify($user, $data['title'], $data['message']);
+            $this->notifier->notify($user, $data['title'], $data['message'], [], 'manual');
             return response()->json(['message' => 'Notification sent']);
         }
 
         // Broadcast to all users
         $users = User::all();
         foreach ($users as $user) {
-            $this->notifier->notify($user, $data['title'], $data['message']);
+            $this->notifier->notify($user, $data['title'], $data['message'], [], 'manual');
         }
 
         return response()->json(['message' => 'Notifications sent']);

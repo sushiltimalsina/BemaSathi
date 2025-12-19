@@ -19,11 +19,19 @@ class Payment extends Model
         'meta',
         'paid_at',
         'billing_cycle',
+        'is_verified',
+        'verified_at',
+        'failed_notified',
+        'failed_notified_at',
     ];
 
     protected $casts = [
         'meta' => 'array',
         'paid_at' => 'datetime',
+        'is_verified' => 'boolean',
+        'verified_at' => 'datetime',
+        'failed_notified' => 'boolean',
+        'failed_notified_at' => 'datetime',
     ];
 
     public function user()

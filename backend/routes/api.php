@@ -233,6 +233,7 @@ Route::middleware('auth:sanctum')->group(function () {
         */
         Route::get('/renewals', [AdminRenewalController::class, 'index']);
         Route::get('/payments', [AdminPaymentController::class, 'index']);
+        Route::post('/payments/{payment}/verify', [AdminPaymentController::class, 'verify']);
 
         /*
         |-------------------------

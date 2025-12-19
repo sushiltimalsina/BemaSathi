@@ -15,6 +15,7 @@ class Notification extends Model
         'is_read',
         'buy_request_id',
         'policy_id',
+        'type',
     ];
 
     public function user()

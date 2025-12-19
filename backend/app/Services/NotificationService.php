@@ -9,8 +9,13 @@ use Illuminate\Support\Facades\Mail;
 
 class NotificationService
 {
-    public function notify(User $user, string $title, string $message, array $context = []): Notification
-    {
+    public function notify(
+        User $user,
+        string $title,
+        string $message,
+        array $context = [],
+        string $type = 'system'
+    ): Notification {
         $notification = Notification::create([
             'user_id' => $user->id,
             'title' => $title,
@@ -18,6 +23,7 @@ class NotificationService
             'is_read' => false,
             'buy_request_id' => $context['buy_request_id'] ?? null,
             'policy_id' => $context['policy_id'] ?? null,
+            'type' => $type,
         ]);
 
         $this->sendEmailIfPossible($user, $title, $message);

@@ -1,12 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import API from "../utils/adminApi";
-import {
-  BanknotesIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ClockIcon,
-  FunnelIcon,
-} from "@heroicons/react/24/outline";
+  import {
+    BanknotesIcon,
+    CheckCircleIcon,
+    XCircleIcon,
+    FunnelIcon,
+  } from "@heroicons/react/24/outline";
 
 const PaymentList = () => {
   const [items, setItems] = useState([]);
@@ -18,24 +17,34 @@ const PaymentList = () => {
   const fmt = (n) =>
     Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
 
+  const load = async () => {
+    try {
+      // Expected admin endpoint
+      const res = await API.get("/admin/payments");
+      setItems(res.data || []);
+    } catch (e) {
+      console.error(e);
+      setError("Unable to load payments.");
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const load = async () => {
-      try {
-        // Expected admin endpoint
-        const res = await API.get("/admin/payments");
-        setItems(res.data || []);
-      } catch (e) {
-        console.error(e);
-        setError("Unable to load payments.");
-      }
-      setLoading(false);
-    };
     load();
   }, []);
 
   const filtered = useMemo(() => {
     return items.filter((p) => {
-      const matchStatus = status === "all" || p.status === status;
+      const normalizedStatus = (p.status || "").toLowerCase();
+      const isSuccess =
+        normalizedStatus === "success" ||
+        normalizedStatus === "paid" ||
+        normalizedStatus === "completed";
+
+      const matchStatus =
+        status === "all" ||
+        (status === "success" && isSuccess) ||
+        (status === "failed" && !isSuccess);
 
       const q = search.toLowerCase();
       const matchSearch =
@@ -49,26 +58,57 @@ const PaymentList = () => {
     });
   }, [items, status, search]);
 
-  const statusBadge = (s) => {
-    switch (s) {
-      case "success":
-        return (
-          <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 text-xs font-semibold">
-            <CheckCircleIcon className="w-4 h-4" /> SUCCESS
-          </span>
-        );
-      case "failed":
-        return (
-          <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 text-xs font-semibold">
-            <XCircleIcon className="w-4 h-4" /> FAILED
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 text-yellow-600 dark:text-yellow-400 text-xs font-semibold">
-            <ClockIcon className="w-4 h-4" /> PENDING
-          </span>
-        );
+  const statusBadge = (payment) => {
+    const normalizedStatus = (payment.status || "").toLowerCase();
+    const isSuccess =
+      normalizedStatus === "success" ||
+      normalizedStatus === "paid" ||
+      normalizedStatus === "completed";
+
+    if (payment.is_verified) {
+      return (
+        <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 text-xs font-semibold">
+          <CheckCircleIcon className="w-4 h-4" /> VERIFIED
+        </span>
+      );
+    }
+
+    if (isSuccess) {
+      return (
+        <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 text-xs font-semibold">
+          <CheckCircleIcon className="w-4 h-4" /> SUCCESS
+        </span>
+      );
+    }
+
+    return (
+      <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 text-xs font-semibold">
+        <XCircleIcon className="w-4 h-4" /> FAILED
+      </span>
+    );
+  };
+
+  const verifyPayment = async (payment) => {
+    const normalizedStatus = (payment.status || "").toLowerCase();
+    const isSuccess =
+      normalizedStatus === "success" ||
+      normalizedStatus === "paid" ||
+      normalizedStatus === "completed";
+
+    if (payment.is_verified) return;
+
+    const ok = window.confirm(
+      isSuccess
+        ? "Verify this payment? This will notify the client."
+        : "Payment failed. Send a repayment notice to the client?"
+    );
+    if (!ok) return;
+
+    try {
+      await API.post(`/admin/payments/${payment.id}/verify`);
+      load();
+    } catch (e) {
+      alert("Failed to verify payment.");
     }
   };
 
@@ -117,7 +157,6 @@ const PaymentList = () => {
             <option value="all">All</option>
             <option value="success">Success</option>
             <option value="failed">Failed</option>
-            <option value="pending">Pending</option>
           </select>
         </div>
       </div>
@@ -129,11 +168,13 @@ const PaymentList = () => {
             <tr>
               <th className="px-4 py-3 text-left">User</th>
               <th className="px-4 py-3 text-left">Policy</th>
+              <th className="px-4 py-3 text-left">Transaction ID</th>
               <th className="px-4 py-3 text-left">Amount</th>
               <th className="px-4 py-3 text-left">Method</th>
               <th className="px-4 py-3 text-left">Cycle</th>
               <th className="px-4 py-3 text-left">Status</th>
               <th className="px-4 py-3 text-left">Date</th>
+              <th className="px-4 py-3 text-left">Action</th>
             </tr>
           </thead>
 
@@ -154,6 +195,10 @@ const PaymentList = () => {
                   {p.buy_request?.policy?.policy_name}
                 </td>
 
+                <td className="px-4 py-3 font-mono text-xs">
+                  {p.transaction_id || "-"}
+                </td>
+
                 <td className="px-4 py-3 font-semibold">
                   Rs. {fmt(p.amount)}
                 </td>
@@ -168,11 +213,36 @@ const PaymentList = () => {
                 </td>
 
                 <td className="px-4 py-3">
-                  {statusBadge(p.status)}
+                  {statusBadge(p)}
                 </td>
 
                 <td className="px-4 py-3">
                   {new Date(p.created_at).toLocaleDateString()}
+                </td>
+
+                <td className="px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={() => verifyPayment(p)}
+                    disabled={p.is_verified || p.failed_notified}
+                    className={`text-xs font-semibold px-3 py-1 rounded-lg transition ${
+                      p.is_verified
+                        ? "bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-300 cursor-not-allowed"
+                        : p.failed_notified
+                        ? "bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-300 cursor-not-allowed"
+                        : (p.status || "").toLowerCase() === "success" ||
+                          (p.status || "").toLowerCase() === "paid" ||
+                          (p.status || "").toLowerCase() === "completed"
+                        ? "bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600"
+                        : "bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500"
+                    }`}
+                  >
+                    {p.is_verified
+                      ? "Verified"
+                      : p.failed_notified
+                      ? "Notified"
+                      : "Verify"}
+                  </button>
                 </td>
               </tr>
             ))}

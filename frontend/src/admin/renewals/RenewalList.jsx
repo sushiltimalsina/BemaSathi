@@ -76,6 +76,17 @@ const RenewalList = () => {
     return Math.ceil(diff);
   };
 
+  const formatDate = (date) => {
+    if (!date) return "-";
+    const parsed = new Date(date);
+    if (Number.isNaN(parsed.getTime())) return date;
+    return parsed.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+    });
+  };
+
   if (loading)
     return <div className="opacity-70">Loading renewals...</div>;
 
@@ -163,7 +174,7 @@ const RenewalList = () => {
                   Rs. {r.cycle_amount}
                 </td>
                 <td className="px-4 py-3">
-                  {r.next_renewal_date}
+                  {formatDate(r.next_renewal_date)}
                 </td>
                 <td
                   className={`px-4 py-3 font-semibold ${

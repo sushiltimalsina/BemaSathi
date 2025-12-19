@@ -10,6 +10,10 @@ class AdminRenewalController extends Controller
     public function index()
     {
         $renewals = BuyRequest::with(['user', 'policy'])
+            ->whereHas('payments', function ($query) {
+                $query->where('is_verified', true)
+                    ->whereIn('status', ['success', 'paid', 'completed']);
+            })
             ->select([
                 'id',
                 'user_id',

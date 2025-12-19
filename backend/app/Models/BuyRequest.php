@@ -48,4 +48,9 @@ class BuyRequest extends Model
     {
         return $this->belongsTo(Agent::class);
     }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
 }
