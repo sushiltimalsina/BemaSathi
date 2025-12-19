@@ -21,6 +21,8 @@ const AuditLog = () => {
 
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
 
   const load = async () => {
     try {
@@ -63,6 +65,16 @@ const AuditLog = () => {
       return matchSearch && matchCat;
     });
   }, [logs, search, category]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paged = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [category, search]);
 
   const exportCSV = async () => {
     try {
@@ -199,7 +211,7 @@ const AuditLog = () => {
           </thead>
 
           <tbody>
-            {filtered.map((log) => (
+            {paged.map((log) => (
               <tr
                 key={log.id}
                 className="border-t border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/40"
@@ -221,7 +233,7 @@ const AuditLog = () => {
               </tr>
             ))}
 
-            {!filtered.length && (
+            {!paged.length && (
               <tr>
                 <td
                   colSpan="4"
@@ -233,6 +245,30 @@ const AuditLog = () => {
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
+        <div>
+          Page {page} of {totalPages}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1}
+            className="px-3 py-1 rounded-lg border border-slate-300 dark:border-slate-700 disabled:opacity-50"
+          >
+            Prev
+          </button>
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages}
+            className="px-3 py-1 rounded-lg border border-slate-300 dark:border-slate-700 disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
       </div>
 
     </div>

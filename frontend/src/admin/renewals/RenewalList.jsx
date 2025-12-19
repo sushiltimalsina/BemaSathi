@@ -76,8 +76,19 @@ const RenewalList = () => {
 
   const daysLeft = (date) => {
     if (!date) return "-";
-    const diff =
-      (new Date(date) - new Date()) / (1000 * 60 * 60 * 24);
+    const today = new Date();
+    const startOfToday = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    );
+    const target = new Date(
+      typeof date === "string" && date.length <= 10
+        ? `${date}T00:00:00`
+        : date
+    );
+    if (Number.isNaN(target.getTime())) return "-";
+    const diff = (target - startOfToday) / (1000 * 60 * 60 * 24);
     return Math.ceil(diff);
   };
 

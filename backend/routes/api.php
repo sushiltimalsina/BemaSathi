@@ -142,7 +142,7 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::middleware(['admin'])->prefix('admin')->group(function () {
+    Route::middleware(['admin', 'audit'])->prefix('admin')->group(function () {
 
         // Admin Profile
         Route::get('/profile', function () {

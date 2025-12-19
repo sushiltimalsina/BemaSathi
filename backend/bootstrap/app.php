@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // REGISTER CUSTOM MIDDLEWARE HERE
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'audit' => \App\Http\Middleware\AuditLogMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
