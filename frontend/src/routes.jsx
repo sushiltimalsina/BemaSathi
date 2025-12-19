@@ -53,9 +53,9 @@ import MyProfile from "./user/client/pages/MyProfile";
 import Notifications from "./user/client/pages/Notifications";
 import MyBuyRequests from "./user/client/pages/MyBuyRequests";
 import MyPolicies from "./user/client/pages/MyPolicies";
-import MyTickets from "./client/support/MyTickets";
-import NewTicket from "./client/support/NewTicket";
-import SupportChat from "./client/support/SupportChat";
+import MyTickets from "./user/client/pages/MyTickets";
+import NewTicket from "./user/client/pages/NewTicket";
+import SupportChat from "./user/client/pages/SupportChat";
 
 
 
@@ -101,9 +101,36 @@ const AppRoutes = () => {
           </ProtectedClientRoute>
         }
       />
-      <Route path="/client/support" element={<MyTickets />} />
-<Route path="/client/support/new" element={<NewTicket />} />
-<Route path="/client/support/:id" element={<SupportChat />} />
+      <Route
+        path="/client/support"
+        element={
+          <ProtectedClientRoute>
+            <ClientLayout>
+              <MyTickets />
+            </ClientLayout>
+          </ProtectedClientRoute>
+        }
+      />
+      <Route
+        path="/client/support/new"
+        element={
+          <ProtectedClientRoute>
+            <ClientLayout>
+              <NewTicket />
+            </ClientLayout>
+          </ProtectedClientRoute>
+        }
+      />
+      <Route
+        path="/client/support/:id"
+        element={
+          <ProtectedClientRoute>
+            <ClientLayout>
+              <SupportChat />
+            </ClientLayout>
+          </ProtectedClientRoute>
+        }
+      />
 
       <Route
         path="/client/my-profile"

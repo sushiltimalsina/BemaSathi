@@ -13,6 +13,7 @@ const SupportView = () => {
   const [ticket, setTicket] = useState(null);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
 
   const load = async () => {
     try {
@@ -26,21 +27,31 @@ const SupportView = () => {
 
   useEffect(() => {
     load();
+    const interval = setInterval(load, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const sendReply = async () => {
-    if (!message.trim()) return;
+    if (!message.trim() || ticket?.status === "closed") return;
 
     try {
+      setSending(true);
       await API.post(`/admin/support/${id}/reply`, { message });
       setMessage("");
-      load();
+      await load();
     } catch (e) {
       alert("Failed to reply");
+    } finally {
+      setSending(false);
     }
   };
 
   const updateStatus = async (status) => {
+    if (ticket?.status === "closed") return;
+    if (status === "closed") {
+      const confirmed = window.confirm("Close this ticket?");
+      if (!confirmed) return;
+    }
     try {
       await API.post(`/admin/support/${id}/status`, { status });
       load();
@@ -62,34 +73,14 @@ const SupportView = () => {
         </p>
       </div>
 
-      {/* STATUS BUTTONS */}
+      {/* STATUS BUTTON */}
       <div className="flex gap-3">
         <button
-          onClick={() => updateStatus("open")}
-          className="px-3 py-1 rounded-lg bg-blue-600 text-white"
-        >
-          Open
-        </button>
-
-        <button
-          onClick={() => updateStatus("in_progress")}
-          className="px-3 py-1 rounded-lg bg-yellow-500 text-white"
-        >
-          In Progress
-        </button>
-
-        <button
-          onClick={() => updateStatus("resolved")}
-          className="px-3 py-1 rounded-lg bg-green-600 text-white"
-        >
-          Resolved
-        </button>
-
-        <button
           onClick={() => updateStatus("closed")}
-          className="px-3 py-1 rounded-lg bg-gray-600 text-white"
+          disabled={ticket.status === "closed"}
+          className="px-3 py-1 rounded-lg bg-gray-600 text-white disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          Closed
+          Close Ticket
         </button>
       </div>
 
@@ -120,17 +111,20 @@ const SupportView = () => {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Type your reply..."
+          disabled={ticket.status === "closed" || sending}
           className="
             flex-1 px-4 py-2 rounded-lg border
             bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700
+            disabled:opacity-60 disabled:cursor-not-allowed
           "
         />
 
         <button
           onClick={sendReply}
+          disabled={ticket.status === "closed" || sending}
           className="
             px-4 py-2 rounded-lg bg-primary-light text-white hover:bg-primary-dark
-            flex items-center gap-1
+            flex items-center gap-1 disabled:opacity-60 disabled:cursor-not-allowed
           "
         >
           <PaperAirplaneIcon className="w-5 h-5" /> Send

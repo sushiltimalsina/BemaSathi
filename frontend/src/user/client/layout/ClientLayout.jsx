@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import ClientSidebar from "./ClientSidebar";
+import ChatBubble from "../components/ChatBubble";
 
 const ClientLayout = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
@@ -46,6 +47,7 @@ const ClientLayout = ({ children }) => {
           </div>
         </div>
       </div>
+      <ChatBubble />
     </div>
   );
 };

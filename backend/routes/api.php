@@ -20,6 +20,8 @@ use App\Http\Controllers\Admin\AdminReportController;
 use App\Http\Controllers\Admin\AdminAuditController;
 use App\Http\Controllers\Admin\AdminSettingsController;
 use App\Http\Controllers\Admin\AdminUserController;
+use App\Http\Controllers\Admin\AdminSupportController;
+use App\Http\Controllers\SupportController;
 
 // Admin Controllers
 use App\Http\Controllers\Admin\AdminPolicyController;
@@ -124,6 +126,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/kyc/submit', [KycController::class, 'submit']);
     Route::get('/kyc/me', [KycController::class, 'myKyc']);
+
+    // Support (Client)
+    Route::get('/support/my-tickets', [SupportController::class, 'myTickets']);
+    Route::post('/support/create', [SupportController::class, 'create']);
+    Route::get('/support/{ticket}', [SupportController::class, 'show']);
+    Route::post('/support/{ticket}/reply', [SupportController::class, 'reply']);
 
 
 
@@ -259,6 +267,16 @@ Route::middleware('auth:sanctum')->group(function () {
         */
         Route::get('/settings', [AdminSettingsController::class, 'show']);
         Route::post('/settings', [AdminSettingsController::class, 'update']);
+
+        /*
+        |-------------------------
+        | Support
+        |-------------------------
+        */
+        Route::get('/support', [AdminSupportController::class, 'index']);
+        Route::get('/support/{ticket}', [AdminSupportController::class, 'show']);
+        Route::post('/support/{ticket}/reply', [AdminSupportController::class, 'reply']);
+        Route::post('/support/{ticket}/status', [AdminSupportController::class, 'updateStatus']);
 
     });
 });

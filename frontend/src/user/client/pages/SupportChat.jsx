@@ -8,6 +8,7 @@ const SupportChat = () => {
   const [ticket, setTicket] = useState(null);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
 
   const load = async () => {
     try {
@@ -21,17 +22,22 @@ const SupportChat = () => {
 
   useEffect(() => {
     load();
+    const interval = setInterval(load, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const sendReply = async () => {
-    if (!message.trim()) return;
+    if (!message.trim() || ticket?.status === "closed") return;
 
     try {
+      setSending(true);
       await API.post(`/support/${id}/reply`, { message });
       setMessage("");
-      load(); // refresh
+      await load();
     } catch (e) {
       alert("Failed to send reply.");
+    } finally {
+      setSending(false);
     }
   };
 
@@ -74,12 +80,14 @@ const SupportChat = () => {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Type your message..."
-          className="flex-1 px-4 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
+          disabled={ticket.status === "closed" || sending}
+          className="flex-1 px-4 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 disabled:opacity-60 disabled:cursor-not-allowed"
         />
 
         <button
           onClick={sendReply}
-          className="px-4 py-2 rounded-lg bg-primary-light text-white hover:bg-primary-dark flex items-center gap-1"
+          disabled={ticket.status === "closed" || sending}
+          className="px-4 py-2 rounded-lg bg-primary-light text-white hover:bg-primary-dark flex items-center gap-1 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           <PaperAirplaneIcon className="w-5 h-5" /> Send
         </button>
