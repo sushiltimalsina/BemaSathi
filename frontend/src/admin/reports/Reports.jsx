@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import API from "../utils/adminApi";
 import {
   DocumentArrowDownIcon,
@@ -9,10 +9,52 @@ import {
 const Reports = () => {
   const [type, setType] = useState("users");
   const [status, setStatus] = useState("all");
+  const [range, setRange] = useState("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
+
+  const statusOptions = useMemo(() => {
+    switch (type) {
+      case "policies":
+        return ["all", "active", "inactive"];
+      case "payments":
+        return ["all", "success", "failed", "pending"];
+      case "renewals":
+        return ["all", "active", "due", "expired"];
+      case "kyc":
+        return ["all", "pending", "approved", "rejected"];
+      default:
+        return ["all"];
+    }
+  }, [type]);
+
+  const resolveDateRange = (value) => {
+    const today = new Date();
+    const toDate = today.toISOString().slice(0, 10);
+
+    if (value === "all") {
+      setFrom("");
+      setTo("");
+      return;
+    }
+
+    if (value === "custom") {
+      setFrom("");
+      setTo("");
+      return;
+    }
+
+    const days =
+      value === "7d" ? 7 : value === "1m" ? 30 : value === "3m" ? 90 : 0;
+    const fromDate = new Date(today.getTime() - days * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
+
+    setFrom(fromDate);
+    setTo(toDate);
+  };
 
   const exportReport = async () => {
     setLoading(true);
@@ -84,12 +126,11 @@ const Reports = () => {
               onChange={(e) => setStatus(e.target.value)}
               className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
             >
-              <option value="all">All</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
+              {statusOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -100,10 +141,27 @@ const Reports = () => {
             </label>
 
             <div className="grid grid-cols-2 gap-2">
+              <select
+                value={range}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setRange(value);
+                  resolveDateRange(value);
+                }}
+                className="px-3 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 col-span-2"
+              >
+                <option value="all">All time</option>
+                <option value="7d">Last 7 days</option>
+                <option value="1m">Last 1 month</option>
+                <option value="3m">Last 3 months</option>
+                <option value="custom">Custom range</option>
+              </select>
+
               <input
                 type="date"
                 value={from}
                 onChange={(e) => setFrom(e.target.value)}
+                disabled={range !== "custom"}
                 className="px-3 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
               />
 
@@ -111,6 +169,7 @@ const Reports = () => {
                 type="date"
                 value={to}
                 onChange={(e) => setTo(e.target.value)}
+                disabled={range !== "custom"}
                 className="px-3 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
               />
             </div>
