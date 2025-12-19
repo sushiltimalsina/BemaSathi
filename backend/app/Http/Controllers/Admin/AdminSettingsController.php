@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
 class AdminSettingsController extends Controller
 {
     private string $file = 'admin_settings.json';
+    private string $envFile = '.env';
 
     public function show()
     {
@@ -59,9 +61,67 @@ class AdminSettingsController extends Controller
 
         Storage::disk('local')->put($this->file, json_encode($data));
 
+        $this->updateEnv([
+            'ESEWA_MERCHANT_CODE' => $data['esewa_merchant_id'] ?? null,
+            'ESEWA_SECRET_KEY' => $data['esewa_secret_key'] ?? null,
+            'KHALTI_PUBLIC_KEY' => $data['khalti_public_key'] ?? null,
+            'KHALTI_SECRET_KEY' => $data['khalti_secret_key'] ?? null,
+            'MAIL_HOST' => $data['smtp_host'] ?? null,
+            'MAIL_PORT' => $data['smtp_port'] ?? null,
+            'MAIL_USERNAME' => $data['smtp_username'] ?? null,
+            'MAIL_PASSWORD' => $data['smtp_password'] ?? null,
+            'MAIL_FROM_NAME' => $data['mail_from_name'] ?? null,
+            'MAIL_FROM_ADDRESS' => $data['mail_from_address'] ?? null,
+            'APP_NAME' => $data['system_name'] ?? null,
+            'APP_FRONTEND_URL' => $data['website_url'] ?? null,
+        ]);
+
+        config([
+            'app.name' => $data['system_name'] ?? config('app.name'),
+            'mail.mailers.smtp.host' => $data['smtp_host'] ?? config('mail.mailers.smtp.host'),
+            'mail.mailers.smtp.port' => $data['smtp_port'] ?? config('mail.mailers.smtp.port'),
+            'mail.mailers.smtp.username' => $data['smtp_username'] ?? config('mail.mailers.smtp.username'),
+            'mail.mailers.smtp.password' => $data['smtp_password'] ?? config('mail.mailers.smtp.password'),
+            'mail.from.name' => $data['mail_from_name'] ?? config('mail.from.name'),
+            'mail.from.address' => $data['mail_from_address'] ?? config('mail.from.address'),
+        ]);
+
         return response()->json([
             'message' => 'Settings saved successfully',
             'data' => $data,
         ]);
+    }
+
+    private function updateEnv(array $values): void
+    {
+        $path = base_path($this->envFile);
+        if (!File::exists($path)) {
+            return;
+        }
+
+        $content = File::get($path);
+
+        foreach ($values as $key => $value) {
+            if ($value === null) {
+                continue;
+            }
+            $safe = $this->formatEnvValue($value);
+            $pattern = "/^{$key}=.*$/m";
+
+            if (preg_match($pattern, $content)) {
+                $content = preg_replace($pattern, "{$key}={$safe}", $content);
+            } else {
+                $content .= PHP_EOL . "{$key}={$safe}";
+            }
+        }
+
+        File::put($path, $content);
+    }
+
+    private function formatEnvValue($value): string
+    {
+        $string = (string) $value;
+        $escaped = str_replace('"', '\"', $string);
+        return "\"{$escaped}\"";
     }
 }
