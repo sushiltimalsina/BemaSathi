@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Str;
 use App\Services\NotificationService;
+use App\Mail\PaymentFailureMail;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
 {
@@ -184,6 +187,8 @@ class PaymentController extends Controller
         ]);
         $this->notifyPayment($payment, 'failed');
 
+        $this->sendPaymentFailureEmail($payment, 'User cancelled or payment rejected');
+
         $failureRedirect = $this->frontendBase() . "/client/payment-failure?payment={$payment->id}";
 
         if ($request->wantsJson()) {
@@ -306,6 +311,7 @@ class PaymentController extends Controller
                 'meta'   => array_merge($payment->meta ?? [], ['pidx' => $pidx, 'khalti_status' => $status]),
             ]);
             $this->notifyPayment($payment, 'failed');
+            $this->sendPaymentFailureEmail($payment, $status ?: 'Khalti verification failed');
 
             return redirect()->away($this->frontendBase() . "/client/payment-failure?payment={$payment->id}");
         }
@@ -477,6 +483,31 @@ class PaymentController extends Controller
             'policy_id' => $payment->policy_id,
         ];
 
-        $this->notifier->notify($user, $title, $message, $context);
+        $this->notifier->notify($user, $title, $message, $context, 'system', false);
+    }
+
+    private function sendPaymentFailureEmail(Payment $payment, ?string $reason = null): void
+    {
+        $payment->loadMissing('user', 'policy', 'buyRequest.policy');
+        $user = $payment->user;
+        if (!$user || !$user->email) {
+            return;
+        }
+
+        if ($payment->failed_notified) {
+            return;
+        }
+
+        try {
+            Mail::to($user->email)->send(new PaymentFailureMail($payment, $reason));
+            $payment->failed_notified = true;
+            $payment->failed_notified_at = now();
+            $payment->save();
+        } catch (\Throwable $e) {
+            Log::warning('Failed sending payment failure email', [
+                'payment_id' => $payment->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

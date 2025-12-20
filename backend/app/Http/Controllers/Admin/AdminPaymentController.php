@@ -6,6 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
+use App\Mail\PaymentFailureMail;
+use App\Mail\PaymentSuccessMail;
+use App\Mail\PolicyPurchaseConfirmationMail;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class AdminPaymentController extends Controller
 {
@@ -49,8 +54,23 @@ class AdminPaymentController extends Controller
                     [
                         'buy_request_id' => $payment->buy_request_id,
                         'policy_id' => $payment->policy_id,
-                    ]
+                    ],
+                    'system',
+                    false
                 );
+
+                if (!$payment->failed_notified && $payment->user->email) {
+                    try {
+                        Mail::to($payment->user->email)->send(new PaymentFailureMail($payment, $payment->meta['reason'] ?? null));
+                        $payment->failed_notified = true;
+                        $payment->failed_notified_at = now();
+                    } catch (\Throwable $e) {
+                        Log::warning('Failed sending admin payment failure email', [
+                            'payment_id' => $payment->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
             }
 
             $payment->failed_notified = true;
@@ -82,8 +102,22 @@ class AdminPaymentController extends Controller
                 [
                     'buy_request_id' => $payment->buy_request_id,
                     'policy_id' => $payment->policy_id,
-                ]
+                ],
+                'system',
+                false
             );
+
+            if ($payment->user->email) {
+                try {
+                    Mail::to($payment->user->email)->send(new PaymentSuccessMail($payment));
+                    Mail::to($payment->user->email)->send(new PolicyPurchaseConfirmationMail($payment));
+                } catch (\Throwable $e) {
+                    Log::warning('Failed sending payment verification emails', [
+                        'payment_id' => $payment->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
         }
 
         return response()->json([

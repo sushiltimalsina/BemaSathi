@@ -1,83 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<body style="margin:0; padding:0; background:#f5f7fb; font-family: Arial, sans-serif; color:#1a1a1a;">
+<body style="margin:0; padding:0; background:#f5f7fb; font-family: Arial, sans-serif; color:#111;">
   <table align="center" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:auto;">
-
-    <!-- HEADER -->
     <tr>
-      <td style="background:#2563EB; padding:20px 30px; text-align:center; border-radius:0 0 8px 8px;">
-        <h1 style="margin:0; color:#ffffff; font-size:24px; letter-spacing:0.5px;">BeemaSathi</h1>
-        <p style="margin:5px 0 0; color:#dbe9ff; font-size:13px;">Smart Digital Insurance Companion</p>
+      <td style="background:#0f2d52; padding:20px 30px; text-align:center;">
+        <h1 style="margin:0; color:#ffffff; font-size:24px;">BeemaSathi</h1>
+        <p style="margin:6px 0 0; color:#cfe0ff; font-size:12px;">Smart Digital Insurance Companion</p>
       </td>
     </tr>
-
-    <!-- MAIN CARD -->
     <tr>
-      <td style="background:#ffffff; padding:30px; border-radius:8px; margin-top:20px; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
-
-        <p style="font-size:16px; margin:0 0 15px;">
-          Hi <strong>{{ $name ?? 'there' }}</strong>,
-        </p>
-
-        <p style="font-size:14px; line-height:1.6; margin:0 0 20px;">
+      <td style="background:#ffffff; padding:28px 30px;">
+        <p style="margin:0 0 12px; font-size:16px;">Hi <strong>{{ $name ?? 'there' }}</strong>,</p>
+        <p style="margin:0 0 16px; font-size:14px; line-height:1.6;">
           We received a request to reset your BeemaSathi account password.
           You can reset it using the verification code below or by clicking the secure link.
         </p>
-
-        <!-- OTP BOX -->
-        <div style="
-          background:#f0f4ff;
-          border:1px solid #c7d7ff;
-          padding:14px;
-          font-size:22px;
-          font-weight:bold;
-          letter-spacing:4px;
-          text-align:center;
-          color:#2563EB;
-          border-radius:6px;
-          margin-bottom:25px;
-        ">
+        <div style="background:#eef3ff; border:1px solid #c7d7ff; padding:14px; font-size:22px; font-weight:bold; letter-spacing:4px; text-align:center; color:#0f62fe; border-radius:6px; margin-bottom:18px;">
           {{ $token }}
         </div>
-
-        <!-- RESET LINK BUTTON -->
-        <a href="{{ $resetLink }}"
-           style="
-             display:inline-block;
-             background:#2563EB;
-             padding:12px 22px;
-             color:white;
-             text-decoration:none;
-             font-size:15px;
-             font-weight:bold;
-             border-radius:6px;
-             margin-bottom:20px;
-           ">
+        <a href="{{ $resetLink }}" style="display:inline-block; background:#0f62fe; padding:12px 22px; color:white; text-decoration:none; font-size:14px; font-weight:bold; border-radius:6px; margin-bottom:16px;">
           Reset Password
         </a>
-
-        <p style="font-size:12px; margin:0 0 25px; color:#6b7280;">
-          If the button doesn't work, copy and paste this link in your browser:<br>
-          <span style="color:#2563EB; word-break:break-all;">{{ $resetLink }}</span>
+        <p style="font-size:12px; margin:0 0 18px; color:#6b7280;">
+          If the button does not work, copy and paste this link in your browser:<br>
+          <span style="color:#0f62fe; word-break:break-all;">{{ $resetLink }}</span>
         </p>
-
         <p style="font-size:13px; margin:0; line-height:1.5; color:#444;">
-          If you didn’t request this password reset, you can safely ignore this message.
+          If you did not request this password reset, you can safely ignore this message.
           Your account will remain secure.
         </p>
-
       </td>
     </tr>
-
-    <!-- FOOTER -->
     <tr>
-      <td style="padding:20px; text-align:center; font-size:12px; color:#6b7280;">
-        © {{ date('Y') }} BeemaSathi · All rights reserved
-        <br>Smart Insurance Comparison Made Simple
+      <td style="padding:18px; text-align:center; font-size:12px; color:#6b7280;">
+        &copy; {{ date('Y') }} BeemaSathi. All rights reserved.
       </td>
     </tr>
-
   </table>
 </body>
 </html>

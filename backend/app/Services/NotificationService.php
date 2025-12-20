@@ -14,7 +14,8 @@ class NotificationService
         string $title,
         string $message,
         array $context = [],
-        string $type = 'system'
+        string $type = 'system',
+        bool $sendEmail = true
     ): Notification {
         $notification = Notification::create([
             'user_id' => $user->id,
@@ -26,7 +27,9 @@ class NotificationService
             'type' => $type,
         ]);
 
-        $this->sendEmailIfPossible($user, $title, $message);
+        if ($sendEmail) {
+            $this->sendEmailIfPossible($user, $title, $message);
+        }
 
         return $notification;
     }

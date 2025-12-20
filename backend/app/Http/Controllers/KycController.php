@@ -6,6 +6,10 @@ use Illuminate\Http\Request;
 use App\Models\KycDocument;
 use Illuminate\Support\Facades\Auth;
 use App\Services\NotificationService;
+use App\Mail\KycApprovedMail;
+use App\Mail\KycRejectedMail;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class KycController extends Controller
 {
@@ -126,7 +130,23 @@ class KycController extends Controller
                 $msg .= ' Remarks: ' . $kyc->remarks;
             }
 
-            $this->notifier->notify($kyc->user, $title, $msg, []);
+            if ($kyc->user->email) {
+                try {
+                    if ($kyc->status === 'approved') {
+                        Mail::to($kyc->user->email)->send(new KycApprovedMail($kyc->user));
+                    } else {
+                        Mail::to($kyc->user->email)->send(new KycRejectedMail($kyc->user, $kyc->remarks));
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('Failed sending KYC email', [
+                        'user_id' => $kyc->user->id,
+                        'status' => $kyc->status,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            $this->notifier->notify($kyc->user, $title, $msg, [], 'system', false);
         }
 
         return response()->json([
