@@ -1,86 +1,187 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <style>
-    body { font-family: Arial, sans-serif; color: #111; font-size: 12px; }
-    .header { border-bottom: 2px solid #0f2d52; padding-bottom: 10px; margin-bottom: 16px; }
-    .brand { font-size: 20px; font-weight: bold; color: #0f2d52; }
-    .tagline { font-size: 11px; color: #4b5563; }
-    .muted { color: #4b5563; }
-    .section-title { font-size: 14px; font-weight: bold; margin: 16px 0 6px; color: #0f2d52; }
-    table { width: 100%; border-collapse: collapse; }
-    td { padding: 6px 0; vertical-align: top; }
-    .label { font-weight: bold; width: 160px; }
-    .terms { font-size: 11px; color: #374151; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div class="brand">{{ $companyName ?? 'Insurance Company' }}</div>
-    <div class="tagline">Policy Document</div>
-    <div class="tagline">Issued via BeemaSathi</div>
-  </div>
+<meta charset="utf-8">
 
+<style>
+  body {
+    font-family: DejaVu Sans, Arial, sans-serif;
+    font-size: 12px;
+    color: #111827;
+    line-height: 1.6;
+  }
+
+  :root {
+    --brand: {{ $brandColor ?? '#0f2d52' }};
+    --muted: #6b7280;
+    --border: #e5e7eb;
+  }
+
+  /* ---------- HEADER ---------- */
+  .letterhead {
+    border-bottom: 3px solid var(--brand);
+    padding-bottom: 14px;
+    margin-bottom: 24px;
+  }
+
+  .company-name {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--brand);
+  }
+
+  .document-type {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .issued-via {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* ---------- SECTIONS ---------- */
+  .section {
+    margin-bottom: 22px;
+  }
+
+  .section-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--brand);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  td {
+    padding: 6px 0;
+    vertical-align: top;
+  }
+
+  .label {
+    width: 180px;
+    font-weight: 600;
+    color: #374151;
+  }
+
+  .value {
+    color: #111827;
+  }
+
+  /* ---------- HIGHLIGHT BOX ---------- */
+  .summary-box {
+    background: #f9fafb;
+    border-left: 4px solid var(--brand);
+    padding: 12px 14px;
+    margin-bottom: 22px;
+  }
+
+  /* ---------- TERMS ---------- */
+  .terms {
+    font-size: 11px;
+    color: #374151;
+  }
+
+  /* ---------- FOOTER ---------- */
+  .footer {
+    margin-top: 30px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--muted);
+  }
+</style>
+</head>
+
+<body>
+
+<!-- LETTERHEAD -->
+<div class="letterhead">
+  <div class="company-name">{{ $companyName ?? 'Insurance Company' }}</div>
+  <div class="document-type">Official Policy Document</div>
+  <div class="issued-via">Issued digitally via BeemaSathi</div>
+</div>
+
+<!-- POLICY SUMMARY -->
+<div class="summary-box">
+  <strong>Policy Number:</strong> {{ $policyNumber }} <br>
+  <strong>Effective Date:</strong>
+  {{ \Illuminate\Support\Carbon::parse($effectiveDate)->toFormattedDateString() }}
+</div>
+
+<!-- POLICY DETAILS -->
+<div class="section">
   <div class="section-title">Policy Details</div>
   <table>
-    <tr><td class="label">Policy number</td><td>{{ $policyNumber }}</td></tr>
-    <tr><td class="label">Policy name</td><td>{{ $policyName }}</td></tr>
-    <tr><td class="label">Company</td><td>{{ $companyName }}</td></tr>
-    <tr><td class="label">Insurance type</td><td>{{ $insuranceType ?? 'N/A' }}</td></tr>
-    <tr><td class="label">Coverage limit</td><td>{{ $coverageLimit }}</td></tr>
-    <tr><td class="label">Premium</td><td>NPR {{ number_format((float) $premium, 2) }}</td></tr>
-    <tr><td class="label">Billing cycle</td><td>{{ ucfirst(str_replace('_', ' ', $billingCycle)) }}</td></tr>
-    <tr><td class="label">Effective date</td><td>{{ \Illuminate\Support\Carbon::parse($effectiveDate)->toFormattedDateString() }}</td></tr>
+    <tr><td class="label">Policy Name</td><td class="value">{{ $policyName }}</td></tr>
+    <tr><td class="label">Insurance Type</td><td class="value">{{ $insuranceType ?? 'N/A' }}</td></tr>
+    <tr><td class="label">Coverage Limit</td><td class="value">{{ $coverageLimit }}</td></tr>
+    <tr><td class="label">Premium</td><td class="value">NPR {{ number_format((float) $premium, 2) }}</td></tr>
+    <tr><td class="label">Billing Cycle</td><td class="value">{{ ucfirst(str_replace('_', ' ', $billingCycle)) }}</td></tr>
+
     @if(!empty($nextRenewalDate))
-    <tr><td class="label">Next renewal date</td><td>{{ \Illuminate\Support\Carbon::parse($nextRenewalDate)->toFormattedDateString() }}</td></tr>
+    <tr>
+      <td class="label">Next Renewal</td>
+      <td class="value">
+        {{ \Illuminate\Support\Carbon::parse($nextRenewalDate)->toFormattedDateString() }}
+      </td>
+    </tr>
     @endif
   </table>
+</div>
 
+<!-- POLICY HOLDER -->
+<div class="section">
   <div class="section-title">Policy Holder</div>
   <table>
-    <tr><td class="label">Name</td><td>{{ $userName }}</td></tr>
-    <tr><td class="label">Email</td><td>{{ $userEmail }}</td></tr>
+    <tr><td class="label">Name</td><td class="value">{{ $userName }}</td></tr>
+    <tr><td class="label">Email</td><td class="value">{{ $userEmail }}</td></tr>
   </table>
+</div>
 
+<!-- PLAN INFORMATION -->
+<div class="section">
   <div class="section-title">Plan Information</div>
   <table>
     <tr>
-      <td class="label">Covered conditions</td>
-      <td>
-        @if(!empty($coveredConditions) && is_array($coveredConditions))
-          {{ implode(', ', $coveredConditions) }}
-        @else
-          N/A
-        @endif
+      <td class="label">Covered Conditions</td>
+      <td class="value">
+        {{ !empty($coveredConditions) ? implode(', ', $coveredConditions) : 'N/A' }}
       </td>
     </tr>
     <tr>
       <td class="label">Exclusions</td>
-      <td>
-        @if(!empty($exclusions) && is_array($exclusions))
-          {{ implode(', ', $exclusions) }}
-        @else
-          N/A
-        @endif
+      <td class="value">
+        {{ !empty($exclusions) ? implode(', ', $exclusions) : 'N/A' }}
       </td>
     </tr>
-    <tr><td class="label">Waiting period</td><td>{{ $waitingPeriodDays ? $waitingPeriodDays . ' days' : 'N/A' }}</td></tr>
-    <tr><td class="label">Co-pay</td><td>{{ $copayPercent !== null ? $copayPercent . '%' : 'N/A' }}</td></tr>
-    <tr><td class="label">Claim settlement ratio</td><td>{{ $claimSettlementRatio !== null ? $claimSettlementRatio . '%' : 'N/A' }}</td></tr>
-    <tr><td class="label">Smoker coverage</td><td>{{ $supportsSmokers ? 'Supported' : 'Not supported' }}</td></tr>
+    <tr><td class="label">Waiting Period</td><td class="value">{{ $waitingPeriodDays ? $waitingPeriodDays.' days' : 'N/A' }}</td></tr>
+    <tr><td class="label">Co-pay</td><td class="value">{{ $copayPercent !== null ? $copayPercent.'%' : 'N/A' }}</td></tr>
+    <tr><td class="label">Claim Settlement Ratio</td><td class="value">{{ $claimSettlementRatio !== null ? $claimSettlementRatio.'%' : 'N/A' }}</td></tr>
+    <tr><td class="label">Smoker Coverage</td><td class="value">{{ $supportsSmokers ? 'Supported' : 'Not Supported' }}</td></tr>
   </table>
+</div>
 
-  <div class="section-title">Terms and Conditions</div>
+<!-- TERMS -->
+<div class="section">
+  <div class="section-title">Terms & Conditions</div>
   <div class="terms">
-    @if(!empty($policyDescription))
-      <p class="muted">{{ $policyDescription }}</p>
-    @else
-      <p>Coverage is subject to underwriting guidelines and exclusions defined by the insurer.</p>
-      <p>Premiums are payable according to the chosen billing cycle to keep the policy active.</p>
-      <p>Claims are processed as per the insurer's claim settlement policy.</p>
-      <p>This document is issued as a digital policy summary for your records.</p>
-    @endif
+    {{ $policyDescription ?? 'Coverage is subject to underwriting guidelines, exclusions, and claim policies defined by the insurer. Premiums must be paid on time to keep the policy active. This is a digitally issued policy summary.' }}
   </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  This document is electronically generated and does not require a physical signature.<br>
+  © {{ date('Y') }} {{ $companyName }} • Issued via BeemaSathi
+</div>
+
 </body>
 </html>

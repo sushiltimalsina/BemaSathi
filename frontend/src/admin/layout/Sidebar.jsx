@@ -13,6 +13,7 @@ import {
   ClipboardDocumentListIcon,
   Cog6ToothIcon,
   LifebuoyIcon,
+  EnvelopeIcon,
 } from "@heroicons/react/24/outline";
 
 const navItems = [
@@ -28,6 +29,7 @@ const navItems = [
   { name: "Audit Log", path: "/admin/audit", icon: ClipboardDocumentListIcon },
   { name: "Settings", path: "/admin/settings", icon: Cog6ToothIcon },
   { name: "Support", path: "/admin/support", icon: LifebuoyIcon },
+  { name: "Agent Inquiries", path: "/admin/agent-inquiries", icon: EnvelopeIcon },
 ];
 
 const Sidebar = () => {

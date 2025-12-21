@@ -31,9 +31,11 @@ use App\Http\Controllers\Admin\AdminBuyRequestController;
 use App\Http\Controllers\Admin\AdminStatsController;
 use App\Http\Controllers\Admin\AdminCompanyController;
 use App\Http\Controllers\Admin\AdminClientController;
+use App\Http\Controllers\Admin\AdminAgentInquiryController;
 use App\Http\Controllers\SavedPolicyController;
 use App\Http\Controllers\PremiumQuoteController;
 use App\Http\Controllers\KycController;
+use App\Http\Controllers\AgentInquiryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -135,6 +137,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/support/{ticket}', [SupportController::class, 'show']);
     Route::post('/support/{ticket}/mark-seen', [SupportController::class, 'markSeen']);
     Route::post('/support/{ticket}/reply', [SupportController::class, 'reply']);
+
+    // Agent inquiry logging (client view of agent details)
+    Route::post('/agent-inquiries', [AgentInquiryController::class, 'store']);
 
 
 
@@ -284,6 +289,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/support/{ticket}/reply', [AdminSupportController::class, 'reply']);
         Route::post('/support/{ticket}/status', [AdminSupportController::class, 'updateStatus']);
         Route::post('/support/{ticket}/mark-seen', [AdminSupportController::class, 'markSeen']);
+
+        /*
+        |-------------------------
+        | Agent Inquiries
+        |-------------------------
+        */
+        Route::get('/agent-inquiries', [AdminAgentInquiryController::class, 'index']);
+        Route::post('/agent-inquiries/{agentInquiry}/notify', [AdminAgentInquiryController::class, 'notify']);
 
     });
 });

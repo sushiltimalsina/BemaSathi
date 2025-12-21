@@ -23,6 +23,7 @@ import AuditLog from "./admin/audit/AuditLog";
 import Settings from "./admin/settings/Settings";
 import SupportList from "./admin/support/SupportList";
 import SupportView from "./admin/support/SupportView";
+import AgentInquiryList from "./admin/agent-inquiries/AgentInquiryList";
 
 /* -------- Guest Pages -------- */
 import Home from "./user/guest/pages/Home";
@@ -304,6 +305,7 @@ const AppRoutes = () => {
         <Route path="settings" element={<Settings />} />
         <Route path="support" element={<SupportList />} />
         <Route path="support/:id" element={<SupportView />} />
+        <Route path="agent-inquiries" element={<AgentInquiryList />} />
       </Route>
     </Routes>
   );

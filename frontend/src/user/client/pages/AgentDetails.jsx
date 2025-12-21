@@ -125,7 +125,7 @@ const AgentDetails = () => {
   }, [agentParam, policyId]);
 
   // -----------------------------------
-  // 4) LOG INQUIRY ONLY ONCE
+  // 4) LOG AGENT VIEW ONLY ONCE
   // -----------------------------------
   useEffect(() => {
     const logInquiry = async () => {
@@ -136,14 +136,8 @@ const AgentDetails = () => {
 
       try {
         await API.post(
-          "/inquiries",
-          {
-            policy_id: policyId,
-            name: user?.name || "Unknown",
-            phone: user?.phone || "Not provided",
-            email: user?.email || null,
-            message: "Viewed agent details",
-          },
+          "/agent-inquiries",
+          { policy_id: policyId },
           { headers: { Authorization: `Bearer ${token}` } }
         );
       } catch (err) {
