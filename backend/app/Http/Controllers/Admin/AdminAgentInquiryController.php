@@ -13,7 +13,13 @@ class AdminAgentInquiryController extends Controller
 {
     public function index()
     {
-        $items = AgentInquiry::orderByDesc('created_at')->get();
+        $latestIds = AgentInquiry::selectRaw('MAX(id) as id')
+            ->groupBy('user_id', 'policy_id', 'policy_name')
+            ->pluck('id');
+
+        $items = AgentInquiry::whereIn('id', $latestIds)
+            ->orderByDesc('created_at')
+            ->get();
         return response()->json($items);
     }
 

@@ -143,6 +143,10 @@
   <table>
     <tr><td class="label">Name</td><td class="value">{{ $userName }}</td></tr>
     <tr><td class="label">Email</td><td class="value">{{ $userEmail }}</td></tr>
+    <tr><td class="label">Phone</td><td class="value">{{ $userPhone ?? 'N/A' }}</td></tr>
+    <tr><td class="label">Address</td><td class="value">{{ $userAddress ?? 'N/A' }}</td></tr>
+    <tr><td class="label">Date of Birth</td><td class="value">{{ $userDob ? \Illuminate\Support\Carbon::parse($userDob)->toFormattedDateString() : 'N/A' }}</td></tr>
+    <tr><td class="label">Document Number</td><td class="value">{{ $userDocumentNumber ?? 'N/A' }}</td></tr>
   </table>
 </div>
 

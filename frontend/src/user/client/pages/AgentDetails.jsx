@@ -232,53 +232,12 @@ const AgentDetails = () => {
 
           <p className="text-xs opacity-70 mt-6 leading-relaxed">
             This agent will assist you with choosing a policy, purchase
-            procedure, documentation, and claims support. Contact the agent
-            directly for any guidance.
+            procedure, documentation, and claims support. You will receive updates from the agent via email/phone or
+            directly contact for any guidance.
           </p>
         </div>
       </div>
 
-      {/* FUTURE FEATURE */}
-      <div className="mt-10">
-        <h3 className="text-lg font-semibold mb-3">
-          Policies handled by this agent
-        </h3>
-        {policies.length === 0 ? (
-          <p className="text-sm opacity-70">
-            No policies assigned to this agent.
-          </p>
-        ) : (
-          <div className="grid md:grid-cols-2 gap-4">
-            {policies.map((p) => (
-              <div
-                key={p.id}
-                className="p-4 rounded-xl border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark shadow-sm"
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-xs opacity-70">{p.insurance_type}</p>
-                    <h4 className="font-semibold">{p.policy_name}</h4>
-                    <p className="text-xs opacity-70">{p.company_name}</p>
-                  </div>
-                  <button
-                    onClick={() => navigate(`/policy/${p.id}`)}
-                    className="text-primary-light dark:text-primary-dark text-xs font-semibold hover:underline"
-                  >
-                    Details
-                  </button>
-                </div>
-                <p className="text-xs opacity-70 mt-2 line-clamp-2">
-                  {p.policy_description || "No description available"}
-                </p>
-                <div className="flex justify-between text-sm mt-3">
-                  <span>Premium: रु. {p.premium_amt}</span>
-                  <span>Coverage: रु. {p.coverage_limit}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
 };
