@@ -132,7 +132,6 @@ class BuyRequestController extends Controller
         };
     }
 
-
     private function resolveProfile($user)
     {
         $kyc = $user->kycDocuments()->where('status', 'approved')->latest()->first();
@@ -148,41 +147,41 @@ class BuyRequestController extends Controller
             'budget_range' => $user->budget_range
         ];
     }
+
     public function preview(Request $request)
-{
-    $user = auth()->user();
+    {
+        $user = auth()->user();
 
-    $data = $request->validate([
-        'policy_id' => 'required|exists:policies,id',
-        'billing_cycle' => 'required|in:monthly,quarterly,half_yearly,yearly'
-    ]);
+        $data = $request->validate([
+            'policy_id' => 'required|exists:policies,id',
+            'billing_cycle' => 'required|in:monthly,quarterly,half_yearly,yearly'
+        ]);
 
-    $policy = Policy::findOrFail($data['policy_id']);
-    $profile = $this->resolveProfile($user);
+        $policy = Policy::findOrFail($data['policy_id']);
+        $profile = $this->resolveProfile($user);
 
-    $quote = $this->calculator->quote(
-        $policy,
-        $profile['age'],
-        $profile['is_smoker'],
-        $profile['health_score'],
-        $profile['coverage_type'],
-        $profile['budget_range']
-    );
+        $quote = $this->calculator->quote(
+            $policy,
+            $profile['age'],
+            $profile['is_smoker'],
+            $profile['health_score'],
+            $profile['coverage_type'],
+            $profile['budget_range']
+        );
 
-    $basePremium = $quote['calculated_total'];
+        $basePremium = $quote['calculated_total'];
 
-    [$cycleAmount, $nextRenewal] = $this->calculateBillingInterval(
-        $data['billing_cycle'],
-        $basePremium
-    );
+        [$cycleAmount, $nextRenewal] = $this->calculateBillingInterval(
+            $data['billing_cycle'],
+            $basePremium
+        );
 
-    return response()->json([
-        'success' => true,
-        'base_premium' => $basePremium,
-        'cycle_amount' => $cycleAmount,
-        'billing_cycle' => $data['billing_cycle'],
-        'next_renewal_date' => $nextRenewal
-    ]);
-}
-
+        return response()->json([
+            'success' => true,
+            'base_premium' => $basePremium,
+            'cycle_amount' => $cycleAmount,
+            'billing_cycle' => $data['billing_cycle'],
+            'next_renewal_date' => $nextRenewal
+        ]);
+    }
 }

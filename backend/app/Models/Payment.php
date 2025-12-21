@@ -19,6 +19,7 @@ class Payment extends Model
         'meta',
         'paid_at',
         'billing_cycle',
+        'payment_type',
         'is_verified',
         'verified_at',
         'failed_notified',

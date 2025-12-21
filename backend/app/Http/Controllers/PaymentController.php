@@ -12,6 +12,7 @@ use App\Services\NotificationService;
 use App\Mail\PaymentFailureMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class PaymentController extends Controller
 {
@@ -109,6 +110,7 @@ class PaymentController extends Controller
             'method'        => 'esewa',
             'provider'      => 'eSewa',
             'status'        => 'pending',
+            'payment_type'  => $this->resolvePaymentType($br->id),
             'meta'          => [
                 'transaction_uuid' => (string) Str::uuid(),
             ],
@@ -159,6 +161,7 @@ class PaymentController extends Controller
         // Mark BuyRequest as Completed (best effort)
         try {
             $payment->buyRequest?->update(['status' => 'completed']);
+            $this->updateRenewalFromPayments($payment->buy_request_id, $payment->buyRequest?->billing_cycle);
         } catch (QueryException $e) {
             // Ignore and continue redirect
         }
@@ -238,6 +241,7 @@ class PaymentController extends Controller
             'method'        => 'khalti',
             'provider'      => 'Khalti',
             'status'        => 'pending',
+            'payment_type'  => $this->resolvePaymentType($br->id),
         ]);
 
         $payload = [
@@ -330,6 +334,7 @@ class PaymentController extends Controller
 
         try {
             $payment->buyRequest?->update(['status' => 'completed']);
+            $this->updateRenewalFromPayments($payment->buy_request_id, $payment->buyRequest?->billing_cycle);
         } catch (QueryException $e) {
             // ignore
         }
@@ -509,5 +514,44 @@ class PaymentController extends Controller
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    private function resolvePaymentType(int $buyRequestId): string
+    {
+        $hasPrevious = Payment::where('buy_request_id', $buyRequestId)->exists();
+        return $hasPrevious ? 'renewal' : 'new';
+    }
+
+    private function updateRenewalFromPayments(?int $buyRequestId, ?string $billingCycle = null): void
+    {
+        if (!$buyRequestId) {
+            return;
+        }
+
+        $payments = Payment::where('buy_request_id', $buyRequestId)
+            ->whereIn('status', ['success', 'paid', 'completed'])
+            ->orderByRaw('COALESCE(verified_at, paid_at, created_at) asc')
+            ->get(['verified_at', 'paid_at', 'created_at']);
+
+        if ($payments->isEmpty()) {
+            return;
+        }
+
+        $anchor = $payments->first();
+        $anchorDate = Carbon::parse($anchor->verified_at ?? $anchor->paid_at ?? $anchor->created_at);
+        $count = $payments->count();
+
+        $cycle = $billingCycle ?: 'yearly';
+        $nextRenewal = match ($cycle) {
+            'monthly' => $anchorDate->copy()->addMonths($count),
+            'quarterly' => $anchorDate->copy()->addMonths($count * 3),
+            'half_yearly' => $anchorDate->copy()->addMonths($count * 6),
+            default => $anchorDate->copy()->addYears($count),
+        };
+
+        BuyRequest::where('id', $buyRequestId)->update([
+            'next_renewal_date' => $nextRenewal->toDateString(),
+            'renewal_status' => 'active',
+        ]);
     }
 }
