@@ -12,11 +12,11 @@ const Navbar = () => {
   const { isDark, mode, cycleMode } = useTheme();
 
   const [isLoggedIn, setIsLoggedIn] = useState(
-    !!localStorage.getItem("client_token")
+    !!sessionStorage.getItem("client_token")
   );
 
   useEffect(() => {
-    setIsLoggedIn(!!localStorage.getItem("client_token"));
+    setIsLoggedIn(!!sessionStorage.getItem("client_token"));
   }, [location.pathname]);
 
   useEffect(() => {
@@ -32,8 +32,8 @@ const Navbar = () => {
   if (location.pathname.startsWith("/admin")) return null;
 
   const handleLogout = () => {
-    localStorage.removeItem("client_token");
-    localStorage.removeItem("client_user");
+    sessionStorage.removeItem("client_token");
+    sessionStorage.removeItem("client_user");
     setIsLoggedIn(false);
     navigate("/");
   };
@@ -59,3 +59,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+

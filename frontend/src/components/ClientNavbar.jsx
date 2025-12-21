@@ -13,7 +13,7 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
 
   useEffect(() => {
     const loadUser = () => {
-      const u = localStorage.getItem("client_user");
+      const u = sessionStorage.getItem("client_user");
       setUser(u ? JSON.parse(u) : null);
     };
 
@@ -60,7 +60,7 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const token = localStorage.getItem("client_token");
+        const token = sessionStorage.getItem("client_token");
         if (!token) return;
 
         const res = await API.get("/notifications");
@@ -350,3 +350,4 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
 };
 
 export default ClientNavbar;
+

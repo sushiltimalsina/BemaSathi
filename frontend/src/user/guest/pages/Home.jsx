@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import {
   ShieldCheckIcon,
@@ -16,7 +16,7 @@ const Home = () => {
   const dark = theme === "dark";
 
   // Detect if client is logged in
-  const isLoggedIn = !!localStorage.getItem("client_token");
+  const isLoggedIn = !!sessionStorage.getItem("client_token");
 
   // Premium gradient using theme tokens
   const heroBg = dark
@@ -315,4 +315,5 @@ const Home = () => {
 };
 
 export default Home;
+
 

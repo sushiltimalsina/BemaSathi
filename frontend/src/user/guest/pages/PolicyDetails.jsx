@@ -21,7 +21,7 @@ const PolicyDetails = () => {
   const [agent, setAgent] = useState(null);
   const [kycStatus, setKycStatus] = useState("checking");
 
-  const token = localStorage.getItem("client_token");
+  const token = sessionStorage.getItem("client_token");
   const isClient = !!token;
   const query = new URLSearchParams(location.search);
   const [ownedRequestId, setOwnedRequestId] = useState(
@@ -345,3 +345,4 @@ const PolicyDetails = () => {
 };
 
 export default PolicyDetails;
+

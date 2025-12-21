@@ -25,7 +25,7 @@ const AgentDetails = () => {
 
   const [loggedInquiry, setLoggedInquiry] = useState(false);
 
-  const token = localStorage.getItem("client_token");
+  const token = sessionStorage.getItem("client_token");
   const isClient = !!token;
 
   // -----------------------------------

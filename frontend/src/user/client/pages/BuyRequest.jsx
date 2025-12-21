@@ -16,7 +16,7 @@ const BuyRequest = () => {
   );
   const policyId = query.get("policy");
 
-  const token = localStorage.getItem("client_token");
+  const token = sessionStorage.getItem("client_token");
   const isClient = !!token;
 
   const [policy, setPolicy] = useState(null);
@@ -548,3 +548,4 @@ const BuyRequest = () => {
 };
 
 export default BuyRequest;
+

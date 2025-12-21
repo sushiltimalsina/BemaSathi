@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-// Simple inactivity logout hook. Tracks user activity in localStorage and logs out after timeout.
+// Simple inactivity logout hook. Tracks user activity in sessionStorage and logs out after timeout.
 const useIdleLogout = ({
   enabled,
   onLogout,
@@ -12,7 +12,7 @@ const useIdleLogout = ({
     if (!enabled) return;
 
     const markActivity = () =>
-      localStorage.setItem(activityKey, Date.now().toString());
+      sessionStorage.setItem(activityKey, Date.now().toString());
 
     // Initialize last activity
     markActivity();
@@ -21,10 +21,10 @@ const useIdleLogout = ({
     events.forEach((evt) => window.addEventListener(evt, markActivity));
 
     const checkIdle = () => {
-      const token = localStorage.getItem(tokenKey);
+      const token = sessionStorage.getItem(tokenKey);
       if (!token) return;
 
-      const last = Number(localStorage.getItem(activityKey));
+      const last = Number(sessionStorage.getItem(activityKey));
       if (!Number.isFinite(last)) {
         markActivity();
         return;
@@ -54,3 +54,4 @@ const useIdleLogout = ({
 };
 
 export default useIdleLogout;
+

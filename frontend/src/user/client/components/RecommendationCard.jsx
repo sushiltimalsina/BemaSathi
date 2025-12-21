@@ -25,7 +25,7 @@ const RecommendationCard = ({ policy, user, kycStatus: kycStatusProp }) => {
 
   const isAdded = compare.some((p) => p.id === policy.id);
   const compareDisabled = compare.length === 2 && !isAdded;
-  const isClient = !!localStorage.getItem("client_token");
+  const isClient = !!sessionStorage.getItem("client_token");
   const kycStatus = kycStatusProp ?? user?.kyc_status;
 
   const fmt = (n) =>
@@ -256,3 +256,4 @@ const RecommendationCard = ({ policy, user, kycStatus: kycStatusProp }) => {
 };
 
 export default RecommendationCard;
+

@@ -126,6 +126,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::match(['put', 'post'], '/notifications/{id}/read', [NotificationController::class, 'markRead']);
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
+    Route::delete('/notifications', [NotificationController::class, 'clearAll']);
 
     Route::post('/kyc/submit', [KycController::class, 'submit']);
     Route::get('/kyc/me', [KycController::class, 'myKyc']);

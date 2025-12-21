@@ -13,7 +13,7 @@ const MyProfile = () => {
   const [success, setSuccess] = useState("");
   const [kycStatus, setKycStatus] = useState("not_submitted");
 
-  const token = localStorage.getItem("client_token");
+  const token = sessionStorage.getItem("client_token");
   const navigate = useNavigate();
 
   const isLocked = kycStatus === "approved";
@@ -121,7 +121,7 @@ const MyProfile = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      localStorage.setItem("force_recalculate", "1");
+      sessionStorage.setItem("client_user", JSON.stringify(user));
       setSuccess("Profile updated successfully.");
       setEditing(false);
     } catch {
@@ -415,3 +415,4 @@ const SelectRow = ({ label, field, options, user, setUser }) => (
 );
 
 export default MyProfile;
+

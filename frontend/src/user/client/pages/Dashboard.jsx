@@ -24,7 +24,7 @@ const ClientDashboard = () => {
   const { compare } = useCompare();
 
   const fetchUser = async () => {
-    const token = localStorage.getItem("client_token");
+    const token = sessionStorage.getItem("client_token");
     if (!token) {
       setError("Please log in to view your dashboard.");
       setLoadingUser(false);
@@ -50,7 +50,7 @@ const ClientDashboard = () => {
       const res = await API.get("/recommendations/personal", {
         params: { insurance_type: insuranceType },
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("client_token")}`,
+          Authorization: `Bearer ${sessionStorage.getItem("client_token")}`,
         },
       });
 
@@ -79,7 +79,7 @@ const ClientDashboard = () => {
     const loadKyc = async () => {
       try {
         const res = await API.get("/kyc/me", {
-          headers: { Authorization: `Bearer ${localStorage.getItem("client_token")}` },
+          headers: { Authorization: `Bearer ${sessionStorage.getItem("client_token")}` },
         });
         const data = res.data?.data;
         const status = Array.isArray(data) ? data[0]?.status : data?.status;
@@ -265,3 +265,4 @@ const ClientDashboard = () => {
 };
 
 export default ClientDashboard;
+

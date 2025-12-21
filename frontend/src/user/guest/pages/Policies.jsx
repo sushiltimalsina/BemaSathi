@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import API from "../../../api/api";
 import {
@@ -56,9 +56,9 @@ const GuestPolicies = () => {
   const navigate = useNavigate();
 
   // Detect client login
-  const token = localStorage.getItem("client_token");
+  const token = sessionStorage.getItem("client_token");
   const isClient = !!token;
-  const user = JSON.parse(localStorage.getItem("client_user") || "{}");
+  const user = JSON.parse(sessionStorage.getItem("client_user") || "{}");
   const userAge = user.dob ? calculateAge(user.dob) : null;
   const multiplier = userAge ? ageMultiplier(userAge) : 1;
 
@@ -120,7 +120,7 @@ const GuestPolicies = () => {
     } else if (sortBy === "coverage_high") {
       temp.sort((a, b) => b.coverage_limit - a.coverage_limit);
     } else {
-      // "Recommended" — rough composite score
+      // "Recommended" � rough composite score
       temp.sort((a, b) => {
         const covDiff = (b.coverage_limit || 0) - (a.coverage_limit || 0);
         const premDiff = (a.premium_amt || 0) - (b.premium_amt || 0); // lower better
@@ -345,7 +345,7 @@ const GuestPolicies = () => {
                             {isClient ? (
                               <span className="font-semibold text-green-600 dark:text-green-400 text-right">
                                 <span className="inline-flex items-center gap-1">
-                                  <span className="font-semibold">रु. {clientPremium}</span>
+                                  <span className="font-semibold">??. {clientPremium}</span>
                                 </span>
                                 <span className="block text-[10px] opacity-60">
                                   age-adjusted
@@ -354,7 +354,7 @@ const GuestPolicies = () => {
                             ) : (
                               <span className="font-semibold text-right">
                                 <span className="inline-flex items-center gap-1">
-                                  रु. {guestMin} – {guestMax}
+                                  ??. {guestMin} � {guestMax}
                                 </span>
                                 <span className="block text-[10px] opacity-60">
                                   login to see exact premium
@@ -367,7 +367,7 @@ const GuestPolicies = () => {
                           <div className="flex justify-between">
                             <span className="opacity-70">Coverage</span>
                             <span className="font-semibold">
-                              रु. {policy.coverage_limit}
+                              ??. {policy.coverage_limit}
                             </span>
                           </div>
 
@@ -436,7 +436,7 @@ const GuestPolicies = () => {
                 })}
             </div>
 
-            {/* COMPARE FOOTER — CLIENT ONLY */}
+            {/* COMPARE FOOTER � CLIENT ONLY */}
             {isClient && selectedForCompare.length > 0 && (
               <div
                 className="
@@ -527,3 +527,8 @@ const GuestPolicies = () => {
 };
 
 export default GuestPolicies;
+
+
+
+
+
