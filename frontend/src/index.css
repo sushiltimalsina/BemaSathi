@@ -51,6 +51,25 @@
 .border-border-dark { border-color: var(--border-dark); }
 
 /* -----------------------------------------------------------
+   LOGOUT BUTTON (LIGHT + DARK)
+----------------------------------------------------------- */
+.logout-btn {
+  color: #dc2626;
+}
+
+.logout-btn:hover {
+  background-color: #fef2f2;
+}
+
+.dark .logout-btn {
+  color: #f87171;
+}
+
+.dark .logout-btn:hover {
+  background-color: rgba(127, 29, 29, 0.3);
+}
+
+/* -----------------------------------------------------------
    DARK MODE OVERRIDES
 ----------------------------------------------------------- */
 .dark .bg-background-light { background-color: var(--background-dark); }

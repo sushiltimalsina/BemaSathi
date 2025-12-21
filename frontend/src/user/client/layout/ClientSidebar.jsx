@@ -6,13 +6,15 @@ import {
   HeartIcon,
   BellIcon,
   ClipboardDocumentListIcon,
+  BanknotesIcon,
 } from "@heroicons/react/24/outline";
 
 const navItems = [
   { name: "Dashboard", icon: <HomeIcon className="w-6" />, path: "/client/dashboard" },
   { name: "All Policies", icon: <DocumentDuplicateIcon className="w-6" />, path: "/client/policies" },
   { name: "Saved Policies", icon: <HeartIcon className="w-6" />, path: "/client/saved" },
-  { name: "Notifications", icon: <BellIcon className="w-6" />, path: "/client/notifications" },
+  { name: "My Policies", icon: <ClipboardDocumentListIcon className="w-6" />, path: "/client/my-policies" },
+  { name: "Payment History", icon: <BanknotesIcon className="w-6" />, path: "/client/payments" },
 ];
 
 const ClientSidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
@@ -31,9 +33,8 @@ const ClientSidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) =
         onMouseEnter={() => setCollapsed(false)}
         onMouseLeave={() => setCollapsed(true)}
         className={`
-          hidden md:flex flex-col sticky top-0 h-screen z-60
+          hidden md:flex flex-col fixed top-0 left-0 h-screen z-60
           bg-sidebar-light dark:bg-sidebar-dark
-          border-r border-border-light dark:border-border-dark
           shadow-sm transition-all duration-300 ease-in-out
           ${collapsed ? "w-20" : "w-64"}
         `}

@@ -47,13 +47,13 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
     { to: "/client/dashboard", label: "Dashboard" },
     { to: "/client/policies", label: "All Policies" },
     { to: "/client/compare", label: "Compare" },
-    { to: "/client/payments", label: "Payments" },
   ];
 
   const accountLinks = [
     { to: "/client/profile", label: "My Profile" },
     { to: "/client/my-policies", label: "My Policies" },
     { to: "/client/saved", label: "Saved Policies" },
+    { to: "/client/payments", label: "Payment History" },
   ];
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -205,20 +205,19 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
 
                 {/* Logout */}
                 <button
-  onClick={() => {
-    onLogout();
-    setProfileOpen(false);
-  }}
-  className="
-    w-full text-left px-4 py-2 font-semibold
-    text-red-600 dark:text-red-400
-    hover:bg-red-100 dark:hover:bg-red-900/40
-    hover:text-red-700 dark:hover:text-red-300
-    transition
-  "
->
-  Logout
-</button>
+                  onClick={() => {
+                    onLogout();
+                    setProfileOpen(false);
+                  }}
+                  className="
+                    w-full text-left px-4 py-2 font-semibold
+                    logout-btn
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50
+                    transition
+                  "
+                >
+                  Logout
+                </button>
 
               </div>
             )}
@@ -333,11 +332,12 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
                   onLogout();
                   closeMobile();
                 }}
-                className="w-full text-left px-4 py-2 font-semibold
-    text-red-600 dark:text-red-400
-    hover:bg-red-100 dark:hover:bg-red-900/40
-    hover:text-red-700 dark:hover:text-red-300
-    transition"
+                className="
+                  w-full text-left px-4 py-2 font-semibold
+                  logout-btn
+                  focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50
+                  transition
+                "
               >
                 Logout
               </button>

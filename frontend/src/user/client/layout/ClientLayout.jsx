@@ -27,7 +27,7 @@ const ClientLayout = ({ children }) => {
       <div
         className={`
           flex-1 transition-all duration-300
-          ${collapsed ? "md:ml-20" : "md:ml-64"}
+          md:pl-20
         `}
       >
         {/* Page Container */}

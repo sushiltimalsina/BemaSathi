@@ -217,7 +217,7 @@ const PaymentPage = () => {
         </div>
 
         <div className="mt-4 flex items-center justify-between text-sm">
-          <span>Status:</span>
+          <span>Buy Status:</span>
           <span className="font-semibold capitalize">{buyRequest.status}</span>
         </div>
       </div>

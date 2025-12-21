@@ -56,6 +56,7 @@ const MyProfile = () => {
     load();
   }, []);
 
+
   const inputEnabled =
     "w-full mt-1 px-3 py-2 rounded-lg text-sm border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark";
 
@@ -70,6 +71,7 @@ const MyProfile = () => {
       : kycStatus === "rejected"
       ? "bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-200"
       : "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+
 
   if (loading)
     return <div className="text-center pt-20">Loading profile...</div>;
@@ -366,6 +368,7 @@ const MyProfile = () => {
           {success && <div className="text-green-600 text-sm">{success}</div>}
         </form>
       )}
+
     </div>
   );
 };

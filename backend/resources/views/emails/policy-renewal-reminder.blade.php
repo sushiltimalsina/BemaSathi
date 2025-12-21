@@ -34,7 +34,7 @@
         </table>
         <p style="margin:0; font-size:14px; line-height:1.6;">
           Pay here: <a href="{{ $renewalUrl }}" style="color:#0f62fe;">Renew Policy</a><br>
-          Late renewal may include penalties.
+          Late renewal may include penalties or become unavailable after the grace period.
         </p>
       </td>
     </tr>
