@@ -22,6 +22,7 @@
   <div class="section-title">Receipt Details</div>
   <table>
     <tr><td class="label">Receipt number</td><td>{{ $receiptNumber }}</td></tr>
+    <tr><td class="label">Policy number</td><td>{{ $policyNumber }}</td></tr>
     <tr><td class="label">Transaction ID</td><td>{{ $transactionId }}</td></tr>
     <tr><td class="label">Amount</td><td>{{ $currency }} {{ number_format((float) $amount, 2) }}</td></tr>
     <tr><td class="label">Paid at</td><td>{{ \Illuminate\Support\Carbon::parse($paidAt)->toDayDateTimeString() }}</td></tr>

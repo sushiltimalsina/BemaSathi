@@ -12,7 +12,6 @@ const navItems = [
   { name: "Dashboard", icon: <HomeIcon className="w-6" />, path: "/client/dashboard" },
   { name: "All Policies", icon: <DocumentDuplicateIcon className="w-6" />, path: "/client/policies" },
   { name: "Saved Policies", icon: <HeartIcon className="w-6" />, path: "/client/saved" },
-  { name: "Buy Requests", icon: <ClipboardDocumentListIcon className="w-6" />, path: "/client/buy-requests" },
   { name: "Notifications", icon: <BellIcon className="w-6" />, path: "/client/notifications" },
 ];
 

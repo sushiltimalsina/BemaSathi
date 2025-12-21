@@ -54,7 +54,6 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
     { to: "/client/profile", label: "My Profile" },
     { to: "/client/my-policies", label: "My Policies" },
     { to: "/client/saved", label: "Saved Policies" },
-    { to: "/client/buy-requests", label: "My Buy Requests" },
   ];
   const [unreadCount, setUnreadCount] = useState(0);
 

@@ -145,7 +145,7 @@ const RenewalCard = ({ request }) => {
             <ArrowPathIcon className="w-4 h-4" />
             Renewal Amount:
           </span>
-          <span className="font-semibold">Rs. {amount}</span>
+          <span className="font-semibold">रु. {amount}</span>
         </div>
 
         {/* DAYS LEFT */}
@@ -164,7 +164,7 @@ const RenewalCard = ({ request }) => {
           onClick={handleRenew}
           disabled={!isRenewable}
           className="
-            w-full py-3 rounded-xl font-semibold text-white 
+            w-full py-3 rounded-xl font-semibold text-white
             bg-gradient-to-r from-primary-light to-primary-dark
             shadow-[0_8px_20px_rgba(0,0,0,0.15)]
             hover:translate-y-[-1px] hover:shadow-[0_12px_28px_rgba(0,0,0,0.22)]

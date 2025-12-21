@@ -71,9 +71,9 @@ const BuyRequest = () => {
       <label className="text-xs font-semibold">{label}</label>
       <input
         className="
-          w-full mt-1 px-3 py-2 border rounded-lg 
-          bg-white dark:bg-slate-900 
-          border-border-light dark:border-border-dark 
+          w-full mt-1 px-3 py-2 border rounded-lg
+          bg-white dark:bg-slate-900
+          border-border-light dark:border-border-dark
           text-sm
         "
         value={value}
@@ -308,7 +308,7 @@ const BuyRequest = () => {
         {/* POLICY CARD */}
         <div
           className="
-            p-6 rounded-2xl shadow-md 
+            p-6 rounded-2xl shadow-md
             border border-border-light dark:border-border-dark
             bg-card-light dark:bg-card-dark
           "
@@ -322,7 +322,7 @@ const BuyRequest = () => {
 
           <span
             className="
-              inline-block px-3 py-1 text-xs mt-3 rounded-full 
+              inline-block px-3 py-1 text-xs mt-3 rounded-full
               bg-primary-light/10 dark:bg-primary-dark/20
               text-primary-light dark:text-primary-dark
               border border-primary-light/30 dark:border-primary-dark/30
@@ -334,24 +334,20 @@ const BuyRequest = () => {
           <p className="text-sm mt-4 opacity-80">{policy.policy_description}</p>
 
           <div className="mt-6 space-y-3 text-sm">
-            {/* YEARLY PREMIUM */}
-            <Row
-              label="Yearly Premium"
-              value={`Rs. ${fmt(policy.premium_amt)}`}
-            />
+
 
             {/* CYCLE PREMIUM */}
             {cyclePremium && (
               <Row
                 label={`Premium (${billingCycle.replace("_", " ")})`}
-                value={`Rs. ${fmt(cyclePremium)}`}
+                value={`रु. ${fmt(cyclePremium)}`}
                 highlight
               />
             )}
 
             <Row
               label="Coverage Limit"
-              value={`Rs. ${fmt(policy.coverage_limit)}`}
+              value={`रु. ${fmt(policy.coverage_limit)}`}
             />
 
             {policy.company_rating && (
@@ -371,7 +367,7 @@ const BuyRequest = () => {
         {/* USER FORM */}
         <div
           className="
-            p-6 rounded-2xl shadow-md 
+            p-6 rounded-2xl shadow-md
             border border-border-light dark:border-border-dark
             bg-card-light dark:bg-card-dark
           "
@@ -400,9 +396,9 @@ const BuyRequest = () => {
               <label className="text-xs font-semibold">Billing Cycle</label>
               <select
                 className="
-                  w-full mt-1 px-3 py-2 border rounded-lg 
-                  bg-white dark:bg-slate-900 
-                  border-border-light dark:border-border-dark 
+                  w-full mt-1 px-3 py-2 border rounded-lg
+                  bg-white dark:bg-slate-900
+                  border-border-light dark:border-border-dark
                   text-sm
                 "
                 value={billingCycle}
@@ -428,7 +424,7 @@ const BuyRequest = () => {
             <div className="mt-6 p-4 rounded-xl bg-primary-light/10 dark:bg-primary-dark/20 border border-primary-light/30 dark:border-primary-dark/30">
               <p className="text-sm opacity-70">Total Amount To Pay Now</p>
               <p className="text-2xl font-bold text-primary-light dark:text-primary-dark">
-                Rs. {fmt(cyclePremium)}
+                रु. {fmt(cyclePremium)}
               </p>
               <p className="text-xs opacity-60 mt-1">
                 Billing Cycle: {billingCycle.replace("_", " ")}
@@ -461,9 +457,9 @@ const BuyRequest = () => {
 
                   {/* Inner Glass Card */}
                   <span className="
-                    absolute inset-[2px] rounded-2xl 
-                    bg-white/10 dark:bg-black/20 
-                    backdrop-blur-xl 
+                    absolute inset-[2px] rounded-2xl
+                    bg-white/10 dark:bg-black/20
+                    backdrop-blur-xl
                     shadow-[0_8px_20px_rgba(0,0,0,0.3)]
                     group-hover:shadow-[0_12px_28px_rgba(0,0,0,0.45)]
                     transition-all duration-300
@@ -484,7 +480,7 @@ const BuyRequest = () => {
                   {!payingEsewa && (
                     <span className="
                       absolute inset-0 rounded-2xl
-                      bg-[#3CB043]/40 blur-xl opacity-0 
+                      bg-[#3CB043]/40 blur-xl opacity-0
                       group-hover:opacity-50 transition duration-500
                     "></span>
                   )}
@@ -513,9 +509,9 @@ const BuyRequest = () => {
 
                   {/* Inner Glass Card */}
                   <span className="
-                    absolute inset-[2px] rounded-2xl 
-                    bg-white/10 dark:bg-black/20 
-                    backdrop-blur-xl 
+                    absolute inset-[2px] rounded-2xl
+                    bg-white/10 dark:bg-black/20
+                    backdrop-blur-xl
                     shadow-[0_8px_20px_rgba(0,0,0,0.3)]
                     group-hover:shadow-[0_12px_28px_rgba(0,0,0,0.45)]
                     transition-all duration-300
@@ -536,7 +532,7 @@ const BuyRequest = () => {
                   {!payingKhalti && (
                     <span className="
                       absolute inset-0 rounded-2xl
-                      bg-[#8B0000]/35 blur-xl opacity-0 
+                      bg-[#8B0000]/35 blur-xl opacity-0
                       group-hover:opacity-50 transition duration-500
                     "></span>
                   )}

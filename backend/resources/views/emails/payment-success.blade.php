@@ -20,6 +20,10 @@
             <td style="padding:8px 0; font-size:14px;">{{ $policyName }}</td>
           </tr>
           <tr>
+            <td style="padding:8px 0; font-size:14px;"><strong>Policy number</strong></td>
+            <td style="padding:8px 0; font-size:14px;">{{ $policyNumber }}</td>
+          </tr>
+          <tr>
             <td style="padding:8px 0; font-size:14px;"><strong>Company</strong></td>
             <td style="padding:8px 0; font-size:14px;">{{ $companyName }}</td>
           </tr>

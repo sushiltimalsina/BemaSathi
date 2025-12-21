@@ -95,10 +95,10 @@ const RecommendationCard = ({ policy, user, kycStatus: kycStatusProp }) => {
   return (
     <div
       className="
-      mb-6 rounded-2xl 
+      mb-6 rounded-2xl
       bg-card-light dark:bg-card-dark
       border border-border-light dark:border-border-dark
-      shadow-md hover:shadow-xl 
+      shadow-md hover:shadow-xl
       transition-all duration-300
       p-6
     "
@@ -129,7 +129,7 @@ const RecommendationCard = ({ policy, user, kycStatus: kycStatusProp }) => {
       <div className="grid md:grid-cols-2 gap-4 mt-5">
         <div
           className="
-          p-4 rounded-xl 
+          p-4 rounded-xl
           bg-emerald-500/10 dark:bg-emerald-500/20
           border border-emerald-500/20 dark:border-emerald-500/30
         "
@@ -139,7 +139,7 @@ const RecommendationCard = ({ policy, user, kycStatus: kycStatusProp }) => {
           </p>
 
           <h3 className="text-xl font-bold text-emerald-600 dark:text-emerald-300">
-            Rs. {fmt(effectivePremium)}
+            रु. {fmt(effectivePremium)}
             {isClient && (
               <span className="block text-[10px] opacity-60">personalized</span>
             )}
@@ -148,7 +148,7 @@ const RecommendationCard = ({ policy, user, kycStatus: kycStatusProp }) => {
 
         <div
           className="
-          p-4 rounded-xl 
+          p-4 rounded-xl
           bg-blue-500/10 dark:bg-blue-500/20
           border border-blue-500/20 dark:border-blue-500/30
         "
@@ -157,7 +157,7 @@ const RecommendationCard = ({ policy, user, kycStatus: kycStatusProp }) => {
             Coverage
           </p>
           <h3 className="text-xl font-bold text-blue-600 dark:text-blue-300">
-            Rs. {fmt(policy.coverage_limit)}
+            रु. {fmt(policy.coverage_limit)}
           </h3>
         </div>
       </div>
@@ -170,7 +170,7 @@ const RecommendationCard = ({ policy, user, kycStatus: kycStatusProp }) => {
 
         <div
           className="
-          p-4 rounded-xl 
+          p-4 rounded-xl
           bg-card-light/80 dark:bg-card-dark/60
           border border-border-light dark:border-border-dark
         "

@@ -147,7 +147,7 @@ const PolicyDetails = () => {
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark transition-colors">
       <div className="max-w-5xl mx-auto px-6 py-10">
-        
+
         {/* BACK BUTTON */}
         <button
           onClick={() => navigate(-1)}
@@ -159,9 +159,9 @@ const PolicyDetails = () => {
 
         {/* TOP SECTION */}
         <div className="
-          bg-card-light dark:bg-card-dark 
-          rounded-2xl p-8 shadow-sm 
-          border border-border-light dark:border-border-dark 
+          bg-card-light dark:bg-card-dark
+          rounded-2xl p-8 shadow-sm
+          border border-border-light dark:border-border-dark
           mb-10
         ">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
@@ -196,27 +196,27 @@ const PolicyDetails = () => {
 
             {/* RIGHT SUMMARY */}
             <div className="
-              bg-background-light dark:bg-background-dark 
-              rounded-2xl px-6 py-4 
-              border border-border-light dark:border-border-dark 
-              shadow-sm 
+              bg-background-light dark:bg-background-dark
+              rounded-2xl px-6 py-4
+              border border-border-light dark:border-border-dark
+              shadow-sm
               w-full md:w-60
             ">
-              
+
               {/* PREMIUM */}
               <div className="mb-4">
                 <p className="text-xs opacity-70">Premium</p>
 
                 {isClient ? (
                   <p className="text-lg font-semibold text-success-light dark:text-success-dark flex items-center gap-1">
-                    Rs. {fmt(clientPremium)}
+                    रु. {fmt(clientPremium)}
                     <span className="block text-[10px] opacity-60 ml-1">
                       (personalized)
                     </span>
                   </p>
                 ) : (
                   <p className="text-xl font-semibold">
-                    Rs. {fmt(guestMin)} - {fmt(guestMax)}
+                    रु. {fmt(guestMin)} - {fmt(guestMax)}
                     <span className="block text-[10px] opacity-60">
                       Login to see your exact premium
                     </span>
@@ -228,7 +228,7 @@ const PolicyDetails = () => {
               <div className="mb-4">
                 <p className="text-xs opacity-70">Coverage Limit</p>
                 <p className="text-xl font-semibold">
-                  Rs. {fmt(policy.coverage_limit)}
+                  रु. {fmt(policy.coverage_limit)}
                 </p>
               </div>
 
@@ -250,9 +250,9 @@ const PolicyDetails = () => {
 
         {/* FEATURES */}
         <div className="
-          bg-card-light dark:bg-card-dark 
-          rounded-2xl p-8 shadow-sm 
-          border border-border-light dark:border-border-dark 
+          bg-card-light dark:bg-card-dark
+          rounded-2xl p-8 shadow-sm
+          border border-border-light dark:border-border-dark
           mb-10
         ">
           <h2 className="text-xl font-bold mb-4">Key Features</h2>
