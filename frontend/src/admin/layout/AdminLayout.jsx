@@ -1,11 +1,29 @@
 import React from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import { AdminToastProvider } from "../ui/AdminToast";
 import { AdminConfirmProvider } from "../ui/AdminConfirm";
+import useIdleLogout from "../../hooks/useIdleLogout";
+import { useAdminAuth } from "../context/AdminAuthContext";
 
 const AdminLayout = () => {
+  const navigate = useNavigate();
+  const { logout } = useAdminAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/admin/login");
+  };
+
+  useIdleLogout({
+    enabled: !!sessionStorage.getItem("admin_token"),
+    onLogout: handleLogout,
+    activityKey: "admin_last_activity",
+    tokenKey: "admin_token",
+    timeoutMs: 5 * 60 * 1000,
+  });
+
   return (
     <AdminToastProvider>
       <AdminConfirmProvider>

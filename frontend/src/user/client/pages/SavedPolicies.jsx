@@ -13,7 +13,7 @@ const SavedPolicies = () => {
   const navigate = useNavigate();
 
   // Require login
-  const token = localStorage.getItem("client_token");
+  const token = sessionStorage.getItem("client_token");
   const isClient = !!token;
 
   const [savedItems, setSavedItems] = useState([]);
@@ -167,7 +167,7 @@ const SavedPolicies = () => {
               <div className="flex justify-between">
                 <span className="text-slate-500">Premium</span>
                 <span className="font-semibold text-green-600 dark:text-green-400 flex items-center gap-1">
-                  <span className="font-bold">Rs.</span>
+                  <span className="font-bold">रु.</span>
                   {fmt(p.adjusted)}
                 </span>
               </div>
@@ -175,7 +175,7 @@ const SavedPolicies = () => {
               <div className="flex justify-between">
                 <span className="text-slate-500">Coverage</span>
                 <span className="font-semibold">
-                  Rs. {fmt(p.coverage_limit)}
+                  रु.{fmt(p.coverage_limit)}
                 </span>
               </div>
 
@@ -231,6 +231,7 @@ const SavedPolicies = () => {
 };
 
 export default SavedPolicies;
+
 
 
 

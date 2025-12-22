@@ -7,6 +7,9 @@ use App\Models\BuyRequest;
 use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use App\Mail\PolicyRenewalReminderMail;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class AdminRenewalController extends Controller
 {
@@ -63,6 +66,17 @@ class AdminRenewalController extends Controller
         $policyName = optional($buyRequest->policy)->policy_name ?? 'your policy';
         $dateText = Carbon::parse($buyRequest->next_renewal_date)->toFormattedDateString();
 
+        if ($buyRequest->user->email) {
+            try {
+                Mail::to($buyRequest->user->email)->send(new PolicyRenewalReminderMail($buyRequest));
+            } catch (\Throwable $e) {
+                Log::warning('Failed sending renewal reminder email', [
+                    'buy_request_id' => $buyRequest->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         $this->notifier->notify(
             $buyRequest->user,
             'Renewal reminder',
@@ -71,7 +85,8 @@ class AdminRenewalController extends Controller
                 'buy_request_id' => $buyRequest->id,
                 'policy_id' => $buyRequest->policy_id,
             ],
-            'system'
+            'system',
+            false
         );
 
         return response()->json([

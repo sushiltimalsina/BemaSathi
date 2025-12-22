@@ -23,6 +23,7 @@ import AuditLog from "./admin/audit/AuditLog";
 import Settings from "./admin/settings/Settings";
 import SupportList from "./admin/support/SupportList";
 import SupportView from "./admin/support/SupportView";
+import AgentInquiryList from "./admin/agent-inquiries/AgentInquiryList";
 
 /* -------- Guest Pages -------- */
 import Home from "./user/guest/pages/Home";
@@ -31,6 +32,7 @@ import GuestPolicyDetails from "./user/guest/pages/PolicyDetails";
 import AboutUs from "./About";
 import ContactUs from "./ContactUs";
 import FAQ from "./FAQ";
+import PolicyComparisonGuide from "./user/guest/pages/PolicyComparisonGuide";
 
 /* -------- Auth Pages -------- */
 import UserLogin from "./auth/Login";
@@ -51,7 +53,6 @@ import PaymentFailure from "./user/client/pages/PaymentFailure";
 import PaymentHistory from "./user/client/pages/PaymentHistory";
 import MyProfile from "./user/client/pages/MyProfile";
 import Notifications from "./user/client/pages/Notifications";
-import MyBuyRequests from "./user/client/pages/MyBuyRequests";
 import MyPolicies from "./user/client/pages/MyPolicies";
 import MyTickets from "./user/client/pages/MyTickets";
 import NewTicket from "./user/client/pages/NewTicket";
@@ -74,6 +75,7 @@ const AppRoutes = () => {
       <Route path="/about" element={<AboutUs />} />
       <Route path="/contact" element={<ContactUs />} />
       <Route path="/faq" element={<FAQ />} />
+      <Route path="/faq/policy-comparison-guide" element={<PolicyComparisonGuide />} />
 
       {/* ----- USER AUTH ----- */}
       <Route path="/login" element={<UserLogin />} />
@@ -148,16 +150,6 @@ const AppRoutes = () => {
           <ProtectedClientRoute>
             <ClientLayout>
               <Notifications />
-            </ClientLayout>
-          </ProtectedClientRoute>
-        }
-      />
-      <Route
-        path="/client/buy-requests"
-        element={
-          <ProtectedClientRoute>
-            <ClientLayout>
-              <MyBuyRequests />
             </ClientLayout>
           </ProtectedClientRoute>
         }
@@ -304,6 +296,7 @@ const AppRoutes = () => {
         <Route path="settings" element={<Settings />} />
         <Route path="support" element={<SupportList />} />
         <Route path="support/:id" element={<SupportView />} />
+        <Route path="agent-inquiries" element={<AgentInquiryList />} />
       </Route>
     </Routes>
   );

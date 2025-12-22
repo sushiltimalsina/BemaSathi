@@ -130,7 +130,7 @@ const PaymentSuccess = () => {
         <div className="mt-8 space-y-4 text-sm">
           <Detail label="Policy" value={policy?.policy_name} />
           <Detail label="Company" value={policy?.company_name} />
-          <Detail label="Amount Paid" value={`Rs. ${fmt(payment.amount)}`} />
+          <Detail label="Amount Paid" value={`रु. ${fmt(payment.amount)}`} />
           <Detail
             label="Billing Cycle"
             value={br?.billing_cycle?.replace("_", " ")}

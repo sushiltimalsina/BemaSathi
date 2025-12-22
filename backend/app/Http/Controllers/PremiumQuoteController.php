@@ -9,6 +9,9 @@ use App\Services\LeadDistributor;
 use App\Services\NotificationService;
 use App\Services\PremiumCalculator;
 use Illuminate\Support\Carbon;
+use App\Mail\BuyRequestSubmittedMail;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class BuyRequestController extends Controller
 {
@@ -78,10 +81,24 @@ class BuyRequestController extends Controller
             ? 'Request submitted and assigned to an agent.'
             : 'Request submitted successfully.';
 
+        $recipient = $buyRequest->email ?: $user->email;
+        if ($recipient) {
+            try {
+                $buyRequest->loadMissing('policy');
+                Mail::to($recipient)->send(new BuyRequestSubmittedMail($buyRequest));
+            } catch (\Throwable $e) {
+                Log::warning('Failed sending buy request email', [
+                    'user_id' => $user->id,
+                    'buy_request_id' => $buyRequest->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         // Notify user
         $this->notifier->notify($user, 'Buy Request Submitted', $msg, [
             'buy_request_id' => $buyRequest->id
-        ]);
+        ], 'system', false);
 
         return response()->json([
             'success' => true,

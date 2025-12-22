@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Str;
 use App\Services\NotificationService;
+use App\Mail\PaymentFailureMail;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class PaymentController extends Controller
 {
@@ -106,6 +110,7 @@ class PaymentController extends Controller
             'method'        => 'esewa',
             'provider'      => 'eSewa',
             'status'        => 'pending',
+            'payment_type'  => $this->resolvePaymentType($br->id),
             'meta'          => [
                 'transaction_uuid' => (string) Str::uuid(),
             ],
@@ -156,6 +161,7 @@ class PaymentController extends Controller
         // Mark BuyRequest as Completed (best effort)
         try {
             $payment->buyRequest?->update(['status' => 'completed']);
+            $this->updateRenewalFromPayments($payment->buy_request_id, $payment->buyRequest?->billing_cycle);
         } catch (QueryException $e) {
             // Ignore and continue redirect
         }
@@ -183,6 +189,8 @@ class PaymentController extends Controller
             'meta'   => ['reason' => 'User cancelled or payment rejected', 'transaction_uuid' => $transactionUuid]
         ]);
         $this->notifyPayment($payment, 'failed');
+
+        $this->sendPaymentFailureEmail($payment, 'User cancelled or payment rejected');
 
         $failureRedirect = $this->frontendBase() . "/client/payment-failure?payment={$payment->id}";
 
@@ -233,6 +241,7 @@ class PaymentController extends Controller
             'method'        => 'khalti',
             'provider'      => 'Khalti',
             'status'        => 'pending',
+            'payment_type'  => $this->resolvePaymentType($br->id),
         ]);
 
         $payload = [
@@ -306,6 +315,7 @@ class PaymentController extends Controller
                 'meta'   => array_merge($payment->meta ?? [], ['pidx' => $pidx, 'khalti_status' => $status]),
             ]);
             $this->notifyPayment($payment, 'failed');
+            $this->sendPaymentFailureEmail($payment, $status ?: 'Khalti verification failed');
 
             return redirect()->away($this->frontendBase() . "/client/payment-failure?payment={$payment->id}");
         }
@@ -324,6 +334,7 @@ class PaymentController extends Controller
 
         try {
             $payment->buyRequest?->update(['status' => 'completed']);
+            $this->updateRenewalFromPayments($payment->buy_request_id, $payment->buyRequest?->billing_cycle);
         } catch (QueryException $e) {
             // ignore
         }
@@ -477,6 +488,70 @@ class PaymentController extends Controller
             'policy_id' => $payment->policy_id,
         ];
 
-        $this->notifier->notify($user, $title, $message, $context);
+        $this->notifier->notify($user, $title, $message, $context, 'system', false);
+    }
+
+    private function sendPaymentFailureEmail(Payment $payment, ?string $reason = null): void
+    {
+        $payment->loadMissing('user', 'policy', 'buyRequest.policy');
+        $user = $payment->user;
+        if (!$user || !$user->email) {
+            return;
+        }
+
+        if ($payment->failed_notified) {
+            return;
+        }
+
+        try {
+            Mail::to($user->email)->send(new PaymentFailureMail($payment, $reason));
+            $payment->failed_notified = true;
+            $payment->failed_notified_at = now();
+            $payment->save();
+        } catch (\Throwable $e) {
+            Log::warning('Failed sending payment failure email', [
+                'payment_id' => $payment->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function resolvePaymentType(int $buyRequestId): string
+    {
+        $hasPrevious = Payment::where('buy_request_id', $buyRequestId)->exists();
+        return $hasPrevious ? 'renewal' : 'new';
+    }
+
+    private function updateRenewalFromPayments(?int $buyRequestId, ?string $billingCycle = null): void
+    {
+        if (!$buyRequestId) {
+            return;
+        }
+
+        $payments = Payment::where('buy_request_id', $buyRequestId)
+            ->whereIn('status', ['success', 'paid', 'completed'])
+            ->orderByRaw('COALESCE(verified_at, paid_at, created_at) asc')
+            ->get(['verified_at', 'paid_at', 'created_at']);
+
+        if ($payments->isEmpty()) {
+            return;
+        }
+
+        $anchor = $payments->first();
+        $anchorDate = Carbon::parse($anchor->verified_at ?? $anchor->paid_at ?? $anchor->created_at);
+        $count = $payments->count();
+
+        $cycle = $billingCycle ?: 'yearly';
+        $nextRenewal = match ($cycle) {
+            'monthly' => $anchorDate->copy()->addMonths($count),
+            'quarterly' => $anchorDate->copy()->addMonths($count * 3),
+            'half_yearly' => $anchorDate->copy()->addMonths($count * 6),
+            default => $anchorDate->copy()->addYears($count),
+        };
+
+        BuyRequest::where('id', $buyRequestId)->update([
+            'next_renewal_date' => $nextRenewal->toDateString(),
+            'renewal_status' => 'active',
+        ]);
     }
 }

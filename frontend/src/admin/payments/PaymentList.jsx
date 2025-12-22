@@ -179,6 +179,7 @@ const PaymentList = () => {
               <th className="px-4 py-3 text-left">Transaction ID</th>
               <th className="px-4 py-3 text-left">Amount</th>
               <th className="px-4 py-3 text-left">Method</th>
+              <th className="px-4 py-3 text-left">Type</th>
               <th className="px-4 py-3 text-left">Cycle</th>
               <th className="px-4 py-3 text-left">Status</th>
               <th className="px-4 py-3 text-left">Date</th>
@@ -214,6 +215,14 @@ const PaymentList = () => {
                 <td className="px-4 py-3 capitalize flex items-center gap-1">
                   <BanknotesIcon className="w-4 h-4 opacity-70" />
                   {p.payment_method}
+                </td>
+
+                <td className="px-4 py-3 capitalize">
+                  {p.payment_type === "renewal"
+                    ? "Renewal"
+                    : p.payment_type === "new"
+                    ? "New"
+                    : "-"}
                 </td>
 
                 <td className="px-4 py-3 capitalize">

@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 
 const ClientProfile = () => {
   const navigate = useNavigate();
-  const token = localStorage.getItem("client_token");
+  const token = sessionStorage.getItem("client_token");
 
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -25,7 +25,7 @@ const ClientProfile = () => {
         });
 
         setUser(res.data);
-        localStorage.setItem("client_user", JSON.stringify(res.data));
+        sessionStorage.setItem("client_user", JSON.stringify(res.data));
 
         try {
           const kycRes = await API.get("/kyc/me");
@@ -155,3 +155,4 @@ const ProfileRow = ({ label, value }) => (
 );
 
 export default ClientProfile;
+

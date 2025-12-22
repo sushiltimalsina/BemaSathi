@@ -37,7 +37,7 @@ const PaymentFailure = () => {
             Back
           </button>
           <button
-            onClick={() => navigate("/client/buy-requests")}
+            onClick={() => navigate("/client/my-policies")}
             className="px-4 py-2 rounded-lg bg-primary-light text-white font-semibold hover:opacity-90 transition"
           >
             View My Requests

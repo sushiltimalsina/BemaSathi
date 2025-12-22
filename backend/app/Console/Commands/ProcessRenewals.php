@@ -7,6 +7,9 @@ use Illuminate\Console\Command;
 use App\Models\BuyRequest;
 use App\Services\NotificationService;
 use Illuminate\Support\Carbon;
+use App\Mail\PolicyRenewalReminderMail;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class ProcessRenewals extends Command
 {
@@ -23,7 +26,7 @@ class ProcessRenewals extends Command
         $today = Carbon::today();
         $graceDays = 7;
 
-        // 1) Mark ACTIVE → DUE when renewal date is today
+        // 1) Mark ACTIVE -> DUE when renewal date is today
         $dueList = BuyRequest::where('renewal_status', 'active')
             ->whereDate('next_renewal_date', '<=', $today)
             ->get();
@@ -34,16 +37,30 @@ class ProcessRenewals extends Command
 
             $user = $br->user; // assumes relation buyRequest->user exists
             if ($user) {
+                if ($user->email) {
+                    try {
+                        $br->loadMissing('policy');
+                        Mail::to($user->email)->send(new PolicyRenewalReminderMail($br));
+                    } catch (\Throwable $e) {
+                        Log::warning('Failed sending renewal reminder email', [
+                            'buy_request_id' => $br->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+
                 $this->notifier->notify(
                     $user,
                     'Policy Renewal Due',
                     "Your policy ({$br->policy->policy_name}) is due for renewal. Please renew within {$graceDays} days to avoid expiry.",
-                    ['buy_request_id' => $br->id]
+                    ['buy_request_id' => $br->id],
+                    'system',
+                    false
                 );
             }
         }
 
-        // 2) Mark DUE → EXPIRED after 7-day grace period
+        // 2) Mark DUE -> EXPIRED after 7-day grace period
         $expiredList = BuyRequest::where('renewal_status', 'due')
             ->whereDate('next_renewal_date', '<', $today->copy()->subDays($graceDays))
             ->get();
@@ -58,7 +75,9 @@ class ProcessRenewals extends Command
                     $user,
                     'Policy Expired',
                     "Your policy ({$br->policy->policy_name}) has expired because it was not renewed within {$graceDays} days.",
-                    ['buy_request_id' => $br->id]
+                    ['buy_request_id' => $br->id],
+                    'system',
+                    false
                 );
             }
         }
@@ -68,4 +87,3 @@ class ProcessRenewals extends Command
         return Command::SUCCESS;
     }
 }
-

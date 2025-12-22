@@ -42,7 +42,7 @@ const Login = () => {
 
   // If already logged in, go straight to the redirect target.
   useEffect(() => {
-    const token = localStorage.getItem("client_token");
+    const token = sessionStorage.getItem("client_token");
     if (token) {
       navigate(redirectPath, { replace: true });
     }
@@ -57,9 +57,9 @@ const Login = () => {
       const res = await API.post("/login", form);
 
       if (res.data.token) {
-        localStorage.setItem("client_token", res.data.token);
+        sessionStorage.setItem("client_token", res.data.token);
         if (res.data.user) {
-          localStorage.setItem("client_user", JSON.stringify(res.data.user));
+          sessionStorage.setItem("client_user", JSON.stringify(res.data.user));
         }
         navigate(redirectPath, { replace: true });
       } else {
@@ -195,3 +195,4 @@ const Login = () => {
 };
 
 export default Login;
+

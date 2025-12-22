@@ -38,7 +38,7 @@ const Register = () => {
       const res = await API.post("/register", payload);
 
       if (res.data.token) {
-        localStorage.setItem("client_token", res.data.token);
+        sessionStorage.setItem("client_token", res.data.token);
         setSuccess("Registration successful. Redirecting...");
         setTimeout(() => navigate("/client/dashboard"), 1200);
       } else {
@@ -259,3 +259,4 @@ const Register = () => {
 };
 
 export default Register;
+

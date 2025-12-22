@@ -13,7 +13,7 @@ const MyProfile = () => {
   const [success, setSuccess] = useState("");
   const [kycStatus, setKycStatus] = useState("not_submitted");
 
-  const token = localStorage.getItem("client_token");
+  const token = sessionStorage.getItem("client_token");
   const navigate = useNavigate();
 
   const isLocked = kycStatus === "approved";
@@ -56,6 +56,7 @@ const MyProfile = () => {
     load();
   }, []);
 
+
   const inputEnabled =
     "w-full mt-1 px-3 py-2 rounded-lg text-sm border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark";
 
@@ -70,6 +71,7 @@ const MyProfile = () => {
       : kycStatus === "rejected"
       ? "bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-200"
       : "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+
 
   if (loading)
     return <div className="text-center pt-20">Loading profile...</div>;
@@ -119,7 +121,7 @@ const MyProfile = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      localStorage.setItem("force_recalculate", "1");
+      sessionStorage.setItem("client_user", JSON.stringify(user));
       setSuccess("Profile updated successfully.");
       setEditing(false);
     } catch {
@@ -366,6 +368,7 @@ const MyProfile = () => {
           {success && <div className="text-green-600 text-sm">{success}</div>}
         </form>
       )}
+
     </div>
   );
 };
@@ -412,3 +415,4 @@ const SelectRow = ({ label, field, options, user, setUser }) => (
 );
 
 export default MyProfile;
+

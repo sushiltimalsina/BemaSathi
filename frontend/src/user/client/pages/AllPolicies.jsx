@@ -18,7 +18,7 @@ const AllPolicies = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const token = localStorage.getItem("client_token");
+  const token = sessionStorage.getItem("client_token");
   const isClient = !!token;
 
   const getTypeFromQuery = () => {
@@ -272,7 +272,7 @@ const AllPolicies = () => {
                     Personalized Premium:
                   </span>
                   <span className="font-semibold">
-                    Rs. {fmt(effectivePremium(p))}
+                    रु. {fmt(effectivePremium(p))}
                   </span>
                 </div>
 
@@ -281,7 +281,7 @@ const AllPolicies = () => {
                     Coverage:
                   </span>
                   <span className="font-semibold">
-                    Rs. {fmt(p.coverage_limit)}
+                    रु. {fmt(p.coverage_limit)}
                   </span>
                 </div>
 
@@ -324,7 +324,7 @@ const AllPolicies = () => {
                 <div className="absolute -bottom-4 right-4">
                   <button
                     onClick={compareSelected}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold shadow-lg transition 
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold shadow-lg transition
                       ${
                         selected.length === 2
                           ? "bg-blue-600 hover:bg-blue-700 text-white"
@@ -384,3 +384,4 @@ const AllPolicies = () => {
 };
 
 export default AllPolicies;
+

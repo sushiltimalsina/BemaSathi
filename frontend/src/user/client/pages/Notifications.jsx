@@ -13,6 +13,8 @@ const Notifications = () => {
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("all"); // all | unread | read
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   const unreadCount = useMemo(
     () => items.filter((n) => !isRead(n)).length,
@@ -51,6 +53,10 @@ const Notifications = () => {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filter]);
 
   const markOneRead = async (id) => {
     // Synthetic reminder notifications are local-only
@@ -97,23 +103,53 @@ const Notifications = () => {
     }
   };
 
+  const clearAll = async () => {
+    if (!window.confirm("Clear all notifications? This cannot be undone.")) return;
+    setWorking(true);
+    setError("");
+    try {
+      await API.delete("/notifications");
+      setItems((prev) => prev.filter((n) => isReminder(getId(n))));
+      setPage(1);
+    } catch (e) {
+      console.error(e);
+      setError("Failed to clear notifications.");
+    } finally {
+      setWorking(false);
+    }
+  };
+
   const filtered = useMemo(() => {
     if (filter === "unread") return items.filter((n) => !isRead(n));
     if (filter === "read") return items.filter((n) => isRead(n));
     return items;
   }, [items, filter]);
 
+  const totalPages = useMemo(() => {
+    const total = Math.ceil(filtered.length / pageSize);
+    return total > 0 ? total : 1;
+  }, [filtered.length, pageSize]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const paged = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page, pageSize]);
+
   return (
     <div className="min-h-screen px-6 py-10 max-w-6xl mx-auto bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-white/60 dark:bg-black/30 border border-border-light dark:border-border-dark backdrop-blur">
+          <div className="p-2 rounded-xl bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark">
             <BellIcon className="w-6 h-6 text-primary-light dark:text-primary-dark" />
           </div>
           <div>
             <h1 className="text-3xl font-bold">Notifications</h1>
-            <p className="text-sm opacity-70">
+            <p className="text-sm text-muted-light dark:text-muted-dark">
               Unread: <span className="font-semibold">{unreadCount}</span>
             </p>
           </div>
@@ -125,7 +161,7 @@ const Notifications = () => {
             onChange={(e) => setFilter(e.target.value)}
             className="
               px-3 py-2 rounded-xl border text-sm
-              bg-white/70 dark:bg-black/30 backdrop-blur
+              bg-card-light dark:bg-card-dark
               border-border-light dark:border-border-dark
               focus:outline-none
             "
@@ -141,7 +177,7 @@ const Notifications = () => {
             className="
               px-4 py-2 rounded-xl text-sm font-semibold
               border border-border-light dark:border-border-dark
-              bg-white/70 dark:bg-black/30 backdrop-blur
+              bg-card-light dark:bg-card-dark
               hover:bg-hover-light dark:hover:bg-hover-dark transition
               disabled:opacity-60 disabled:cursor-not-allowed
               inline-flex items-center gap-2
@@ -167,12 +203,31 @@ const Notifications = () => {
               Mark all read
             </button>
           )}
+
+          {realCount > 0 && (
+            <button
+              onClick={clearAll}
+              disabled={working}
+              className="
+                px-4 py-2 rounded-xl text-sm font-semibold
+                border border-red-300/70 dark:border-red-500/40
+                text-red-600 dark:text-red-300
+                bg-red-50/70 dark:bg-red-900/20
+                hover:bg-red-100/80 dark:hover:bg-red-900/30 transition
+                disabled:opacity-60 disabled:cursor-not-allowed
+              "
+            >
+              Clear all
+            </button>
+          )}
         </div>
       </div>
 
       {/* States */}
       {loading && (
-        <div className="text-center opacity-70 mt-14">Loading notifications...</div>
+        <div className="text-center text-muted-light dark:text-muted-dark mt-14">
+          Loading notifications...
+        </div>
       )}
 
       {!loading && error && (
@@ -182,14 +237,14 @@ const Notifications = () => {
       )}
 
       {!loading && filtered.length === 0 && (
-        <div className="text-center opacity-70 mt-16">
+        <div className="text-center text-muted-light dark:text-muted-dark mt-16">
           No notifications found.
         </div>
       )}
 
       {/* List */}
       <div className="grid gap-4">
-        {filtered.map((n) => {
+        {paged.map((n) => {
           const id = getId(n);
           const read = isRead(n);
           const title = getTitle(n);
@@ -201,11 +256,11 @@ const Notifications = () => {
             <div
               key={id}
               className={`
-                p-5 rounded-2xl border backdrop-blur
+                p-5 rounded-2xl border
                 ${read
-                  ? "bg-white/50 dark:bg-black/25 border-border-light dark:border-border-dark"
-                  : "bg-white/75 dark:bg-black/40 border-primary-light/30 dark:border-primary-dark/30"}
-                shadow hover:shadow-lg transition
+                  ? "bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark"
+                  : "bg-card-light dark:bg-card-dark border-primary-light/30 dark:border-primary-dark/30"}
+                shadow-sm hover:shadow-lg transition
               `}
             >
               <div className="flex items-start justify-between gap-4">
@@ -221,15 +276,15 @@ const Notifications = () => {
                     >
                       {read ? "READ" : "UNREAD"}
                     </span>
-                    <p className="text-xs opacity-70">{when}</p>
+                    <p className="text-xs text-muted-light dark:text-muted-dark">{when}</p>
                   </div>
 
                   <h3 className="mt-2 text-base font-bold">{title}</h3>
-                  <p className="mt-1 text-sm opacity-80 leading-relaxed">{message}</p>
+                  <p className="mt-1 text-sm text-muted-light dark:text-muted-dark leading-relaxed">{message}</p>
 
                   {/* Optional meta (buy_request_id etc.) */}
                   {meta && (
-                    <div className="mt-3 text-xs opacity-70">
+                    <div className="mt-3 text-xs text-muted-light dark:text-muted-dark">
                       {Object.entries(meta).slice(0, 3).map(([k, v]) => (
                         <span key={k} className="mr-3">
                           <span className="font-semibold">{k}:</span> {String(v)}
@@ -245,7 +300,7 @@ const Notifications = () => {
                     disabled={working}
                     className="
                       shrink-0 px-4 py-2 rounded-xl text-sm font-semibold
-                      bg-white/70 dark:bg-black/30 backdrop-blur
+                      bg-card-light dark:bg-card-dark
                       border border-border-light dark:border-border-dark
                       hover:bg-hover-light dark:hover:bg-hover-dark transition
                       disabled:opacity-60 disabled:cursor-not-allowed
@@ -261,6 +316,57 @@ const Notifications = () => {
           );
         })}
       </div>
+
+      {!loading && filtered.length > pageSize && (
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="
+              px-3 py-1.5 rounded-lg text-sm
+              border border-border-light dark:border-border-dark
+              bg-card-light dark:bg-card-dark
+              hover:bg-hover-light dark:hover:bg-hover-dark transition
+              disabled:opacity-60 disabled:cursor-not-allowed
+            "
+          >
+            Prev
+          </button>
+
+          {Array.from({ length: totalPages }).map((_, idx) => {
+            const pageNum = idx + 1;
+            const active = pageNum === page;
+            return (
+              <button
+                key={pageNum}
+                onClick={() => setPage(pageNum)}
+                className={`
+                  px-3 py-1.5 rounded-lg text-sm font-semibold
+                  border ${active ? "border-primary-light/40 dark:border-primary-dark/40" : "border-border-light dark:border-border-dark"}
+                  ${active ? "bg-primary-light/10 dark:bg-primary-dark/20 text-primary-light dark:text-primary-dark" : "bg-card-light dark:bg-card-dark"}
+                  hover:bg-hover-light dark:hover:bg-hover-dark transition
+                `}
+              >
+                {pageNum}
+              </button>
+            );
+          })}
+
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="
+              px-3 py-1.5 rounded-lg text-sm
+              border border-border-light dark:border-border-dark
+              bg-card-light dark:bg-card-dark
+              hover:bg-hover-light dark:hover:bg-hover-dark transition
+              disabled:opacity-60 disabled:cursor-not-allowed
+            "
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 };

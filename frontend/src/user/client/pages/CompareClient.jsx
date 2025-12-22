@@ -5,7 +5,7 @@ import { useCompare } from "../../../context/CompareContext";
 
 const formatRs = (n) => {
   const num = Number(n ?? 0);
-  return `Rs. ${num.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+  return `रु. ${num.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 };
 
 const getTitle = (p) => (p?.policy_name ? p.policy_name : "Policy");
@@ -26,7 +26,7 @@ const CompareClient = () => {
   const p1 = query.get("p1");
   const p2 = query.get("p2");
 
-  const token = localStorage.getItem("client_token");
+  const token = sessionStorage.getItem("client_token");
 
   useEffect(() => {
     if (!token) {
@@ -50,7 +50,7 @@ const CompareClient = () => {
     try {
       const res = await API.get("/me", {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("client_token")}`,
+          Authorization: `Bearer ${sessionStorage.getItem("client_token")}`,
         },
       });
       setUser(res.data);
@@ -280,7 +280,7 @@ const CompareClient = () => {
         {typeMismatch && (
           <div
             className="
-              bg-red-50 dark:bg-red-900/20 
+              bg-red-50 dark:bg-red-900/20
               border border-red-200 dark:border-red-500
               text-red-700 dark:text-red-200
               p-5 rounded-2xl text-center mb-10 shadow-sm
@@ -416,8 +416,8 @@ const PolicyCard = ({
   return (
     <div
       className="
-        bg-card-light dark:bg-card-dark 
-        rounded-2xl p-6 shadow-sm 
+        bg-card-light dark:bg-card-dark
+        rounded-2xl p-6 shadow-sm
         border border-border-light dark:border-border-dark
         flex flex-col justify-between
       "
@@ -509,8 +509,8 @@ const PolicyCard = ({
         <Link
           to={detailTo}
           className="
-            text-sm font-semibold 
-            text-text-light dark:text-text-dark 
+            text-sm font-semibold
+            text-text-light dark:text-text-dark
             hover:underline
           "
         >
@@ -575,3 +575,4 @@ const ComparisonRow = ({
 };
 
 export default CompareClient;
+
