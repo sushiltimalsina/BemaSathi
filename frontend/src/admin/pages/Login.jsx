@@ -29,11 +29,11 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow p-8 space-y-6">
+    <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark px-4">
+      <div className="w-full max-w-md bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl shadow p-8 space-y-6">
         <div className="text-center space-y-1">
           <h1 className="text-2xl font-bold">Admin Login</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-muted-light dark:text-muted-dark">
             Access the BeemaSathi admin console
           </p>
         </div>
@@ -45,7 +45,7 @@ const Login = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 focus:outline-none"
+              className="w-full px-4 py-2 rounded-lg border bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark focus:outline-none"
               required
             />
           </div>
@@ -56,13 +56,13 @@ const Login = () => {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 focus:outline-none"
+              className="w-full px-4 py-2 rounded-lg border bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark focus:outline-none"
               required
             />
           </div>
 
           {error && (
-            <div className="text-sm text-red-600 bg-red-100/50 border border-red-200 rounded-lg px-3 py-2">
+            <div className="text-sm text-red-600 dark:text-red-300 bg-red-100/50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg px-3 py-2">
               {error}
             </div>
           )}

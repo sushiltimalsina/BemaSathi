@@ -43,6 +43,12 @@
             <td style="padding:8px 0; font-size:14px;"><strong>Timestamp</strong></td>
             <td style="padding:8px 0; font-size:14px;">{{ \Illuminate\Support\Carbon::parse($paidAt)->toDayDateTimeString() }}</td>
           </tr>
+          @if(!empty($nextRenewalDate))
+          <tr>
+            <td style="padding:8px 0; font-size:14px;"><strong>Next renewal</strong></td>
+            <td style="padding:8px 0; font-size:14px;">{{ \Illuminate\Support\Carbon::parse($nextRenewalDate)->toDayDateTimeString() }}</td>
+          </tr>
+          @endif
         </table>
         <p style="margin:0; font-size:14px; line-height:1.6;">Thank you for your payment.</p>
       </td>

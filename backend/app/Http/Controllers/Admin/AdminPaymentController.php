@@ -154,6 +154,20 @@ class AdminPaymentController extends Controller
                     ]);
                 }
             }
+
+            if (($payment->payment_type ?? 'new') === 'renewal') {
+                $this->notifier->notify(
+                    $payment->user,
+                    'Receipt sent',
+                    "Your renewal payment for {$policyName} was verified and the receipt has been sent to your email.",
+                    [
+                        'buy_request_id' => $payment->buy_request_id,
+                        'policy_id' => $payment->policy_id,
+                    ],
+                    'system',
+                    false
+                );
+            }
         }
 
         return response()->json([

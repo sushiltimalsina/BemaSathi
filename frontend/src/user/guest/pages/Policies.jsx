@@ -120,7 +120,7 @@ const GuestPolicies = () => {
     } else if (sortBy === "coverage_high") {
       temp.sort((a, b) => b.coverage_limit - a.coverage_limit);
     } else {
-      // "Recommended" � rough composite score
+      // "Recommended" � rough composite score
       temp.sort((a, b) => {
         const covDiff = (b.coverage_limit || 0) - (a.coverage_limit || 0);
         const premDiff = (a.premium_amt || 0) - (b.premium_amt || 0); // lower better
@@ -239,9 +239,9 @@ const GuestPolicies = () => {
           {/* FILTERS SIDEBAR */}
           <aside
             className="
-              bg-card-light dark:bg-card-dark 
-              rounded-2xl shadow-sm 
-              border border-border-light dark:border-border-dark 
+              bg-card-light dark:bg-card-dark
+              rounded-2xl shadow-sm
+              border border-border-light dark:border-border-dark
               p-4 h-fit hidden md:block
             "
           >
@@ -308,9 +308,9 @@ const GuestPolicies = () => {
                     <div
                       key={policy.id}
                       className="
-                        bg-card-light dark:bg-card-dark 
+                        bg-card-light dark:bg-card-dark
                         rounded-2xl border border-border-light dark:border-border-dark
-                        shadow-sm hover:shadow-md hover:-translate-y-[2px] 
+                        shadow-sm hover:shadow-md hover:-translate-y-[2px]
                         transition p-5 flex flex-col justify-between
                       "
                     >
@@ -345,7 +345,7 @@ const GuestPolicies = () => {
                             {isClient ? (
                               <span className="font-semibold text-green-600 dark:text-green-400 text-right">
                                 <span className="inline-flex items-center gap-1">
-                                  <span className="font-semibold">??. {clientPremium}</span>
+                                  <span className="font-semibold">रु. {clientPremium}</span>
                                 </span>
                                 <span className="block text-[10px] opacity-60">
                                   age-adjusted
@@ -354,7 +354,7 @@ const GuestPolicies = () => {
                             ) : (
                               <span className="font-semibold text-right">
                                 <span className="inline-flex items-center gap-1">
-                                  ??. {guestMin} � {guestMax}
+                                  रु. {guestMin} - {guestMax}
                                 </span>
                                 <span className="block text-[10px] opacity-60">
                                   login to see exact premium
@@ -367,7 +367,7 @@ const GuestPolicies = () => {
                           <div className="flex justify-between">
                             <span className="opacity-70">Coverage</span>
                             <span className="font-semibold">
-                              ??. {policy.coverage_limit}
+                              रु. {policy.coverage_limit}
                             </span>
                           </div>
 
@@ -405,8 +405,8 @@ const GuestPolicies = () => {
                           <button
                             onClick={() => navigate("/login")}
                             className="
-                              w-full flex items-center justify-center gap-2 text-sm font-semibold 
-                              rounded-lg py-2 
+                              w-full flex items-center justify-center gap-2 text-sm font-semibold
+                              rounded-lg py-2
                               bg-hover-light dark:bg-hover-dark
                             "
                           >
@@ -436,11 +436,11 @@ const GuestPolicies = () => {
                 })}
             </div>
 
-            {/* COMPARE FOOTER � CLIENT ONLY */}
+            {/* COMPARE FOOTER � CLIENT ONLY */}
             {isClient && selectedForCompare.length > 0 && (
               <div
                 className="
-                  mt-8 flex flex-col sm:flex-row items-center justify-between gap-3 
+                  mt-8 flex flex-col sm:flex-row items-center justify-between gap-3
                   bg-card-light dark:bg-card-dark
                   border border-border-light dark:border-border-dark
                   rounded-2xl px-4 py-3 shadow-sm

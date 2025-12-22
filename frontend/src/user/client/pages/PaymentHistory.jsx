@@ -30,8 +30,18 @@ const PaymentHistory = () => {
     loadPayments();
   }, []);
 
-  const statusBadge = (status) => {
-    const normalized = (status || "").toLowerCase();
+  const statusBadge = (payment) => {
+    if (payment?.is_verified) {
+      return (
+        <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-300">
+          <CheckCircleIcon className="w-4 h-4" /> Verified
+        </span>
+      );
+    }
+
+    const normalized = (payment?.status || "").toLowerCase();
+    const metaStatus = String(payment?.meta?.khalti_status || payment?.meta?.gateway_status || "").toLowerCase();
+    const hasFailureReason = Boolean(payment?.meta?.reason || payment?.failed_notified);
 
     if (normalized === "success" || normalized === "completed") {
       return (
@@ -41,7 +51,11 @@ const PaymentHistory = () => {
       );
     }
 
-    if (normalized === "failed") {
+    if (
+      ["failed", "failure", "cancelled", "canceled", "rejected", "error"].includes(normalized) ||
+      (metaStatus && metaStatus !== "completed") ||
+      hasFailureReason
+    ) {
       return (
         <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
           <XCircleIcon className="w-4 h-4" /> Failed
@@ -49,11 +63,7 @@ const PaymentHistory = () => {
       );
     }
 
-    return (
-      <span className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400">
-        <ClockIcon className="w-4 h-4" /> Pending
-      </span>
-    );
+    return <span className="text-xs text-muted-light dark:text-muted-dark">—</span>;
   };
 
   if (loading)
@@ -125,7 +135,7 @@ const PaymentHistory = () => {
                 </td>
 
                 <td className="px-4 py-3">
-                  {statusBadge(p.status)}
+                  {statusBadge(p)}
                 </td>
 
                 <td className="px-4 py-3">

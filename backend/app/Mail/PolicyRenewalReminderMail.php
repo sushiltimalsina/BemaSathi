@@ -20,6 +20,9 @@ class PolicyRenewalReminderMail extends Mailable
         $this->buyRequest->loadMissing('user', 'policy');
         $frontend = rtrim(env('APP_FRONTEND_URL', config('app.url')), '/');
 
+        $renewPath = '/client/payment?request=' . $this->buyRequest->id;
+        $renewalUrl = $frontend . '/login?redirect=' . rawurlencode($renewPath);
+
         return $this->subject('Policy Renewal Reminder')
             ->view('emails.policy-renewal-reminder')
             ->with([
@@ -29,7 +32,7 @@ class PolicyRenewalReminderMail extends Mailable
                 'renewalDate' => $this->buyRequest->next_renewal_date,
                 'amount' => $this->buyRequest->cycle_amount,
                 'billingCycle' => $this->buyRequest->billing_cycle ?? 'yearly',
-                'renewalUrl' => $frontend . '/client/payment?buy_request_id=' . $this->buyRequest->id,
+                'renewalUrl' => $renewalUrl,
             ]);
     }
 }

@@ -28,6 +28,7 @@ class PaymentSuccessMail extends Mailable
         $paidAt = $this->payment->verified_at ?? $this->payment->paid_at ?? now();
         $receiptNumber = 'RCPT-' . str_pad((string) $this->payment->id, 6, '0', STR_PAD_LEFT);
         $policyNumber = $this->resolvePolicyNumber();
+        $nextRenewalDate = $this->payment->buyRequest?->next_renewal_date;
 
         $pdf = Pdf::loadView('pdfs.payment-receipt', [
             'receiptNumber' => $receiptNumber,
@@ -41,6 +42,7 @@ class PaymentSuccessMail extends Mailable
             'billingCycle' => $billingCycle,
             'userName' => $user?->name ?? 'Customer',
             'userEmail' => $user?->email,
+            'nextRenewalDate' => $nextRenewalDate,
         ]);
 
         return $this->subject('Payment Successful - Receipt')
@@ -54,6 +56,7 @@ class PaymentSuccessMail extends Mailable
                 'amount' => $this->payment->amount,
                 'transactionId' => $transactionId,
                 'paidAt' => $paidAt,
+                'nextRenewalDate' => $nextRenewalDate,
             ])
             ->attachData($pdf->output(), "receipt-{$receiptNumber}.pdf", [
                 'mime' => 'application/pdf',

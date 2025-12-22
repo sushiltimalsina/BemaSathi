@@ -33,6 +33,12 @@
     <tr><td class="label">Policy</td><td>{{ $policyName }}</td></tr>
     <tr><td class="label">Company</td><td>{{ $companyName }}</td></tr>
     <tr><td class="label">Billing cycle</td><td>{{ ucfirst(str_replace('_', ' ', $billingCycle)) }}</td></tr>
+    @if(!empty($nextRenewalDate))
+    <tr>
+      <td class="label">Next renewal</td>
+      <td>{{ \Illuminate\Support\Carbon::parse($nextRenewalDate)->toDayDateTimeString() }}</td>
+    </tr>
+    @endif
   </table>
 
   <div class="section-title">Payer</div>
