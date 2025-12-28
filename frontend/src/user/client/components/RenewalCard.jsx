@@ -165,9 +165,9 @@ const RenewalCard = ({ request }) => {
           disabled={!isRenewable}
           className="
             w-full py-3 rounded-xl font-semibold text-white 
-            bg-gradient-to-r from-primary-light to-primary-dark
+            bg-linear-to-r from-primary-light to-primary-dark
             shadow-[0_8px_20px_rgba(0,0,0,0.15)]
-            hover:translate-y-[-1px] hover:shadow-[0_12px_28px_rgba(0,0,0,0.22)]
+            hover:-translate-y-px hover:shadow-[0_12px_28px_rgba(0,0,0,0.22)]
             active:translate-y-0
             transition
             disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none
