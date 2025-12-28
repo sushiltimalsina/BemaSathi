@@ -122,7 +122,7 @@ const RenewalCard = ({ request }) => {
         {/* BILLING CYCLE */}
         <div className="flex justify-between">
           <span className="flex items-center gap-2 opacity-75">
-            <ClockIcon className="w-4 h-4" />
+            <ClockIcon className="w-4 h-4"/>
             Billing Cycle:
           </span>
           <span className="font-semibold capitalize">{cycle}</span>
