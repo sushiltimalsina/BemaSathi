@@ -55,7 +55,11 @@ const AgentInquiryList = () => {
 
     try {
       await API.post(`/admin/agent-inquiries/${item.id}/notify`);
-      load();
+      setItems((prev) =>
+        prev.map((row) =>
+          row.id === item.id ? { ...row, notified_at: new Date().toISOString() } : row
+        )
+      );
       addToast({ type: "success", title: "Agent notified" });
     } catch (e) {
       addToast({

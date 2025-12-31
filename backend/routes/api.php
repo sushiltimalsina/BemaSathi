@@ -3,12 +3,12 @@
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BuyRequestController;
 use App\Http\Controllers\PolicyController;
 use App\Http\Controllers\ComparisonController;
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\AdminAuthController;
-use App\Http\Controllers\BuyRequestController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\RecommendationController;
@@ -21,7 +21,9 @@ use App\Http\Controllers\Admin\AdminAuditController;
 use App\Http\Controllers\Admin\AdminSettingsController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AdminSupportController;
+use App\Http\Controllers\Admin\AdminAgentInquiryController;
 use App\Http\Controllers\SupportController;
+use App\Http\Controllers\AgentInquiryController;
 
 // Admin Controllers
 use App\Http\Controllers\Admin\AdminPolicyController;
@@ -104,10 +106,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // User: Comparison
     Route::post('/compare', [ComparisonController::class, 'compare']);
-
-    Route::post('/buy', [BuyRequestController::class, 'store']);
     Route::get('/my-requests', [BuyRequestController::class, 'userRequests']);
+    Route::post('/buy', [BuyRequestController::class, 'store']);
     Route::post('/buy/preview', [BuyRequestController::class, 'preview']);
+
 
 
     // Payments (authenticated creation and view)
@@ -135,6 +137,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/support/{ticket}', [SupportController::class, 'show']);
     Route::post('/support/{ticket}/mark-seen', [SupportController::class, 'markSeen']);
     Route::post('/support/{ticket}/reply', [SupportController::class, 'reply']);
+
+    // Agent inquiries (Client)
+    Route::post('/agent-inquiries', [AgentInquiryController::class, 'store']);
 
 
 
@@ -215,15 +220,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/inquiries/{inquiry}', [AdminInquiryController::class, 'show']);
         Route::delete('/inquiries/{inquiry}', [AdminInquiryController::class, 'destroy']);
 
-        /*
-        |-------------------------
-        | Buy Requests (Admin Only)
-        |-------------------------
-        */
-        Route::get('/buy-requests',                 [AdminBuyRequestController::class, 'index']);
-        Route::get('/buy-requests/{buyRequest}',    [AdminBuyRequestController::class, 'show']);
-        Route::put('/buy-requests/{buyRequest}',    [AdminBuyRequestController::class, 'update']);
-        Route::delete('/buy-requests/{buyRequest}', [AdminBuyRequestController::class, 'destroy']);
         // KYC (Admin Only)
         Route::get('/kyc', [KycController::class, 'index']);
         Route::patch('/kyc/{id}/status', [KycController::class, 'updateStatus']);
@@ -238,6 +234,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/renewals/{buyRequest}/notify', [AdminRenewalController::class, 'notify']);
         Route::get('/payments', [AdminPaymentController::class, 'index']);
         Route::post('/payments/{payment}/verify', [AdminPaymentController::class, 'verify']);
+        Route::get('/agent-inquiries', [AdminAgentInquiryController::class, 'index']);
+        Route::post('/agent-inquiries/{agentInquiry}/notify', [AdminAgentInquiryController::class, 'notify']);
+
+        /*
+        |-------------------------
+        | Buy Requests (Admin Only)
+        |-------------------------
+        */
+        Route::get('/buy-requests',                 [AdminBuyRequestController::class, 'index']);
+        Route::get('/buy-requests/{buyRequest}',    [AdminBuyRequestController::class, 'show']);
+        Route::put('/buy-requests/{buyRequest}',    [AdminBuyRequestController::class, 'update']);
+        Route::delete('/buy-requests/{buyRequest}', [AdminBuyRequestController::class, 'destroy']);
 
         /*
         |-------------------------

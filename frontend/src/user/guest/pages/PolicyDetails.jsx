@@ -9,6 +9,8 @@ import {
   UserIcon,
   CheckCircleIcon,
   ArrowsRightLeftIcon,
+  BookmarkIcon,
+  BookmarkSlashIcon,
 } from "@heroicons/react/24/outline";
 
 const PolicyDetails = () => {
@@ -18,8 +20,8 @@ const PolicyDetails = () => {
 
   const [policy, setPolicy] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [agent, setAgent] = useState(null);
-  const [kycStatus, setKycStatus] = useState("checking");
+  const [saved, setSaved] = useState(false);
+  const [kycStatus, setKycStatus] = useState(null);
 
   const token = localStorage.getItem("client_token");
   const isClient = !!token;
@@ -34,6 +36,22 @@ const PolicyDetails = () => {
   useEffect(() => {
     fetchPolicy();
   }, [id]);
+
+  useEffect(() => {
+    const loadKyc = async () => {
+      if (!isClient) return;
+      try {
+        const res = await API.get("/kyc/me");
+        const list = res.data?.data || [];
+        setKycStatus(list?.[0]?.status || "not_submitted");
+      } catch (err) {
+        console.error("KYC fetch failed", err);
+        setKycStatus(null);
+      }
+    };
+
+    loadKyc();
+  }, [isClient]);
 
   // If user is logged in but no owned request passed, check if they already bought this policy.
   useEffect(() => {
@@ -56,38 +74,27 @@ const PolicyDetails = () => {
     checkOwned();
   }, [id, isClient, ownedRequestId]);
 
-  // Fetch KYC status for logged-in users so we can gate buying
   useEffect(() => {
-    const loadKyc = async () => {
+    const loadSaved = async () => {
       if (!isClient) return;
       try {
-        const res = await API.get("/kyc/me");
-        const kyc = res.data?.data;
-        const status = Array.isArray(kyc)
-          ? kyc[0]?.status
-          : kyc?.status;
-        setKycStatus(status || "not_submitted");
+        const res = await API.get("/saved");
+        const ids =
+          Array.isArray(res.data) && res.data.length
+            ? res.data.map((s) => String(s.policy_id))
+            : [];
+        setSaved(ids.includes(String(id)));
       } catch (err) {
-        console.error("KYC fetch failed", err);
-        setKycStatus("not_submitted");
+        console.error("Saved fetch failed", err);
       }
     };
-    loadKyc();
-  }, [isClient]);
+    loadSaved();
+  }, [id, isClient]);
 
   const fetchPolicy = async () => {
     try {
       const res = await API.get(`/policies/${id}`);
       setPolicy(res.data);
-
-      if (res.data.agent_id) {
-        try {
-          const agentRes = await API.get(`/agents/${res.data.agent_id}`);
-          setAgent(agentRes.data);
-        } catch (e) {
-          console.error("Agent fetch failed", e);
-        }
-      }
     } catch (err) {
       console.error(err);
       setPolicy(null);
@@ -120,28 +127,42 @@ const PolicyDetails = () => {
   const clientPremium =
     policy.personalized_premium ?? policy.premium_amt ?? guestMin;
 
-  const handleBuyClick = () => {
-    if (!isClient) {
-      navigate("/login");
-      return;
-    }
-    if (kycStatus !== "approved") {
-      navigate("/client/kyc");
-      return;
-    }
-    navigate(`/client/buy?policy=${policy.id}`);
-  };
-
   const handleRenewClick = () => {
     if (!isClient) {
       navigate("/login");
       return;
     }
-    if (!ownedRequestId) {
-      handleBuyClick();
+    navigate(`/client/payment?request=${ownedRequestId}`);
+  };
+
+  const handleBuyClick = () => {
+    if (!isClient) {
+      navigate("/login");
       return;
     }
-    navigate(`/client/payment?request=${ownedRequestId}`);
+    if (kycStatus && kycStatus !== "approved") {
+      navigate(`/client/kyc?policy=${policy.id}`);
+      return;
+    }
+    navigate(`/client/buy?policy=${policy.id}`);
+  };
+
+  const toggleSave = async () => {
+    if (!isClient) {
+      navigate("/login");
+      return;
+    }
+    try {
+      if (saved) {
+        await API.delete(`/saved/${policy.id}`);
+        setSaved(false);
+      } else {
+        await API.post("/saved", { policy_id: policy.id });
+        setSaved(true);
+      }
+    } catch (err) {
+      console.error("Save toggle failed", err);
+    }
   };
 
   return (
@@ -244,6 +265,23 @@ const PolicyDetails = () => {
                   </div>
                 </div>
               )}
+
+              <button
+                onClick={toggleSave}
+                className="mt-4 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-border-light dark:border-border-dark text-xs font-semibold hover:bg-hover-light dark:hover:bg-hover-dark transition"
+              >
+                {saved ? (
+                  <>
+                    <BookmarkSlashIcon className="w-4 h-4 text-red-500" />
+                    Saved
+                  </>
+                ) : (
+                  <>
+                    <BookmarkIcon className="w-4 h-4" />
+                    Save Policy
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -273,59 +311,23 @@ const PolicyDetails = () => {
               Trusted company with solid customer support.
             </li>
 
-            {agent && (
-              <li className="flex items-center gap-2">
-                <UserIcon className="w-5 h-5 text-primary-light dark:text-primary-dark" />
-                Dedicated agent support available.
-              </li>
-            )}
           </ul>
         </div>
 
-        {/* AGENT SECTION (CLIENT ONLY) */}
-        {isClient && agent && (
-          <div className="
-            bg-card-light dark:bg-card-dark 
-            rounded-2xl p-8 shadow-sm 
-            border border-border-light dark:border-border-dark 
-            mb-10
-          ">
-            <h2 className="text-xl font-bold mb-4">Assigned Agent</h2>
-
-            <div className="flex items-center gap-4">
-              <div className="
-                w-14 h-14 rounded-full flex items-center justify-center 
-                bg-primary-light/20 
-                text-primary-light dark:text-primary-dark
-                font-bold text-xl
-              ">
-                {agent.name.charAt(0)}
-              </div>
-
-              <div className="flex-1">
-                <p className="font-semibold">{agent.name}</p>
-                <p className="text-sm opacity-80">Phone: {agent.phone}</p>
-                <p className="text-sm opacity-80">Email: {agent.email}</p>
-              </div>
-
-              <button
-                onClick={() => navigate(`/client/agent?policy=${policy.id}`)}
-                className="
-                  px-5 py-2 rounded-lg 
-                  bg-primary-light text-white text-sm font-semibold 
-                  hover:opacity-90 transition
-                "
-              >
-                View More
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* ACTION BUTTONS */}
         <div className="flex flex-col sm:flex-row gap-4">
-
-          {/* VIEW AGENT */}
+          {!isOwned && (
+            <button
+              onClick={handleBuyClick}
+              className="
+                flex-1 px-5 py-3 rounded-lg
+                bg-primary-light text-white font-semibold
+                hover:opacity-90 transition
+              "
+            >
+              Buy / Request
+            </button>
+          )}
           <button
             onClick={() =>
               isClient
@@ -363,21 +365,18 @@ const PolicyDetails = () => {
             Compare with another policy
           </button>
 
-          {/* PRIMARY ACTION: BUY or RENEW */}
-          <button
-            onClick={isOwned ? handleRenewClick : handleBuyClick}
-            className="
-              flex-1 px-5 py-3 rounded-lg
-              bg-primary-light text-white font-semibold
-              hover:opacity-90 transition
-            "
-          >
-            {isOwned
-              ? "Renew Now"
-              : isClient
-              ? "Buy / Request Callback"
-              : "Login to buy"}
-          </button>
+          {isOwned && (
+            <button
+              onClick={handleRenewClick}
+              className="
+                flex-1 px-5 py-3 rounded-lg
+                bg-primary-light text-white font-semibold
+                hover:opacity-90 transition
+              "
+            >
+              Renew Now
+            </button>
+          )}
         </div>
       </div>
     </div>

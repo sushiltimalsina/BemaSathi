@@ -17,20 +17,13 @@ class BuyRequestSubmittedMail extends Mailable
 
     public function build()
     {
-        $this->buyRequest->loadMissing('policy', 'user');
         $frontend = rtrim(env('APP_FRONTEND_URL', config('app.url')), '/');
-
-        $policyName = $this->buyRequest->policy?->policy_name ?? 'your policy';
-        $companyName = $this->buyRequest->policy?->company_name ?? 'Insurance Company';
 
         return $this->subject('Your Buy Request Has Been Submitted Successfully')
             ->view('emails.buy-request-submitted')
             ->with([
-                'name' => $this->buyRequest->user?->name ?? $this->buyRequest->name,
-                'policyName' => $policyName,
-                'companyName' => $companyName,
-                'billingCycle' => $this->buyRequest->billing_cycle ?? 'yearly',
-                'amount' => $this->buyRequest->cycle_amount ?? $this->buyRequest->calculated_premium,
+                'userName' => $this->buyRequest->name ?? $this->buyRequest->user?->name,
+                'policyName' => $this->buyRequest->policy?->policy_name,
                 'paymentUrl' => $frontend . '/client/payment?buy_request_id=' . $this->buyRequest->id,
             ]);
     }

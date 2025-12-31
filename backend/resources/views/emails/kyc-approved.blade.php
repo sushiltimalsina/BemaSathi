@@ -12,12 +12,12 @@
       <td style="background:#ffffff; padding:28px 30px;">
         <p style="margin:0 0 12px; font-size:16px;">Hi <strong>{{ $name ?? 'there' }}</strong>,</p>
         <p style="margin:0 0 16px; font-size:14px; line-height:1.6;">
-          Your KYC documents have been approved. You can now select policies and submit buy requests.
+          Your KYC documents have been approved. You can now explore available policies and submit a buy request.
         </p>
         <p style="margin:0 0 8px; font-size:14px; font-weight:bold;">Next steps</p>
         <ul style="margin:0 0 16px 18px; padding:0; font-size:14px; line-height:1.6;">
           <li>Explore policies: <a href="{{ $policiesUrl }}" style="color:#0f62fe;">Browse Policies</a></li>
-          <li>Submit a buy request: <a href="{{ $buyUrl }}" style="color:#0f62fe;">Start Request</a></li>
+          <li>Select a policy and submit your buy request.</li>
         </ul>
         <p style="margin:0; font-size:14px; line-height:1.6;">Thank you for completing verification.</p>
       </td>

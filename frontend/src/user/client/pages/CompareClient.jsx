@@ -539,7 +539,7 @@ const PolicyCard = ({
           </Link>
         ) : (
           <Link
-            to={`/client/buy?policy=${policy.id}`}
+          to={`/client/buy?policy=${policy.id}`}
             className="
               px-4 py-2 rounded-lg text-sm font-semibold
               bg-primary-light text-white hover:opacity-90 shadow

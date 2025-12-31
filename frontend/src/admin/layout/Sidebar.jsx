@@ -23,6 +23,7 @@ const navItems = [
   { name: "Renewals", path: "/admin/renewals", icon: ArrowPathIcon },
   { name: "Payments", path: "/admin/payments", icon: BanknotesIcon },
   { name: "Users", path: "/admin/users", icon: UserGroupIcon },
+  { name: "Agent Inquiries", path: "/admin/agent-inquiries", icon: ClipboardDocumentListIcon },
   { name: "Notifications", path: "/admin/notifications", icon: BellIcon },
   { name: "Reports", path: "/admin/reports", icon: ChartBarSquareIcon },
   { name: "Audit Log", path: "/admin/audit", icon: ClipboardDocumentListIcon },
@@ -32,7 +33,7 @@ const navItems = [
 
 const Sidebar = () => {
   return (
-    <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col">
+    <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col min-h-0">
       {/* Brand */}
       <div className="h-16 flex items-center px-6 border-b border-slate-200 dark:border-slate-800">
         <span className="text-xl font-bold text-primary-light dark:text-primary-dark">
@@ -41,7 +42,7 @@ const Sidebar = () => {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-4 py-4 space-y-1">
+      <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
         {navItems.map((item) => (
           <NavLink
             key={item.name}

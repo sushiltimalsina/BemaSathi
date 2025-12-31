@@ -111,7 +111,7 @@ const KycPage = () => {
   // Redirect only when approved and a policy redirect is present
   useEffect(() => {
     if (!redirectPolicyId) return;
-    if (latestKyc?.status === "approved") {
+    if (latestKyc?.status === "approved" && !latestKyc?.allow_edit) {
       navigate(`/client/buy?policy=${redirectPolicyId}`, { replace: true });
     }
   }, [latestKyc?.status, redirectPolicyId, navigate]);

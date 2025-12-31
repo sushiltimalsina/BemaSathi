@@ -23,6 +23,7 @@ import AuditLog from "./admin/audit/AuditLog";
 import Settings from "./admin/settings/Settings";
 import SupportList from "./admin/support/SupportList";
 import SupportView from "./admin/support/SupportView";
+import AgentInquiryList from "./admin/agent-inquiries/AgentInquiryList";
 
 /* -------- Guest Pages -------- */
 import Home from "./user/guest/pages/Home";
@@ -43,8 +44,8 @@ import ClientPolicies from "./user/client/pages/AllPolicies";
 import ClientSaved from "./user/client/pages/SavedPolicies";
 import ClientCompare from "./user/client/pages/CompareClient";
 import ClientAgent from "./user/client/pages/AgentDetails";
-import ClientBuy from "./user/client/pages/BuyRequest";
 import KycPage from "./user/client/pages/KycPage";
+import ClientBuy from "./user/client/pages/BuyRequest";
 import PaymentPage from "./user/client/pages/Payment";
 import PaymentSuccess from "./user/client/pages/PaymentSuccess";
 import PaymentFailure from "./user/client/pages/PaymentFailure";
@@ -304,6 +305,7 @@ const AppRoutes = () => {
         <Route path="settings" element={<Settings />} />
         <Route path="support" element={<SupportList />} />
         <Route path="support/:id" element={<SupportView />} />
+        <Route path="agent-inquiries" element={<AgentInquiryList />} />
       </Route>
     </Routes>
   );

@@ -232,7 +232,7 @@ const Home = () => {
             {[
               { step: "Step 1", title: "Choose Insurance Type", desc: "Select Health, Term Life, or Whole Life to start." },
               { step: "Step 2", title: "View & Compare Policies", desc: "Compare two policies side-by-side." },
-              { step: "Step 3", title: "Connect & Buy", desc: "View agent details or submit a buy request." },
+              { step: "Step 3", title: "Request Policy", desc: "Submit a buy request after KYC approval." },
             ].map((s, i) => (
               <div
                 key={i}

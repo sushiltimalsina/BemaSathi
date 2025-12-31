@@ -24,7 +24,6 @@ class KycApprovedMail extends Mailable
             ->with([
                 'name' => $this->user->name,
                 'policiesUrl' => $frontend . '/client/policies',
-                'buyUrl' => $frontend . '/client/buy-request',
             ]);
     }
 }
