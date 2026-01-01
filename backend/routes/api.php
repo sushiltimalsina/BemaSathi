@@ -107,6 +107,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // User: Comparison
     Route::post('/compare', [ComparisonController::class, 'compare']);
     Route::get('/my-requests', [BuyRequestController::class, 'userRequests']);
+    Route::get('/buy-requests/{buyRequest}', [BuyRequestController::class, 'show']);
     Route::post('/buy', [BuyRequestController::class, 'store']);
     Route::post('/buy/preview', [BuyRequestController::class, 'preview']);
 

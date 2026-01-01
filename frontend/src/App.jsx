@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, useLocation } from "react-router-dom";
 import AppRoutes from "./routes";
 
 // Providers
@@ -12,6 +12,29 @@ import { CompareProvider } from "./context/CompareContext";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import CompareBar from "./user/client/components/CompareBar";
+
+const AppShell = () => {
+  const location = useLocation();
+  const hideGlobalFooter =
+    location.pathname.startsWith("/client") ||
+    location.pathname.startsWith("/admin");
+
+  return (
+    <>
+      {/* Global Navbar */}
+      <Navbar />
+
+      {/* Client compare bar */}
+      <CompareBar />
+
+      {/* Routes */}
+      <AppRoutes />
+
+      {/* Global Footer */}
+      {!hideGlobalFooter && <Footer />}
+    </>
+  );
+};
 
 const AppFrame = () => {
   return (
@@ -26,17 +49,7 @@ const AppFrame = () => {
       <ToastProvider>
         <AdminAuthProvider>
           <BrowserRouter>
-            {/* Global Navbar */}
-            <Navbar />
-
-            {/* Client compare bar */}
-            <CompareBar />
-
-            {/* Routes */}
-            <AppRoutes />
-
-            {/* Footer */}
-            <Footer />
+            <AppShell />
           </BrowserRouter>
         </AdminAuthProvider>
       </ToastProvider>

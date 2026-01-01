@@ -104,8 +104,8 @@ const PaymentPage = () => {
 
   const loadRequestByBuyRequest = async (reqId) => {
     try {
-        const res = await API.get("/my-requests");
-        const req = res.data.find((r) => r.id === Number(reqId));
+      const res = await API.get(`/buy-requests/${reqId}`);
+      const req = res.data?.data || res.data;
 
       if (!req) {
         setError("Request not found.");
@@ -113,8 +113,8 @@ const PaymentPage = () => {
         return;
       }
 
-        setBuyRequest(req);
-        setPolicy(req.policy);
+      setBuyRequest(req);
+      setPolicy(req.policy || null);
     } catch (err) {
       console.error(err);
       setError("Unable to load payment details.");
@@ -225,10 +225,10 @@ const PaymentPage = () => {
       <div className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow p-6 mb-8">
         <div className="flex items-center gap-3 mb-4">
           <ShieldCheckIcon className="w-7 h-7 text-primary-light dark:text-primary-dark" />
-          <h2 className="text-xl font-bold">{policy.policy_name}</h2>
+          <h2 className="text-xl font-bold">{policy?.policy_name || "Policy"}</h2>
         </div>
 
-        <p className="text-sm opacity-80 mb-2">Company: {policy.company_name}</p>
+        <p className="text-sm opacity-80 mb-2">Company: {policy?.company_name || "-"}</p>
 
         <div className="mt-4 p-4 rounded-lg bg-hover-light dark:bg-hover-dark border border-border-light dark:border-border-dark">
           <p className="text-sm">Amount to Pay Now:</p>
@@ -262,107 +262,104 @@ const PaymentPage = () => {
 
       {/* PAY BUTTON */}
       <div className="grid gap-3 sm:grid-cols-2">
-         <button
-                  type="button"
-                  disabled={payingEsewa || kycStatus !== "approved"}
-                  onClick={handlePayNow}
-                  className={`
-                    relative group w-full py-3 px-5 rounded-2xl font-semibold overflow-hidden
-                    flex items-center justify-center gap-3
-                    transition-all duration-300 active:scale-95
+        <button
+          type="button"
+          disabled={paying}
+          onClick={handlePayment}
+          className={`
+            relative group w-full py-3 px-5 rounded-2xl font-semibold overflow-hidden
+            flex items-center justify-center gap-3
+            transition-all duration-300 active:scale-95
 
-                    ${payingEsewa
-                      ? "cursor-not-allowed opacity-60"
-                      : "cursor-pointer"
-                    }
-                  `}
-                >
+            ${paying
+              ? "cursor-not-allowed opacity-60"
+              : "cursor-pointer"
+            }
+          `}
+        >
+          {/* Gradient Border Layer */}
+          <span className="absolute inset-0 rounded-2xl bg-linear-to-br from-[#3CB043] via-[#49d157] to-[#2f8a37] p-0.5 group-hover:from-[#49d157] group-hover:to-[#3CB043] transition-all duration-500"></span>
 
-                  {/* Gradient Border Layer */}
-                  <span className="absolute inset-0 rounded-2xl bg-linear-to-br from-[#3CB043] via-[#49d157] to-[#2f8a37] p-0.5 group-hover:from-[#49d157] group-hover:to-[#3CB043] transition-all duration-500"></span>
+          {/* Inner Glass Card */}
+          <span className="
+            absolute inset-0.5 rounded-2xl 
+            bg-white/10 dark:bg-black/20 
+            backdrop-blur-xl 
+            shadow-[0_8px_20px_rgba(0,0,0,0.3)]
+            group-hover:shadow-[0_12px_28px_rgba(0,0,0,0.45)]
+            transition-all duration-300
+          ">
+            <img
+              src="/esewa.png"
+              alt="eSewa"
+              className="h z-100 opacity-10"
+            />
+          </span>
 
-                  {/* Inner Glass Card */}
-                  <span className="
-                    absolute inset-0.5 rounded-2xl 
-                    bg-white/10 dark:bg-black/20 
-                    backdrop-blur-xl 
-                    shadow-[0_8px_20px_rgba(0,0,0,0.3)]
-                    group-hover:shadow-[0_12px_28px_rgba(0,0,0,0.45)]
-                    transition-all duration-300
-                  ">
-                    <img
-                      src="/esewa.png"
-                      alt="eSewa"
-                      className="h z-100 opacity-10"
-                    />
-                  </span>
+          {/* Text */}
+          <span className="relative z-10 text-base tracking-wide text-black dark:text-white">
+            {paying ? "Processing..." : "Pay via eSewa"}
+          </span>
 
-                  {/* Text */}
-                  <span className="relative z-10 text-base tracking-wide text-black dark:text-white">
-                    {payingEsewa ? "Processing..." : "Pay via eSewa"}
-                  </span>
+          {/* Glow Pulse */}
+          {!paying && (
+            <span className="
+              absolute inset-0 rounded-2xl
+              bg-[#3CB043]/40 blur-xl opacity-0 
+              group-hover:opacity-50 transition duration-500
+            "></span>
+          )}
+        </button>
 
-                  {/* Glow Pulse */}
-                  {!payingEsewa && (
-                    <span className="
-                      absolute inset-0 rounded-2xl
-                      bg-[#3CB043]/40 blur-xl opacity-0 
-                      group-hover:opacity-50 transition duration-500
-                    "></span>
-                  )}
-                </button>
+        {/* ==================== Khalti Ultra Premium Button ==================== */}
+        <button
+          type="button"
+          disabled={paying}
+          onClick={handleKhaltiPayment}
+          className={`
+            relative group w-full py-3 px-5 rounded-2xl font-semibold overflow-hidden
+            flex items-center justify-center gap-3
+            transition-all duration-300 active:scale-95
 
+            ${paying
+              ? "cursor-not-allowed opacity-60"
+              : "cursor-pointer"
+            }
+          `}
+        >
+          {/* Gradient Border Layer */}
+          <span className="absolute inset-0 rounded-2xl bg-linear-to-br from-[#8B0000] via-[#a30f0f] to-[#600000] p-0.5 group-hover:from-[#a30f0f] group-hover:to-[#8B0000] transition-all duration-500"></span>
 
-                {/* ==================== Khalti Ultra Premium Button ==================== */}
-                <button
-                  type="button"
-                  disabled={payingKhalti || kycStatus !== "approved"}
-                  onClick={handlePayKhalti}
-                  className={`
-                    relative group w-full py-3 px-5 rounded-2xl font-semibold overflow-hidden
-                    flex items-center justify-center gap-3
-                    transition-all duration-300 active:scale-95
+          {/* Inner Glass Card */}
+          <span className="
+            absolute inset-0.5 rounded-2xl 
+            bg-white/10 dark:bg-black/20 
+            backdrop-blur-xl 
+            shadow-[0_8px_20px_rgba(0,0,0,0.3)]
+            group-hover:shadow-[0_12px_28px_rgba(0,0,0,0.45)]
+            transition-all duration-300
+          ">
+            <img
+              src="/khalti.png"
+              alt="Khalti"
+              className="relative z-10 opacity-10"
+            />
+          </span>
 
-                    ${payingKhalti
-                      ? "cursor-not-allowed opacity-60"
-                      : "cursor-pointer"
-                    }
-                  `}
-                >
+          {/* Text */}
+          <span className="relative z-10 text-base tracking-wide text-black dark:text-white">
+            {paying ? "Processing..." : "Pay via Khalti"}
+          </span>
 
-                  {/* Gradient Border Layer */}
-                  <span className="absolute inset-0 rounded-2xl bg-linear-to-br from-[#8B0000] via-[#a30f0f] to-[#600000] p-0.5 group-hover:from-[#a30f0f] group-hover:to-[#8B0000] transition-all duration-500"></span>
-
-                  {/* Inner Glass Card */}
-                  <span className="
-                    absolute inset-0.5 rounded-2xl 
-                    bg-white/10 dark:bg-black/20 
-                    backdrop-blur-xl 
-                    shadow-[0_8px_20px_rgba(0,0,0,0.3)]
-                    group-hover:shadow-[0_12px_28px_rgba(0,0,0,0.45)]
-                    transition-all duration-300
-                  ">
-                    <img
-                      src="/khalti.png"
-                      alt="Khalti"
-                      className="relative z-10 opacity-10"
-                    />
-                  </span>
-
-                  {/* Text */}
-                  <span className="relative z-10 text-base tracking-wide text-black dark:text-white">
-                    {payingKhalti ? "Processing..." : "Pay via Khalti"}
-                  </span>
-
-                  {/* Glow Pulse */}
-                  {!payingKhalti && (
-                    <span className="
-                      absolute inset-0 rounded-2xl
-                      bg-[#8B0000]/35 blur-xl opacity-0 
-                      group-hover:opacity-50 transition duration-500
-                    "></span>
-                  )}
-                </button>
+          {/* Glow Pulse */}
+          {!paying && (
+            <span className="
+              absolute inset-0 rounded-2xl
+              bg-[#8B0000]/35 blur-xl opacity-0 
+              group-hover:opacity-50 transition duration-500
+            "></span>
+          )}
+        </button>
 
       </div>
     </div>

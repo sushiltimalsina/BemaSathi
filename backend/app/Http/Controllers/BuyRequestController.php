@@ -111,6 +111,20 @@ class BuyRequestController extends Controller
         return response()->json($requests);
     }
 
+    /**
+     * Get a specific buy request for the authenticated user.
+     */
+    public function show(Request $request, BuyRequest $buyRequest)
+    {
+        if ($buyRequest->user_id !== $request->user()?->id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $buyRequest->load('policy');
+
+        return response()->json($buyRequest);
+    }
+
     private function calculateBillingInterval(string $cycle, float $basePremium): array
     {
         return match ($cycle) {
