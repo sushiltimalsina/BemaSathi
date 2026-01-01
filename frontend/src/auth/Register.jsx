@@ -12,9 +12,11 @@ const Register = () => {
     email: "",
     address: "",
     password: "",
+    confirm_password: "",
     dob: "",
     budget_range: "",
     coverage_type: "individual",
+    family_members: "1",
     is_smoker: "0",
     pre_existing_conditions: [],
   });
@@ -22,6 +24,42 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [confirmError, setConfirmError] = useState("");
+
+  const validateEmail = (value) => {
+    if (!value) return "";
+    const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+    return ok ? "" : "Enter a valid email address.";
+  };
+
+  const validatePhone = (value) => {
+    if (!value) return "";
+    const ok = /^9[0-9]{9}$/.test(value);
+    return ok ? "" : "Enter a valid 10-digit phone number starting with 9.";
+  };
+
+  const passwordRules = (value) => {
+    if (!value || value.length < 8) return "Password must be at least 8 characters.";
+    if (!/[A-Z]/.test(value)) return "Password must include an uppercase letter.";
+    if (!/[a-z]/.test(value)) return "Password must include a lowercase letter.";
+    if (!/[0-9]/.test(value)) return "Password must include a number.";
+    if (!/[^A-Za-z0-9]/.test(value)) return "Password must include a symbol.";
+    return "";
+  };
+
+  const validatePasswords = (nextForm) => {
+    const pwdError = passwordRules(nextForm.password);
+    setPasswordError(pwdError);
+    const confirmMsg =
+      nextForm.confirm_password && nextForm.confirm_password !== nextForm.password
+        ? "Passwords do not match."
+        : "";
+    setConfirmError(confirmMsg);
+    return !pwdError && !confirmMsg;
+  };
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -30,9 +68,33 @@ const Register = () => {
     setSuccess("");
 
     try {
+      const phoneMsg = validatePhone(form.phone);
+      setPhoneError(phoneMsg);
+      if (phoneMsg) {
+        setLoading(false);
+        return;
+      }
+
+      const emailMsg = validateEmail(form.email);
+      setEmailError(emailMsg);
+      if (emailMsg) {
+        setLoading(false);
+        return;
+      }
+
+      const ok = validatePasswords(form);
+      if (!ok) {
+        setLoading(false);
+        return;
+      }
+
       const payload = {
         ...form,
         is_smoker: form.is_smoker === "1",
+        family_members:
+          form.coverage_type === "family"
+            ? Number(form.family_members || 2)
+            : 1,
       };
 
       const res = await API.post("/register", payload);
@@ -52,8 +114,8 @@ const Register = () => {
           localStorage.setItem("client_user", fallbackUser);
           sessionStorage.setItem("client_user", fallbackUser);
         }
-        setSuccess("Registration successful. Redirecting...");
-        setTimeout(() => navigate("/client/dashboard"), 1200);
+        setSuccess("Registration successful.");
+        navigate("/client/dashboard");
       } else {
         setError("Unexpected response from server.");
       }
@@ -109,6 +171,7 @@ const Register = () => {
             { label: "Email", key: "email", type: "email" },
             { label: "Address", key: "address", type: "text" },
             { label: "Password", key: "password", type: "password" },
+            { label: "Confirm Password", key: "confirm_password", type: "password" },
             { label: "Date of Birth", key: "dob", type: "date" },
           ].map((field) => (
             <div key={field.key}>
@@ -120,7 +183,19 @@ const Register = () => {
                 type={field.type}
                 value={form[field.key]}
                 onChange={(e) =>
-                  setForm({ ...form, [field.key]: e.target.value })
+                  setForm((prev) => {
+                    const next = { ...prev, [field.key]: e.target.value };
+                    if (field.key === "phone") {
+                      setPhoneError(validatePhone(next.phone));
+                    }
+                    if (field.key === "email") {
+                      setEmailError(validateEmail(next.email));
+                    }
+                    if (field.key === "password" || field.key === "confirm_password") {
+                      validatePasswords(next);
+                    }
+                    return next;
+                  })
                 }
                 className="
                   w-full mt-1 px-3 py-2 text-sm rounded-lg
@@ -131,6 +206,23 @@ const Register = () => {
                 "
                 required
               />
+              {field.key === "phone" && phoneError && (
+                <p className="text-[11px] text-red-500 mt-1">{phoneError}</p>
+              )}
+              {field.key === "email" && emailError && (
+                <p className="text-[11px] text-red-500 mt-1">{emailError}</p>
+              )}
+              {field.key === "password" && passwordError && (
+                <p className="text-[11px] text-red-500 mt-1">{passwordError}</p>
+              )}
+              {field.key === "password" && !passwordError && (
+                <p className="text-[11px] opacity-70 mt-1">
+                  Use 8+ characters with uppercase, lowercase, number, and symbol.
+                </p>
+              )}
+              {field.key === "confirm_password" && confirmError && (
+                <p className="text-[11px] text-red-500 mt-1">{confirmError}</p>
+              )}
             </div>
           ))}
 
@@ -168,7 +260,12 @@ const Register = () => {
             <select
               value={form.coverage_type}
               onChange={(e) =>
-                setForm({ ...form, coverage_type: e.target.value })
+                setForm({
+                  ...form,
+                  coverage_type: e.target.value,
+                  family_members:
+                    e.target.value === "family" ? form.family_members || "2" : "1",
+                })
               }
               className="
                 w-full mt-1 px-3 py-2 rounded-lg text-sm
@@ -182,6 +279,35 @@ const Register = () => {
               <option value="family">Family</option>
             </select>
           </div>
+
+          {/* FAMILY MEMBERS */}
+          {form.coverage_type === "family" && (
+            <div>
+              <label className="text-xs font-semibold opacity-80">
+                Number of Family Members Covered
+              </label>
+              <input
+                type="number"
+                min="2"
+                max="20"
+                value={form.family_members}
+                onChange={(e) =>
+                  setForm({ ...form, family_members: e.target.value })
+                }
+                className="
+                  w-full mt-1 px-3 py-2 rounded-lg text-sm
+                  bg-background-light dark:bg-background-dark
+                  border border-border-light dark:border-border-dark
+                  text-text-light dark:text-text-dark
+                "
+                required
+              />
+              <p className="text-[11px] opacity-70 mt-1">
+                Note: if any family member is a smoker or has pre-existing conditions,
+                please select them below.
+              </p>
+            </div>
+          )}
 
           {/* SMOKER */}
           <div>
@@ -204,6 +330,11 @@ const Register = () => {
               <option value="0">No</option>
               <option value="1">Yes</option>
             </select>
+            {form.coverage_type === "family" && (
+              <p className="text-[11px] opacity-70 mt-1">
+                Choose "Yes" if any covered family member smokes.
+              </p>
+            )}
           </div>
 
           {/* CONDITIONS */}
@@ -237,6 +368,11 @@ const Register = () => {
                 </label>
               ))}
             </div>
+            {form.coverage_type === "family" && (
+              <p className="text-[11px] opacity-70 mt-2">
+                Select conditions if any covered family member has them.
+              </p>
+            )}
           </div>
 
           {/* SUBMIT */}
