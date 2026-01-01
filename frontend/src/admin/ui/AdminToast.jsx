@@ -41,7 +41,7 @@ export const AdminToastProvider = ({ children }) => {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`min-w-[240px] max-w-[320px] rounded-lg px-4 py-3 shadow-lg ${typeStyles[t.type] || typeStyles.info}`}
+            className={`min-w-60 max-w-[320px] rounded-lg px-4 py-3 shadow-lg ${typeStyles[t.type] || typeStyles.info}`}
           >
             {t.title && <div className="text-sm font-semibold">{t.title}</div>}
             <div className="text-sm">{t.message}</div>

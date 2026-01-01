@@ -310,7 +310,7 @@ const GuestPolicies = () => {
                       className="
                         bg-card-light dark:bg-card-dark 
                         rounded-2xl border border-border-light dark:border-border-dark
-                        shadow-sm hover:shadow-md hover:-translate-y-[2px] 
+                        shadow-sm hover:shadow-md hover:-translate-y-0.5 
                         transition p-5 flex flex-col justify-between
                       "
                     >
