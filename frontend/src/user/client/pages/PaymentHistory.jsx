@@ -30,13 +30,14 @@ const PaymentHistory = () => {
     loadPayments();
   }, []);
 
-  const statusBadge = (status) => {
+  const statusBadge = (status, isVerified) => {
     const normalized = (status || "").toLowerCase();
-
-    if (normalized === "success" || normalized === "completed") {
+    const isSuccess =
+      normalized === "success" || normalized === "paid" || normalized === "completed";
+    if (isVerified || isSuccess) {
       return (
         <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
-          <CheckCircleIcon className="w-4 h-4" /> Completed
+          <CheckCircleIcon className="w-4 h-4" /> Verified
         </span>
       );
     }
@@ -45,6 +46,13 @@ const PaymentHistory = () => {
       return (
         <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
           <XCircleIcon className="w-4 h-4" /> Failed
+        </span>
+      );
+    }
+    if (normalized === "cancelled") {
+      return (
+        <span className="flex items-center gap-1 text-slate-500 dark:text-slate-300">
+          <XCircleIcon className="w-4 h-4" /> Cancelled
         </span>
       );
     }
@@ -125,7 +133,7 @@ const PaymentHistory = () => {
                 </td>
 
                 <td className="px-4 py-3">
-                  {statusBadge(p.status)}
+                  {statusBadge(p.status, p.is_verified)}
                 </td>
 
                 <td className="px-4 py-3">

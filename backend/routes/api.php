@@ -117,6 +117,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/payments/{payment}', [PaymentController::class, 'show']);
     Route::post('/payments', [PaymentController::class, 'create']);
     Route::post('/payments/{payment}/status', [PaymentController::class, 'updateStatus']);
+    Route::post('/payments/{payment}/cancel', [PaymentController::class, 'cancel']);
     Route::post('/payments/esewa', [PaymentController::class, 'create']);
     Route::post('/payments/khalti', [PaymentController::class, 'createKhalti']);
     Route::post('/payments/khalti/verify', [PaymentController::class, 'verifyKhalti']);

@@ -3,9 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\PaymentFailureMail;
+use App\Mail\PaymentSuccessMail;
+use App\Mail\PolicyPurchaseConfirmationMail;
 use App\Models\Payment;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class AdminPaymentController extends Controller
 {
@@ -51,6 +55,14 @@ class AdminPaymentController extends Controller
                         'policy_id' => $payment->policy_id,
                     ]
                 );
+                if ($payment->user->email) {
+                    try {
+                        $reason = $payment->meta['reason'] ?? null;
+                        Mail::to($payment->user->email)->send(new PaymentFailureMail($payment, $reason));
+                    } catch (\Throwable $e) {
+                        // ignore email failures
+                    }
+                }
             }
 
             $payment->failed_notified = true;
@@ -84,11 +96,35 @@ class AdminPaymentController extends Controller
                     'policy_id' => $payment->policy_id,
                 ]
             );
+            if ($payment->user->email) {
+                try {
+                    Mail::to($payment->user->email)->send(new PaymentSuccessMail($payment));
+                    if ($this->shouldSendPolicyDocument($payment)) {
+                        Mail::to($payment->user->email)->send(new PolicyPurchaseConfirmationMail($payment));
+                    }
+                } catch (\Throwable $e) {
+                    // ignore email failures
+                }
+            }
         }
 
         return response()->json([
             'message' => 'Payment verified.',
             'payment' => $payment,
         ]);
+    }
+
+    private function shouldSendPolicyDocument(Payment $payment): bool
+    {
+        if (!$payment->buy_request_id) {
+            return false;
+        }
+
+        $otherVerified = Payment::where('buy_request_id', $payment->buy_request_id)
+            ->where('is_verified', true)
+            ->where('id', '!=', $payment->id)
+            ->exists();
+
+        return !$otherVerified;
     }
 }

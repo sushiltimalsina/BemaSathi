@@ -1,12 +1,31 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ExclamationTriangleIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
+import API from "../../../api/api";
 
 const PaymentFailure = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const query = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const paymentId = query.get("payment");
+  const [cancelMessage, setCancelMessage] = useState("");
+
+  useEffect(() => {
+    const markCancelledIfPending = async () => {
+      if (!paymentId) return;
+      try {
+        const res = await API.get(`/payments/${paymentId}`);
+        const status = (res.data?.status || "").toLowerCase();
+        if (status === "pending") {
+          await API.post(`/payments/${paymentId}/cancel`);
+          setCancelMessage("Payment marked as cancelled.");
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+    markCancelledIfPending();
+  }, [paymentId]);
 
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark px-6 py-12 flex items-center">
@@ -25,6 +44,11 @@ const PaymentFailure = () => {
         {paymentId && (
           <p className="text-xs text-text-light dark:text-text-dark mb-4">
             Reference: <span className="font-semibold">{paymentId}</span>
+          </p>
+        )}
+        {cancelMessage && (
+          <p className="text-xs text-green-600 dark:text-green-400 mb-3">
+            {cancelMessage}
           </p>
         )}
 

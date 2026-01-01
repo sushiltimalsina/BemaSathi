@@ -85,6 +85,14 @@ const PaymentList = () => {
       );
     }
 
+    if (normalizedStatus === "cancelled") {
+      return (
+        <span className="inline-flex items-center gap-1 text-slate-500 dark:text-slate-300 text-xs font-semibold">
+          <XCircleIcon className="w-4 h-4" /> CANCELLED
+        </span>
+      );
+    }
+
     return (
       <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 text-xs font-semibold">
         <XCircleIcon className="w-4 h-4" /> FAILED

@@ -4,11 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\Payment;
 use App\Models\BuyRequest;
+use App\Mail\PaymentSuccessMail;
+use App\Mail\PaymentFailureMail;
+use App\Mail\PolicyPurchaseConfirmationMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Str;
 use App\Services\NotificationService;
+use Illuminate\Support\Facades\Mail;
 
 class PaymentController extends Controller
 {
@@ -157,6 +161,8 @@ class PaymentController extends Controller
                 'status' => 'completed',
                 'provider_reference' => $transactionUuid,
                 'paid_at' => now(),
+                'is_verified' => true,
+                'verified_at' => now(),
             ]);
             $this->notifyPayment($payment, 'completed');
         } catch (QueryException $e) {
@@ -188,11 +194,13 @@ class PaymentController extends Controller
             ?? $request->query('transaction_uuid')
             ?? $request->input('transaction_uuid');
 
+        $isCancelled = (bool) ($request->query('cancelled') ?? $request->input('cancelled'));
+        $status = $isCancelled ? 'cancelled' : 'failed';
         $payment->update([
-            'status' => 'failed',
-            'meta'   => ['reason' => 'User cancelled or payment rejected', 'transaction_uuid' => $transactionUuid]
+            'status' => $status,
+            'meta'   => ['reason' => $isCancelled ? 'User cancelled payment' : 'Payment failed', 'transaction_uuid' => $transactionUuid]
         ]);
-        $this->notifyPayment($payment, 'failed');
+        $this->notifyPayment($payment, $status);
 
         $failureRedirect = $this->frontendBase() . "/client/payment-failure?payment={$payment->id}";
 
@@ -335,6 +343,8 @@ class PaymentController extends Controller
                 'status' => 'completed',
                 'provider_reference' => $pidx,
                 'paid_at' => now(),
+                'is_verified' => true,
+                'verified_at' => now(),
                 'meta' => array_merge($payment->meta ?? [], ['pidx' => $pidx, 'khalti_status' => $status]),
             ]);
             $this->notifyPayment($payment, 'completed');
@@ -364,6 +374,27 @@ class PaymentController extends Controller
             ->get();
 
         return response()->json($payments);
+    }
+
+    public function cancel(Request $request, Payment $payment)
+    {
+        $user = $request->user();
+        if ($payment->user_id !== $user?->id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $normalized = strtolower((string) $payment->status);
+        if (in_array($normalized, ['completed', 'success', 'paid'], true)) {
+            return response()->json(['message' => 'Payment already completed.'], 409);
+        }
+
+        $payment->update([
+            'status' => 'cancelled',
+            'meta' => array_merge($payment->meta ?? [], ['reason' => 'User cancelled payment']),
+        ]);
+        $this->notifyPayment($payment, 'cancelled');
+
+        return response()->json(['message' => 'Payment cancelled.', 'payment' => $payment]);
     }
 
     private function buildEsewaPayload(Payment $payment): array
@@ -482,13 +513,13 @@ class PaymentController extends Controller
 
         $title = match ($status) {
             'completed', 'success' => 'Payment Completed',
-            'failed' => 'Payment Failed',
+            'failed', 'cancelled' => 'Payment Failed',
             default => 'Payment Update',
         };
 
         $message = match ($status) {
             'completed', 'success' => "Your payment for {$policyName} was completed successfully.",
-            'failed' => "Your payment for {$policyName} did not complete. Please try again.",
+            'failed', 'cancelled' => "Your payment for {$policyName} did not complete. Please try again.",
             default => "Your payment status for {$policyName} is {$status}.",
         };
 
@@ -498,5 +529,39 @@ class PaymentController extends Controller
         ];
 
         $this->notifier->notify($user, $title, $message, $context);
+
+        if (!$user->email) {
+            return;
+        }
+
+        try {
+            if (in_array($status, ['completed', 'success'], true)) {
+                Mail::to($user->email)->send(new PaymentSuccessMail($payment));
+                if ($this->shouldSendPolicyDocument($payment)) {
+                    Mail::to($user->email)->send(new PolicyPurchaseConfirmationMail($payment));
+                }
+            }
+
+            if (in_array($status, ['failed', 'cancelled'], true)) {
+                $reason = $payment->meta['reason'] ?? null;
+                Mail::to($user->email)->send(new PaymentFailureMail($payment, $reason));
+            }
+        } catch (\Throwable $e) {
+            // ignore email failures
+        }
+    }
+
+    private function shouldSendPolicyDocument(Payment $payment): bool
+    {
+        if (!$payment->buy_request_id) {
+            return false;
+        }
+
+        $otherVerified = Payment::where('buy_request_id', $payment->buy_request_id)
+            ->where('is_verified', true)
+            ->where('id', '!=', $payment->id)
+            ->exists();
+
+        return !$otherVerified;
     }
 }
