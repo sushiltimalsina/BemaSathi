@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import ClientSidebar from "./ClientSidebar";
 import ChatBubble from "../components/ChatBubble";
+import ClientSidebar from "./ClientSidebar";
+import Footer from "../../../components/Footer";
 
 const ClientLayout = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
@@ -22,7 +23,6 @@ const ClientLayout = ({ children }) => {
         setMobileOpen={setMobileOpen}
         setCollapsed={setCollapsed}
       />
-
       {/* Main content wrapper */}
       <div
         className={`
@@ -45,6 +45,7 @@ const ClientLayout = ({ children }) => {
           >
             {children}
           </div>
+          <Footer />
         </div>
       </div>
       <ChatBubble />

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
+use App\Models\Policy;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 
@@ -42,6 +43,7 @@ class AdminCompanyController extends Controller
 
     public function update(Request $request, Company $company)
     {
+        $previousName = $company->name;
         $validated = $request->validate([
             'name'        => 'required|string',
             'email'       => 'required|email',
@@ -53,6 +55,11 @@ class AdminCompanyController extends Controller
         ]);
 
         $company->update($validated);
+
+        if (Schema::hasColumn('policies', 'is_active') && array_key_exists('is_active', $validated)) {
+            Policy::whereIn('company_name', [$previousName, $company->name])
+                ->update(['is_active' => (bool) $company->is_active]);
+        }
 
         return response()->json([
             'message' => 'Company updated successfully',
@@ -74,6 +81,11 @@ class AdminCompanyController extends Controller
         if (Schema::hasColumn('companies', 'is_active')) {
             $company->is_active = !($company->is_active ?? true);
             $company->save();
+        }
+
+        if (Schema::hasColumn('policies', 'is_active')) {
+            Policy::where('company_name', $company->name)
+                ->update(['is_active' => (bool) $company->is_active]);
         }
 
         return response()->json([

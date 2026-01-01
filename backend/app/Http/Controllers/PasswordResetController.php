@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use App\Mail\ResetPasswordMail;
 
@@ -28,7 +29,24 @@ class PasswordResetController extends Controller
         );
 
         // Send reset email
-        Mail::to($user->email)->send(new ResetPasswordMail($user, $otp));
+        try {
+            $mail = new ResetPasswordMail($user, $otp);
+            $from = config('mail.from.address');
+            $smtpUser = config('mail.mailers.smtp.username');
+            if ($smtpUser && $from && strcasecmp($from, $smtpUser) !== 0) {
+                $mail->from($smtpUser, config('mail.from.name'));
+            }
+            Mail::to($user->email)->send($mail);
+        } catch (\Throwable $e) {
+            Log::warning('Failed sending reset password email', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error' => $e->getMessage(),
+            ]);
+            return response()->json([
+                'message' => 'Unable to send reset email. Please try again later.',
+            ], 500);
+        }
 
         return response()->json([
             'message' => 'Reset link sent if the email exists.',
