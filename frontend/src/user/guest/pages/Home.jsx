@@ -1,4 +1,4 @@
-﻿import React from "react";
+﻿import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ShieldCheckIcon,
@@ -10,10 +10,22 @@ import {
   SparklesIcon,
 } from "@heroicons/react/24/outline";
 import { useTheme } from "../../../context/ThemeContext";
+import API from "../../../api/api";
 
 const Home = () => {
   const { theme } = useTheme();
   const dark = theme === "dark";
+  const [snapshot, setSnapshot] = useState({
+    health: null,
+    "term-life": null,
+    "whole-life": null,
+  });
+  const [snapshotLoading, setSnapshotLoading] = useState(true);
+
+  const formatNpr = (value) => {
+    if (typeof value !== "number") return "--";
+    return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
+  };
 
   // Detect if client is logged in
   const isLoggedIn = !!sessionStorage.getItem("client_token");
@@ -28,6 +40,64 @@ const Home = () => {
     purple: "bg-purple-50 dark:bg-purple-900/30",
     emerald: "bg-emerald-50 dark:bg-emerald-900/30",
   };
+
+  useEffect(() => {
+    const loadSnapshot = async () => {
+      try {
+        setSnapshotLoading(true);
+        const res = await API.get("/policies");
+        const policies = Array.isArray(res.data) ? res.data : [];
+        const data = {
+          health: { providers: new Set(), minPremium: null },
+          "term-life": { providers: new Set(), minPremium: null },
+          "whole-life": { providers: new Set(), minPremium: null },
+        };
+
+        policies.forEach((policy) => {
+          const type = policy?.insurance_type
+            ? String(policy.insurance_type).toLowerCase()
+            : "";
+          let key = null;
+          if (type.includes("health")) key = "health";
+          if (type.includes("term")) key = "term-life";
+          if (type.includes("whole")) key = "whole-life";
+          if (!key) return;
+
+          if (policy.company_name) {
+            data[key].providers.add(policy.company_name);
+          }
+
+          const premium = Number(policy.premium_amt);
+          if (!Number.isNaN(premium)) {
+            if (data[key].minPremium === null || premium < data[key].minPremium) {
+              data[key].minPremium = premium;
+            }
+          }
+        });
+
+        setSnapshot({
+          health: {
+            providers: data.health.providers.size,
+            minPremium: data.health.minPremium,
+          },
+          "term-life": {
+            providers: data["term-life"].providers.size,
+            minPremium: data["term-life"].minPremium,
+          },
+          "whole-life": {
+            providers: data["whole-life"].providers.size,
+            minPremium: data["whole-life"].minPremium,
+          },
+        });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setSnapshotLoading(false);
+      }
+    };
+
+    loadSnapshot();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark transition-colors">
@@ -126,9 +196,9 @@ const Home = () => {
 
               <div className="space-y-4 text-sm">
                 {[
-                  { name: "Health Insurance", detail: "From 4 providers", price: "रु. 12,500+/year" },
-                  { name: "Term Life", detail: "Long-term security", price: "रु. 8,000+/year" },
-                  { name: "Whole Life", detail: "Lifetime coverage", price: "रु. 9,300+/year" },
+                  { name: "Health Insurance", key: "health", detail: "Cover medical expenses" },
+                  { name: "Term Life", key: "term-life", detail: "Long-term security" },
+                  { name: "Whole Life", key: "whole-life", detail: "Lifetime coverage" },
                 ].map((item, i) => (
                   <div
                     key={i}
@@ -140,15 +210,27 @@ const Home = () => {
                   >
                     <div>
                       <p className="font-semibold">{item.name}</p>
-                      <p className="opacity-70 text-xs">{item.detail}</p>
+                      <p className="opacity-70 text-xs">
+                        {snapshotLoading
+                          ? "Loading providers..."
+                          : snapshot[item.key]?.providers
+                          ? `From ${snapshot[item.key].providers} providers`
+                          : item.detail}
+                      </p>
                     </div>
-                    <p className="font-semibold">{item.price}</p>
+                    <p className="font-semibold">
+                      {snapshotLoading
+                        ? "रु. --/year"
+                        : snapshot[item.key]?.minPremium
+                        ? `रु. ${formatNpr(snapshot[item.key].minPremium)}+/year`
+                        : "रु. --/year"}
+                    </p>
                   </div>
                 ))}
               </div>
 
               <div className="mt-5 text-xs opacity-70">
-                * Demo data. Actual premiums depend on company and plan.
+                * Calculated from available policies.
               </div>
             </div>
 
@@ -315,4 +397,9 @@ const Home = () => {
 };
 
 export default Home;
+
+
+
+
+
 
