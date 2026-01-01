@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Payment;
 use App\Models\BuyRequest;
+use App\Models\Policy;
 use App\Mail\PaymentSuccessMail;
 use App\Mail\PaymentFailureMail;
 use App\Mail\PolicyPurchaseConfirmationMail;
@@ -12,7 +13,10 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Str;
 use App\Services\NotificationService;
+use App\Services\LeadDistributor;
+use App\Services\PremiumCalculator;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Carbon;
 
 class PaymentController extends Controller
 {
@@ -25,10 +29,18 @@ class PaymentController extends Controller
     private string $khaltiSecret;
     private string $khaltiPublic;
     private NotificationService $notifier;
+    private LeadDistributor $leadDistributor;
+    private PremiumCalculator $calculator;
 
-    public function __construct(NotificationService $notifier)
+    public function __construct(
+        NotificationService $notifier,
+        LeadDistributor $leadDistributor,
+        PremiumCalculator $calculator
+    )
     {
         $this->notifier = $notifier;
+        $this->leadDistributor = $leadDistributor;
+        $this->calculator = $calculator;
         $merchant = config('services.esewa.merchant_code');
         $secret   = config('services.esewa.secret_key');
 
@@ -70,14 +82,29 @@ class PaymentController extends Controller
     public function create(Request $request)
     {
         $data = $request->validate([
-            'buy_request_id' => 'required|exists:buy_requests,id',
+            'buy_request_id' => 'nullable|exists:buy_requests,id',
+            'policy_id' => 'nullable|exists:policies,id',
             'billing_cycle'  => 'nullable|in:monthly,quarterly,half_yearly,yearly',
+            'email' => 'nullable|email',
         ]);
 
-        $br = BuyRequest::with('policy')->findOrFail($data['buy_request_id']);
+        if (empty($data['buy_request_id']) && empty($data['policy_id'])) {
+            return response()->json(['message' => 'buy_request_id or policy_id is required.'], 422);
+        }
 
-        if ($br->user_id !== $request->user()?->id) {
-            return response()->json(['message' => 'Forbidden'], 403);
+        if (!empty($data['buy_request_id'])) {
+            $br = BuyRequest::with('policy')->findOrFail($data['buy_request_id']);
+
+            if ($br->user_id !== $request->user()?->id) {
+                return response()->json(['message' => 'Forbidden'], 403);
+            }
+        } else {
+            $br = $this->createBuyRequestFromPolicy(
+                $request,
+                (int) $data['policy_id'],
+                $data['billing_cycle'] ?? null,
+                $data['email'] ?? null
+            );
         }
 
         $latestKyc = $request->user()?->kycDocuments()->latest()->first();
@@ -214,14 +241,29 @@ class PaymentController extends Controller
     public function createKhalti(Request $request)
     {
         $data = $request->validate([
-            'buy_request_id' => 'required|exists:buy_requests,id',
+            'buy_request_id' => 'nullable|exists:buy_requests,id',
+            'policy_id' => 'nullable|exists:policies,id',
             'billing_cycle'  => 'nullable|in:monthly,quarterly,half_yearly,yearly',
+            'email' => 'nullable|email',
         ]);
 
-        $br = BuyRequest::with('policy')->findOrFail($data['buy_request_id']);
+        if (empty($data['buy_request_id']) && empty($data['policy_id'])) {
+            return response()->json(['message' => 'buy_request_id or policy_id is required.'], 422);
+        }
 
-        if ($br->user_id !== $request->user()?->id) {
-            return response()->json(['message' => 'Forbidden'], 403);
+        if (!empty($data['buy_request_id'])) {
+            $br = BuyRequest::with('policy')->findOrFail($data['buy_request_id']);
+
+            if ($br->user_id !== $request->user()?->id) {
+                return response()->json(['message' => 'Forbidden'], 403);
+            }
+        } else {
+            $br = $this->createBuyRequestFromPolicy(
+                $request,
+                (int) $data['policy_id'],
+                $data['billing_cycle'] ?? null,
+                $data['email'] ?? null
+            );
         }
 
         $latestKyc = $request->user()?->kycDocuments()->latest()->first();
@@ -448,6 +490,82 @@ class PaymentController extends Controller
         };
     }
 
+    private function resolveProfile($user): array
+    {
+        $kyc = $user?->kycDocuments()?->where('status', 'approved')->latest()->first();
+        $dob = $user?->dob ?? $kyc?->dob;
+        $age = ($dob ? Carbon::parse($dob)->age : 30);
+
+        return [
+            'age' => max(1, min(120, $age)),
+            'is_smoker' => (bool) ($user?->is_smoker),
+            'health_score' => $user?->health_score ?? 70,
+            'coverage_type' => $user?->coverage_type ?? 'individual',
+            'budget_range' => $user?->budget_range,
+            'family_members' => $user?->family_members ?? 1,
+        ];
+    }
+
+    private function calculateBillingInterval(string $cycle, float $basePremium): array
+    {
+        return match ($cycle) {
+            'monthly'     => [round($basePremium / 12, 2), now()->addMonth()->toDateString()],
+            'quarterly'   => [round($basePremium / 4, 2), now()->addMonths(3)->toDateString()],
+            'half_yearly' => [round($basePremium / 2, 2), now()->addMonths(6)->toDateString()],
+            default       => [round($basePremium, 2), now()->addYear()->toDateString()],
+        };
+    }
+
+    private function createBuyRequestFromPolicy(Request $request, int $policyId, ?string $billingCycle, ?string $email): BuyRequest
+    {
+        $user = $request->user();
+        $profile = $this->resolveProfile($user);
+        $policy = Policy::findOrFail($policyId);
+
+        $quote = $this->calculator->quote(
+            $policy,
+            $profile['age'],
+            $profile['is_smoker'],
+            $profile['health_score'],
+            $profile['coverage_type'],
+            $profile['budget_range'],
+            $profile['family_members']
+        );
+
+        $basePremium = $quote['calculated_total'];
+        $interval = $billingCycle ?? 'yearly';
+        [$cycleAmount, $nextRenewal] = $this->calculateBillingInterval($interval, $basePremium);
+
+        $latestKyc = $user?->kycDocuments()?->where('status', 'approved')->latest()->first();
+        $name = $latestKyc?->full_name ?? $user?->name;
+        $phone = $latestKyc?->phone ?? $user?->phone;
+        $recipientEmail = $email ?: ($user?->email ?? null);
+
+        $buyRequest = BuyRequest::create([
+            'user_id' => $user?->id,
+            'policy_id' => $policyId,
+            'name' => $name,
+            'phone' => $phone,
+            'email' => $recipientEmail,
+            'status' => 'pending',
+            'calculated_premium' => $basePremium,
+            'cycle_amount' => $cycleAmount,
+            'billing_cycle' => $interval,
+            'next_renewal_date' => $nextRenewal,
+            'renewal_status' => 'active',
+        ]);
+
+        try {
+            $this->leadDistributor->assign($buyRequest);
+        } catch (\Throwable $e) {
+            // ignore agent assignment failures
+        }
+
+        // Intentionally no email/notification on buy request creation.
+
+        return $buyRequest;
+    }
+
     /**
      * Extract transaction UUID from query/body or encoded "data" blob.
      */
@@ -530,21 +648,22 @@ class PaymentController extends Controller
 
         $this->notifier->notify($user, $title, $message, $context);
 
-        if (!$user->email) {
+        $recipient = $payment->buyRequest?->email ?: $user->email;
+        if (!$recipient) {
             return;
         }
 
         try {
             if (in_array($status, ['completed', 'success'], true)) {
-                Mail::to($user->email)->send(new PaymentSuccessMail($payment));
+                Mail::to($recipient)->send(new PaymentSuccessMail($payment));
                 if ($this->shouldSendPolicyDocument($payment)) {
-                    Mail::to($user->email)->send(new PolicyPurchaseConfirmationMail($payment));
+                    Mail::to($recipient)->send(new PolicyPurchaseConfirmationMail($payment));
                 }
             }
 
             if (in_array($status, ['failed', 'cancelled'], true)) {
                 $reason = $payment->meta['reason'] ?? null;
-                Mail::to($user->email)->send(new PaymentFailureMail($payment, $reason));
+                Mail::to($recipient)->send(new PaymentFailureMail($payment, $reason));
             }
         } catch (\Throwable $e) {
             // ignore email failures

@@ -23,6 +23,7 @@ class PolicyPurchaseConfirmationMail extends Mailable
         $policy = $this->payment->policy ?? $this->payment->buyRequest?->policy;
         $user = $this->payment->user;
         $kyc = $user?->kycDocuments()?->where('status', 'approved')->latest()->first();
+        $recipientEmail = $this->payment->buyRequest?->email ?? $user?->email;
 
         $policyNumber = 'BS-' . str_pad((string) $this->payment->id, 6, '0', STR_PAD_LEFT);
         $effectiveDate = $this->payment->verified_at ?? $this->payment->paid_at ?? now();
@@ -48,7 +49,7 @@ class PolicyPurchaseConfirmationMail extends Mailable
             'claimSettlementRatio' => $policy?->claim_settlement_ratio,
             'supportsSmokers' => $policy?->supports_smokers,
             'userName' => $kyc?->full_name ?? $user?->name ?? 'Policy Holder',
-            'userEmail' => $user?->email,
+            'userEmail' => $recipientEmail,
             'userPhone' => $kyc?->phone ?? $user?->phone,
             'userAddress' => $kyc?->address ?? $user?->address,
             'userDob' => $kyc?->dob ?? $user?->dob,

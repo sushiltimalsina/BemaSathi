@@ -6,18 +6,13 @@ use Illuminate\Http\Request;
 use App\Models\BuyRequest;
 use App\Models\Policy;
 use App\Services\LeadDistributor;
-use App\Services\NotificationService;
 use App\Services\PremiumCalculator;
 use Illuminate\Support\Carbon;
-use App\Mail\BuyRequestSubmittedMail;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Log;
 
 class BuyRequestController extends Controller
 {
     public function __construct(
         private LeadDistributor $leadDistributor,
-        private NotificationService $notifier,
         private PremiumCalculator $calculator
     ) {}
 
@@ -47,6 +42,9 @@ class BuyRequestController extends Controller
                 'message' => 'KYC edit access granted. Please resubmit KYC before submitting a request.'
             ], 403);
         }
+
+        $data['name'] = $latestKyc?->full_name ?? $user->name;
+        $data['phone'] = $latestKyc?->phone ?? $user->phone;
 
         $profile = $this->resolveProfile($user);
         $policy = Policy::findOrFail($data['policy_id']);
@@ -82,23 +80,7 @@ class BuyRequestController extends Controller
             ? 'Request submitted and assigned to an agent.'
             : 'Request submitted successfully.';
 
-        $recipient = $buyRequest->email ?: $user->email;
-        if ($recipient) {
-            try {
-                $buyRequest->loadMissing('policy');
-                Mail::to($recipient)->send(new BuyRequestSubmittedMail($buyRequest));
-            } catch (\Throwable $e) {
-                Log::warning('Failed sending buy request email', [
-                    'user_id' => $user->id,
-                    'buy_request_id' => $buyRequest->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
-
-        $this->notifier->notify($user, 'Buy Request Submitted', $msg, [
-            'buy_request_id' => $buyRequest->id
-        ], 'system');
+        // Intentionally no email/notification on buy request creation.
 
         return response()->json([
             'success' => true,

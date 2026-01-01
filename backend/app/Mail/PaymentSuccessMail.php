@@ -22,6 +22,7 @@ class PaymentSuccessMail extends Mailable
 
         $policy = $this->payment->policy ?? $this->payment->buyRequest?->policy;
         $user = $this->payment->user;
+        $recipientEmail = $this->payment->buyRequest?->email ?? $user?->email;
         $billingCycle = $this->payment->buyRequest?->billing_cycle ?? $this->payment->billing_cycle ?? 'yearly';
         $transactionId = $this->payment->provider_reference
             ?? ($this->payment->meta['transaction_uuid'] ?? (string) $this->payment->id);
@@ -41,7 +42,7 @@ class PaymentSuccessMail extends Mailable
             'companyName' => $policy?->company_name ?? 'Insurance Company',
             'billingCycle' => $billingCycle,
             'userName' => $user?->name ?? 'Customer',
-            'userEmail' => $user?->email,
+            'userEmail' => $recipientEmail,
             'nextRenewalDate' => $nextRenewalDate,
         ]);
 

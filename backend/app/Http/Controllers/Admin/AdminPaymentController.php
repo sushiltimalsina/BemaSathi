@@ -44,6 +44,8 @@ class AdminPaymentController extends Controller
         $payment->load(['user', 'buyRequest.policy']);
         $policyName = optional(optional($payment->buyRequest)->policy)->policy_name ?? 'your policy';
 
+        $recipient = $payment->buyRequest?->email ?: $payment->user?->email;
+
         if (!$isSuccess) {
             if ($payment->user) {
                 $this->notifier->notify(
@@ -55,13 +57,13 @@ class AdminPaymentController extends Controller
                         'policy_id' => $payment->policy_id,
                     ]
                 );
-                if ($payment->user->email) {
-                    try {
-                        $reason = $payment->meta['reason'] ?? null;
-                        Mail::to($payment->user->email)->send(new PaymentFailureMail($payment, $reason));
-                    } catch (\Throwable $e) {
-                        // ignore email failures
-                    }
+            }
+            if ($payment->user && $recipient) {
+                try {
+                    $reason = $payment->meta['reason'] ?? null;
+                    Mail::to($recipient)->send(new PaymentFailureMail($payment, $reason));
+                } catch (\Throwable $e) {
+                    // ignore email failures
                 }
             }
 
@@ -96,15 +98,15 @@ class AdminPaymentController extends Controller
                     'policy_id' => $payment->policy_id,
                 ]
             );
-            if ($payment->user->email) {
-                try {
-                    Mail::to($payment->user->email)->send(new PaymentSuccessMail($payment));
-                    if ($this->shouldSendPolicyDocument($payment)) {
-                        Mail::to($payment->user->email)->send(new PolicyPurchaseConfirmationMail($payment));
-                    }
-                } catch (\Throwable $e) {
-                    // ignore email failures
+        }
+        if ($payment->user && $recipient) {
+            try {
+                Mail::to($recipient)->send(new PaymentSuccessMail($payment));
+                if ($this->shouldSendPolicyDocument($payment)) {
+                    Mail::to($recipient)->send(new PolicyPurchaseConfirmationMail($payment));
                 }
+            } catch (\Throwable $e) {
+                // ignore email failures
             }
         }
 

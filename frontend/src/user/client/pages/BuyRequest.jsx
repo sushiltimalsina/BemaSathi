@@ -200,27 +200,6 @@ const BuyRequest = () => {
   };
 
   // Create buy request with billing_cycle
-  const createBuyRequest = async () => {
-    const res = await API.post("/buy", {
-      policy_id: Number(policyId),
-      name: form.name.trim(),
-      phone: form.phone.trim(),
-      email: form.email.trim() || undefined,
-      billing_cycle: billingCycle,
-    });
-
-    const buy_request_id =
-      res.data?.buy_request_id ||
-      res.data?.data?.id ||
-      res.data?.buy_request?.id;
-
-    if (!buy_request_id) {
-      throw new Error(res.data?.message || "Could not create request.");
-    }
-
-    return buy_request_id;
-  };
-
   // Pay via eSewa
   const handlePayNow = async () => {
     if (kycStatus !== "approved") {
@@ -232,10 +211,10 @@ const BuyRequest = () => {
     setError("");
 
     try {
-      const buy_request_id = await createBuyRequest();
-
       const payRes = await API.post("/payments/esewa", {
-        buy_request_id,
+        policy_id: Number(policyId),
+        billing_cycle: billingCycle,
+        email: form.email.trim() || undefined,
       });
 
       const { redirect_url, payload } = payRes.data;
@@ -265,10 +244,10 @@ const BuyRequest = () => {
     setError("");
 
     try {
-      const buy_request_id = await createBuyRequest();
-
       const payRes = await API.post("/payments/khalti", {
-        buy_request_id,
+        policy_id: Number(policyId),
+        billing_cycle: billingCycle,
+        email: form.email.trim() || undefined,
       });
 
       if (payRes.data?.payment_url) {
@@ -347,7 +326,7 @@ const BuyRequest = () => {
             {/* YEARLY PREMIUM */}
             <Row
               label="Yearly Premium"
-              value={`Rs. ${fmt(policy.premium_amt)}`}
+              value={`Rs. ${fmt(policy.personalized_premium || policy.premium_amt)}`} 
             />
 
             {/* CYCLE PREMIUM */}
@@ -399,11 +378,16 @@ const BuyRequest = () => {
               value={form.phone}
               onChange={(v) => setForm({ ...form, phone: v })}
             />
+            <tr>
+              <label className="text-xs font-semibold">Please provide a  email where you want to receive policy documents and reciepts.</label>
+            </tr>
+            
             <Input
               label="Email"
               value={form.email}
               onChange={(v) => setForm({ ...form, email: v })}
             />
+            
 
             {/* BILLING CYCLE */}
             <div>
@@ -467,11 +451,11 @@ const BuyRequest = () => {
                 >
 
                   {/* Gradient Border Layer */}
-                  <span className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#3CB043] via-[#49d157] to-[#2f8a37] p-[2px] group-hover:from-[#49d157] group-hover:to-[#3CB043] transition-all duration-500"></span>
+                  <span className="absolute inset-0 rounded-2xl bg-linear-to-br from-[#3CB043] via-[#49d157] to-[#2f8a37] p-0.5 group-hover:from-[#49d157] group-hover:to-[#3CB043] transition-all duration-500"></span>
 
                   {/* Inner Glass Card */}
                   <span className="
-                    absolute inset-[2px] rounded-2xl 
+                    absolute inset-0.5 rounded-2xl 
                     bg-white/10 dark:bg-black/20 
                     backdrop-blur-xl 
                     shadow-[0_8px_20px_rgba(0,0,0,0.3)]
@@ -519,11 +503,11 @@ const BuyRequest = () => {
                 >
 
                   {/* Gradient Border Layer */}
-                  <span className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#8B0000] via-[#a30f0f] to-[#600000] p-[2px] group-hover:from-[#a30f0f] group-hover:to-[#8B0000] transition-all duration-500"></span>
+                  <span className="absolute inset-0 rounded-2xl bg-linear-to-br from-[#8B0000] via-[#a30f0f] to-[#600000] p-0.5 group-hover:from-[#a30f0f] group-hover:to-[#8B0000] transition-all duration-500"></span>
 
                   {/* Inner Glass Card */}
                   <span className="
-                    absolute inset-[2px] rounded-2xl 
+                    absolute inset-0.5 rounded-2xl 
                     bg-white/10 dark:bg-black/20 
                     backdrop-blur-xl 
                     shadow-[0_8px_20px_rgba(0,0,0,0.3)]

@@ -53,7 +53,6 @@ import PaymentFailure from "./user/client/pages/PaymentFailure";
 import PaymentHistory from "./user/client/pages/PaymentHistory";
 import MyProfile from "./user/client/pages/MyProfile";
 import Notifications from "./user/client/pages/Notifications";
-import MyBuyRequests from "./user/client/pages/MyBuyRequests";
 import MyPolicies from "./user/client/pages/MyPolicies";
 import MyTickets from "./user/client/pages/MyTickets";
 import NewTicket from "./user/client/pages/NewTicket";
@@ -150,16 +149,6 @@ const AppRoutes = () => {
           <ProtectedClientRoute>
             <ClientLayout>
               <Notifications />
-            </ClientLayout>
-          </ProtectedClientRoute>
-        }
-      />
-      <Route
-        path="/client/buy-requests"
-        element={
-          <ProtectedClientRoute>
-            <ClientLayout>
-              <MyBuyRequests />
             </ClientLayout>
           </ProtectedClientRoute>
         }
