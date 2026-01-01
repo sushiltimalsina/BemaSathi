@@ -8,7 +8,7 @@
 // - View Details Modal
 // - Light/Dark fully compatible
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import API from "../../../api/api";
 
@@ -22,8 +22,6 @@ const KycPage = () => {
 
   const redirectPolicyId = query.get("policy");
 
-  const pdfRef = useRef(null);
-
   const [user, setUser] = useState(null);
   const [kycList, setKycList] = useState([]);
   const latestKyc = kycList?.[0] || null;
@@ -31,7 +29,8 @@ const KycPage = () => {
   const isPending = kycStatus === "pending";
   const isApproved = kycStatus === "approved";
   // Lock edits if KYC is pending or approved
-  const isLocked = isApproved || isPending;
+  const [isEditing, setIsEditing] = useState(false);
+  const isLocked = isApproved || (isPending && !isEditing);
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
@@ -371,6 +370,9 @@ const KycPage = () => {
       const fd = new FormData();
       fd.append("document_type", documentType);
       fd.append("document_number", documentNumber);
+      if (isPending && isEditing) {
+        fd.append("edit_pending", "1");
+      }
       if (frontFile) fd.append("front", frontFile);
       if (backFile) fd.append("back", backFile);
       fd.append("full_name", profile.full_name);
@@ -395,77 +397,17 @@ const KycPage = () => {
       // optimistic refresh
       const submitted = res.data?.data;
       if (submitted) {
-        setKycList((prev) => [submitted, ...(prev || [])]);
+        setKycList((prev) => {
+          const existing = Array.isArray(prev) ? prev : [];
+          const filtered = existing.filter((item) => item?.id !== submitted.id);
+          return [submitted, ...filtered];
+        });
       }
+      setIsEditing(false);
       setLoading(false);
     } catch (error) {
       setError("Submission failed.");
       setLoading(false);
-    }
-  };
-
-  // Lazy-load PDF deps from CDN (avoid bundler resolution issues)
-  const loadPdfLibs = async () => {
-    try {
-      const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
-        import(/* @vite-ignore */ "https://esm.sh/jspdf@2.5.1"),
-        import(/* @vite-ignore */ "https://esm.sh/html2canvas@1.4.1"),
-      ]);
-      return { jsPDF, html2canvas };
-    } catch (cdnErr) {
-      console.error("PDF libs unavailable", cdnErr);
-      return null;
-    }
-  };
-
-  // Download PDF
-  const handleDownloadPdf = async () => {
-    if (!pdfRef.current) return;
-    try {
-      const libs = await loadPdfLibs();
-      if (libs) {
-        const { jsPDF, html2canvas } = libs;
-        const canvas = await html2canvas(pdfRef.current, { scale: 2, useCORS: true });
-        const imgData = canvas.toDataURL("image/png");
-
-        const pdf = new jsPDF("p", "mm", "a4");
-        const width = pdf.internal.pageSize.getWidth();
-        const height = (canvas.height * width) / canvas.width;
-
-        pdf.addImage(imgData, "PNG", 0, 0, width, height);
-        pdf.save("kyc-details.pdf");
-        return;
-      }
-
-      // Fallback: open print dialog with KYC content
-      const printWindow = window.open("", "_blank");
-      if (printWindow) {
-        printWindow.document.write(
-          `<html><head><title>KYC Details</title></head><body>${pdfRef.current.innerHTML}</body></html>`
-        );
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
-        return;
-      }
-
-      setError("Failed to generate PDF. Please try again.");
-    } catch (err) {
-      console.error(err);
-      // Last-resort fallback to print dialog on error
-      const printWindow = window.open("", "_blank");
-      if (printWindow && pdfRef.current) {
-        printWindow.document.write(
-          `<html><head><title>KYC Details</title></head><body>${pdfRef.current.innerHTML}</body></html>`
-        );
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
-      } else {
-        setError("Failed to generate PDF. Please try again.");
-      }
     }
   };
 
@@ -511,19 +453,21 @@ const KycPage = () => {
                 : "Your KYC was submitted and is awaiting approval."}
             </p>
           </div>
+          {isPending && !isEditing && (
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              className="ml-auto px-3 py-1.5 text-xs rounded-lg border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark hover:bg-hover-light dark:hover:bg-hover-dark"
+            >
+              Edit Details
+            </button>
+          )}
         </div>
       )}
 
-      {/* PDF + MODAL OPTIONS */}
+      {/* MODAL OPTIONS */}
       {isLocked && (
         <div className="mb-4 flex gap-3">
-          <button
-            onClick={handleDownloadPdf}
-            className="px-4 py-2 text-sm rounded-lg bg-primary-light text-white hover:opacity-90"
-          >
-            Download KYC PDF
-          </button>
-
           <button
             onClick={() => setShowDetailsModal(true)}
             className="px-4 py-2 text-sm rounded-lg border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark hover:bg-hover-light dark:hover:bg-hover-dark"
@@ -535,7 +479,7 @@ const KycPage = () => {
 
       {/* ===================== MAIN FORM ===================== */}
 
-      <div ref={pdfRef}>
+      <div>
         {/* HEADER */}
         <h1 className="text-3xl font-bold mb-6 text-text-light dark:text-text-dark">
           KYC Verification
@@ -585,6 +529,11 @@ const KycPage = () => {
           onSubmit={handleSubmit}
           className="p-6 rounded-xl shadow bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark space-y-8"
         >
+          {isPending && isEditing && (
+            <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 text-xs">
+              Editing a pending KYC requires resubmission. Please review all details before submitting.
+            </div>
+          )}
 
           
           {/* USER INFO */}
@@ -841,7 +790,7 @@ const KycPage = () => {
               disabled={loading}
               className="w-full py-3 rounded-lg text-white font-semibold bg-primary-light hover:bg-primary-light/90"
             >
-              {loading ? "Submitting…" : "Submit KYC"}
+              {loading ? "Submitting..." : isPending && isEditing ? "Resubmit KYC" : "Submit KYC"}
             </button>
           )}
         </form>
@@ -912,3 +861,4 @@ const KycPage = () => {
 };
 
 export default KycPage;
+
