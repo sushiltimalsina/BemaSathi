@@ -23,6 +23,7 @@ class AgentInquiryMail extends Mailable
                 'agentName' => $this->agentInquiry->agent_name,
                 'clientName' => $this->agentInquiry->user_name,
                 'clientEmail' => $this->agentInquiry->user_email,
+                'clientPhone' => $this->agentInquiry->user?->phone,
                 'policyName' => $this->agentInquiry->policy_name,
                 'companyName' => $this->agentInquiry->company_name,
                 'premiumAmount' => $this->agentInquiry->premium_amount,

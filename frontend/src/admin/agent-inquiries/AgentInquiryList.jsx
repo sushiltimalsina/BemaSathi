@@ -12,6 +12,15 @@ const AgentInquiryList = () => {
   const { addToast } = useAdminToast();
   const confirm = useAdminConfirm();
 
+  const daysSince = (value) => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    const now = new Date();
+    const diff = now - date;
+    return Math.floor(diff / (1000 * 60 * 60 * 24));
+  };
+
   const fmt = (n) =>
     Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
 
@@ -45,22 +54,32 @@ const AgentInquiryList = () => {
   }, [items, search]);
 
   const notifyAgent = async (item) => {
-    if (item.notified_at) return;
+    const days = daysSince(item.notified_at);
+    const canRenotify = item.notified_at && days !== null && days >= 3;
+    if (item.notified_at && !canRenotify) return;
 
-    const ok = await confirm("Notify agent about this inquiry?", {
-      title: "Notify Agent",
-      confirmText: "Notify",
-    });
+    const ok = await confirm(
+      canRenotify
+        ? "Renotify agent about this inquiry?"
+        : "Notify agent about this inquiry?",
+      {
+        title: canRenotify ? "Renotify Agent" : "Notify Agent",
+        confirmText: canRenotify ? "Renotify" : "Notify",
+      }
+    );
     if (!ok) return;
 
     try {
-      await API.post(`/admin/agent-inquiries/${item.id}/notify`);
+      const res = await API.post(`/admin/agent-inquiries/${item.id}/notify`);
+      const updated = res.data?.data;
       setItems((prev) =>
         prev.map((row) =>
-          row.id === item.id ? { ...row, notified_at: new Date().toISOString() } : row
+          row.id === item.id
+            ? { ...row, notified_at: updated?.notified_at || new Date().toISOString() }
+            : row
         )
       );
-      addToast({ type: "success", title: "Agent notified" });
+      addToast({ type: "success", title: canRenotify ? "Agent renotified" : "Agent notified" });
     } catch (e) {
       addToast({
         type: "error",
@@ -134,16 +153,21 @@ const AgentInquiryList = () => {
                   <button
                     type="button"
                     onClick={() => notifyAgent(i)}
-                    disabled={!!i.notified_at}
+                    disabled={!!i.notified_at && !(daysSince(i.notified_at) >= 3)}
                     className={`text-xs font-semibold px-3 py-1 rounded-lg transition inline-flex items-center gap-1 ${
-                      i.notified_at
+                      i.notified_at && !(daysSince(i.notified_at) >= 3)
                         ? "bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-300 cursor-not-allowed"
                         : "bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
                     }`}
                   >
                     <EnvelopeIcon className="w-4 h-4" />
-                    {i.notified_at ? "Notified" : "Notify"}
+                    {i.notified_at ? (daysSince(i.notified_at) >= 3 ? "Renotify" : "Notified") : "Notify"}
                   </button>
+                  {i.notified_at && (
+                    <div className="mt-1 text-xs opacity-70">
+                      Last notified: {new Date(i.notified_at).toLocaleString()}
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}

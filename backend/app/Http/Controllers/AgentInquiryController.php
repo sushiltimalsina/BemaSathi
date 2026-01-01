@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\AgentInquiry;
 use App\Models\BuyRequest;
 use App\Models\Policy;
+use App\Mail\AgentInquiryMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class AgentInquiryController extends Controller
 {
@@ -41,10 +43,27 @@ class AgentInquiryController extends Controller
             'agent_phone' => $agent?->phone,
         ]);
 
-        if (!$agent) {
+        if ($agent && $agent->email) {
+            try {
+                Mail::to($agent->email)->send(new AgentInquiryMail($inquiry));
+                $inquiry->notified_at = now();
+                $inquiry->save();
+            } catch (\Throwable $e) {
+                Log::warning('Failed sending agent inquiry email', [
+                    'agent_inquiry_id' => $inquiry->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        } elseif (!$agent) {
             Log::info('Agent inquiry created without agent', [
                 'policy_id' => $policy->id,
                 'user_id' => $user?->id,
+            ]);
+        } else {
+            Log::info('Agent inquiry created without agent email', [
+                'policy_id' => $policy->id,
+                'user_id' => $user?->id,
+                'agent_id' => $agent?->id,
             ]);
         }
 

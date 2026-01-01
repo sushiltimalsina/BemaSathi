@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\AgentInquiryMail;
 use App\Models\AgentInquiry;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -41,9 +42,12 @@ class AdminAgentInquiryController extends Controller
         }
 
         if ($agentInquiry->notified_at) {
-            return response()->json([
-                'message' => 'Agent already notified.',
-            ], 409);
+            $lastNotified = Carbon::parse($agentInquiry->notified_at);
+            if ($lastNotified->diffInDays(now()) < 3) {
+                return response()->json([
+                    'message' => 'Agent already notified. Renotify available after 3 days.',
+                ], 409);
+            }
         }
 
         try {
