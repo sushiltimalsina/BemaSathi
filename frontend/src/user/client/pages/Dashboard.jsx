@@ -115,6 +115,20 @@ const ClientDashboard = () => {
     loadKyc();
   }, []);
 
+  useEffect(() => {
+    const handleProfileUpdated = (event) => {
+      const nextUser = event?.detail?.user;
+      if (nextUser) {
+        setUser(nextUser);
+      } else {
+        fetchUser();
+      }
+    };
+
+    window.addEventListener("profile:updated", handleProfileUpdated);
+    return () => window.removeEventListener("profile:updated", handleProfileUpdated);
+  }, []);
+
   const badgeColor =
     kycStatus === "approved" && allowEdit
       ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100"

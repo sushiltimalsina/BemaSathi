@@ -106,26 +106,60 @@ public function updateProfile(Request $request)
         'name' => 'required|string|max:255',
         'phone' => 'nullable|string|max:30',
         'address' => 'nullable|string|max:255',
-        'dob' => 'nullable|date',
+        'dob' => 'nullable|date|before:today',
         'is_smoker' => 'nullable|boolean',
         'budget_range' => 'nullable|string',
-        'coverage_type' => 'nullable|string',
+        'coverage_type' => 'nullable|in:individual,family',
         'family_members' => 'nullable|integer|min:1|max:20',
         'pre_existing_conditions' => 'nullable|array',
         'pre_existing_conditions.*' => 'in:diabetes,heart,hypertension,asthma',
+        'family_member_details' => 'nullable|array',
+        'family_member_details.*.name' => 'required|string|max:255',
+        'family_member_details.*.relation' => 'required|string|in:Self,Spouse,Son,Daughter,Father,Mother,Brother,Sister,Grandfather,Grandmother',
+        'family_member_details.*.dob' => 'required|date|before:today',
     ]);
+
+    $latestKyc = $user->kycDocuments()->latest()->first();
+    $allowDobEdit = !$latestKyc
+        || $latestKyc->status === 'rejected'
+        || ($latestKyc->status === 'approved' && $latestKyc->allow_edit);
+
+    $coverageType = $validated['coverage_type'] ?? $user->coverage_type;
+    $familyCount = ($coverageType === 'family')
+        ? max(2, (int) ($validated['family_members'] ?? $user->family_members ?? 2))
+        : 1;
+    $familyDetails = $validated['family_member_details']
+        ?? $user->family_member_details
+        ?? [];
+
+    if ($coverageType === 'family') {
+        if (count($familyDetails) !== $familyCount) {
+            return response()->json([
+                'message' => 'Please provide details for all family members.',
+            ], 422);
+        }
+        $selfName = $validated['name'];
+        $selfDob = ($allowDobEdit && isset($validated['dob'])) ? $validated['dob'] : $user->dob;
+        $familyDetails = array_values($familyDetails);
+        $familyDetails[0] = [
+            'name' => $selfName,
+            'relation' => 'Self',
+            'dob' => $selfDob,
+        ];
+    } else {
+        $familyDetails = [];
+    }
 
     $user->update([
         'name' => $validated['name'],
         'phone' => $validated['phone'] ?? $user->phone,
         'address' => $validated['address'] ?? $user->address,
-        'dob' => $validated['dob'] ?? $user->dob,
+        'dob' => $allowDobEdit && isset($validated['dob']) ? $validated['dob'] : $user->dob,
         'is_smoker' => $validated['is_smoker'] ?? $user->is_smoker,
         'budget_range' => $validated['budget_range'] ?? $user->budget_range,
-        'coverage_type' => $validated['coverage_type'] ?? $user->coverage_type,
-        'family_members' => ($validated['coverage_type'] ?? $user->coverage_type) === 'family'
-            ? max(2, (int) ($validated['family_members'] ?? $user->family_members ?? 2))
-            : 1,
+        'coverage_type' => $coverageType,
+        'family_members' => $familyCount,
+        'family_member_details' => $familyDetails,
         'pre_existing_conditions' => $validated['pre_existing_conditions']
             ?? $user->pre_existing_conditions,
     ]);

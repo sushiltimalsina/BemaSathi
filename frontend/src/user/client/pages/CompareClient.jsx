@@ -46,6 +46,22 @@ const CompareClient = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p1, p2]);
 
+  useEffect(() => {
+    const handleProfileUpdated = (event) => {
+      const nextUser = event?.detail?.user;
+      if (nextUser) {
+        setUser(nextUser);
+      } else {
+        fetchUser();
+      }
+      fetchPolicies();
+    };
+
+    window.addEventListener("profile:updated", handleProfileUpdated);
+    return () =>
+      window.removeEventListener("profile:updated", handleProfileUpdated);
+  }, [p1, p2]);
+
   const fetchUser = async () => {
     try {
       const res = await API.get("/me", {

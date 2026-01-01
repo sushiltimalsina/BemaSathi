@@ -131,6 +131,9 @@ const KycPage = () => {
 
       const isFamily = u.data?.coverage_type === "family";
       const count = isFamily ? Number(u.data?.family_members || 2) : 0;
+      const userFamilyDetails = Array.isArray(u.data?.family_member_details)
+        ? u.data.family_member_details
+        : [];
       setFamilyCount(count);
 
       const k = await API.get("/kyc/me");
@@ -143,6 +146,11 @@ const KycPage = () => {
         if (info.document_number) setDocumentNumber(info.document_number);
         if (info.family_members && Array.isArray(info.family_members)) {
           syncFamilyMembers(info.family_members.length, info.family_members, {
+            full_name: u.data?.name || "",
+            dob: u.data?.dob || "",
+          });
+        } else if (userFamilyDetails.length) {
+          syncFamilyMembers(count, userFamilyDetails, {
             full_name: u.data?.name || "",
             dob: u.data?.dob || "",
           });
@@ -164,6 +172,16 @@ const KycPage = () => {
           if (frontUrl) setFrontPreview(frontUrl);
           if (backUrl) setBackPreview(backUrl);
         }
+      } else if (userFamilyDetails.length) {
+        syncFamilyMembers(count, userFamilyDetails, {
+          full_name: u.data?.name || "",
+          dob: u.data?.dob || "",
+        });
+      } else {
+        syncFamilyMembers(count, [], {
+          full_name: u.data?.name || "",
+          dob: u.data?.dob || "",
+        });
       }
     };
     load();
@@ -441,6 +459,16 @@ const KycPage = () => {
           const filtered = existing.filter((item) => item?.id !== submitted.id);
           return [submitted, ...filtered];
         });
+      }
+      try {
+        const me = await API.get("/me");
+        if (me?.data) {
+          window.dispatchEvent(
+            new CustomEvent("profile:updated", { detail: { user: me.data } })
+          );
+        }
+      } catch {
+        // ignore profile sync errors
       }
       setIsEditing(false);
       setLoading(false);

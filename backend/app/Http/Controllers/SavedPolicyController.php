@@ -77,7 +77,7 @@ class SavedPolicyController extends Controller
             ->latest()
             ->first();
 
-        $dob = $approvedKyc?->dob ?? $user->dob;
+        $dob = $user->dob ?? $approvedKyc?->dob;
         $age = $dob ? Carbon::parse($dob)->age : null;
         if (!$age || $age < 1 || $age > 120) {
             $age = 30;

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Policy;
 use App\Models\User;
+use App\Models\Payment;
 use App\Services\PremiumCalculator;
 use Illuminate\Support\Carbon;
 
@@ -17,7 +18,22 @@ class RecommendationController extends Controller
         $user = $request->user();
         $type = $request->query('insurance_type');
 
-        $policies = Policy::when($type, fn($q) => $q->where('insurance_type', $type))->get();
+        $ownedPolicyIds = collect();
+        if ($user) {
+            $ownedPolicyIds = Payment::query()
+                ->where('user_id', $user->id)
+                ->where('is_verified', true)
+                ->whereIn('status', ['success', 'paid', 'completed'])
+                ->pluck('policy_id')
+                ->filter()
+                ->unique();
+        }
+
+        $policies = Policy::when($type, fn($q) => $q->where('insurance_type', $type))
+            ->when($ownedPolicyIds->isNotEmpty(), function ($q) use ($ownedPolicyIds) {
+                $q->whereNotIn('id', $ownedPolicyIds);
+            })
+            ->get();
 
         $profile = $this->resolveProfile($user);
 
@@ -114,7 +130,7 @@ class RecommendationController extends Controller
     {
         $kyc = $user->kycDocuments()->where('status', 'approved')->latest()->first();
 
-        $dob = $kyc?->dob ?? $user->dob;
+        $dob = $user->dob ?? $kyc?->dob;
         $age = ($dob ? Carbon::parse($dob)->age : 30);
 
         return [

@@ -65,6 +65,15 @@ const AllPolicies = () => {
     fetchSaved();
   }, []);
 
+  useEffect(() => {
+    const handleProfileUpdated = () => {
+      fetchPolicies();
+    };
+
+    window.addEventListener("profile:updated", handleProfileUpdated);
+    return () => window.removeEventListener("profile:updated", handleProfileUpdated);
+  }, []);
+
   // URL changes update filters
   useEffect(() => {
     const params = new URLSearchParams(location.search);

@@ -151,6 +151,26 @@ class KycController extends Controller
             $kyc = KycDocument::create($payload);
         }
 
+        $userUpdates = [
+            'name' => $payload['full_name'] ?? $user->name,
+            'phone' => $payload['phone'] ?? $user->phone,
+            'address' => $payload['address'] ?? $user->address,
+        ];
+        if ($request->filled('dob')) {
+            $userUpdates['dob'] = $payload['dob'] ?? $user->dob;
+        }
+        if (is_array($familyMembers)) {
+            $userUpdates['family_member_details'] = $familyMembers;
+            $userUpdates['family_members'] = max(1, count($familyMembers));
+        }
+        if (!empty($userUpdates)) {
+            try {
+                $user->update($userUpdates);
+            } catch (\Throwable $e) {
+                // ignore profile sync errors
+            }
+        }
+
         if (($existing && $editPending) || $editApproved) {
             $ticket = SupportTicket::where('user_id', $user->id)
                 ->whereIn('category', ['kyc_update', 'kyc update'])

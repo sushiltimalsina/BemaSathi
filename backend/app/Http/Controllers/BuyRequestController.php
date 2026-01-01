@@ -144,7 +144,7 @@ class BuyRequestController extends Controller
     {
         $kyc = $user->kycDocuments()->where('status', 'approved')->latest()->first();
 
-        $dob = $kyc?->dob ?? $user->dob;
+        $dob = $user->dob ?? $kyc?->dob;
         $age = ($dob ? Carbon::parse($dob)->age : 30);
 
         return [

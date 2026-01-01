@@ -3,6 +3,17 @@ import { useNavigate } from "react-router-dom";
 import API from "../../../api/api";
 
 const CONDITIONS = ["diabetes", "heart", "hypertension", "asthma"];
+const RELATIONS = [
+  "Spouse",
+  "Son",
+  "Daughter",
+  "Father",
+  "Mother",
+  "Brother",
+  "Sister",
+  "Grandfather",
+  "Grandmother",
+];
 
 const MyProfile = () => {
   const [user, setUser] = useState(null);
@@ -12,17 +23,37 @@ const MyProfile = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [kycStatus, setKycStatus] = useState("not_submitted");
+  const [allowDobEdit, setAllowDobEdit] = useState(false);
+  const [familyDetails, setFamilyDetails] = useState([]);
 
   const token = localStorage.getItem("client_token");
   const navigate = useNavigate();
-
-  const isLocked = kycStatus === "approved";
 
   // Reset messages on mount
   useEffect(() => {
     setError("");
     setSuccess("");
   }, []);
+
+  const syncFamilyDetails = (count, existing = [], selfProfile = null) => {
+    const total = Math.max(0, Number(count || 0));
+    const next = Array.from({ length: total }).map((_, idx) => {
+      const prev = existing[idx] || {};
+      if (idx === 0 && selfProfile) {
+        return {
+          name: selfProfile.name || "",
+          relation: "Self",
+          dob: selfProfile.dob || "",
+        };
+      }
+      return {
+        name: prev.name || "",
+        relation: prev.relation || "",
+        dob: prev.dob || "",
+      };
+    });
+    setFamilyDetails(next);
+  };
 
   // Load user + KYC
   useEffect(() => {
@@ -38,15 +69,34 @@ const MyProfile = () => {
             : [],
           is_smoker: !!data.is_smoker,
           family_members: data.family_members ?? 1,
+          family_member_details: Array.isArray(data.family_member_details)
+            ? data.family_member_details
+            : [],
         };
 
         setUser(normalized);
         setOriginalUser(normalized);
 
+        if (normalized.coverage_type === "family") {
+          syncFamilyDetails(
+            normalized.family_members,
+            normalized.family_member_details,
+            { name: normalized.name, dob: normalized.dob }
+          );
+        } else {
+          setFamilyDetails([]);
+        }
+
         const k = await API.get("/kyc/me");
         const list = k.data?.data || [];
-        const status = list.length ? list[0].status : "not_submitted";
+        const latest = list.length ? list[0] : null;
+        const status = latest?.status || "not_submitted";
         setKycStatus(status);
+        setAllowDobEdit(
+          status === "not_submitted" ||
+            status === "rejected" ||
+            (status === "approved" && Boolean(latest?.allow_edit))
+        );
       } catch {
         setError("Failed to load profile.");
       } finally {
@@ -60,8 +110,22 @@ const MyProfile = () => {
   const inputEnabled =
     "w-full mt-1 px-3 py-2 rounded-lg text-sm border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark";
 
-  const inputDisabled =
-    "w-full mt-1 px-3 py-2 rounded-lg text-sm bg-gray-200/90 dark:bg-slate-700/70 text-gray-500 dark:text-gray-300 opacity-80 cursor-not-allowed";
+  useEffect(() => {
+    if (!user) return;
+    if (user.coverage_type === "family") {
+      const count = Math.max(2, Number(user.family_members || 2));
+      if (count !== user.family_members) {
+        setUser((prev) => ({ ...prev, family_members: count }));
+      }
+      syncFamilyDetails(count, familyDetails, { name: user.name, dob: user.dob });
+    } else {
+      if (user.family_members !== 1) {
+        setUser((prev) => ({ ...prev, family_members: 1 }));
+      }
+      setFamilyDetails([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.coverage_type, user?.family_members, user?.name, user?.dob]);
 
   const badgeColor =
     kycStatus === "approved"
@@ -81,7 +145,6 @@ const MyProfile = () => {
     );
 
   const startEditing = () => {
-    if (isLocked) return;
     setError("");
     setSuccess("");
     setOriginalUser(user); // snapshot before editing
@@ -99,32 +162,70 @@ const MyProfile = () => {
 
   const handleUpdate = async (e) => {
     e.preventDefault();
-    if (isLocked) return;
 
     setError("");
     setSuccess("");
 
     try {
-          await API.put(
+      const payload = {
+        name: user.name,
+        phone: user.phone,
+        address: user.address,
+        is_smoker: user.is_smoker ? 1 : 0,
+        budget_range: user.budget_range,
+        coverage_type: user.coverage_type,
+        family_members:
+          user.coverage_type === "family"
+            ? Number(user.family_members || 2)
+            : 1,
+        pre_existing_conditions: user.pre_existing_conditions,
+        family_member_details:
+          user.coverage_type === "family" ? familyDetails : [],
+      };
+      if (allowDobEdit) {
+        payload.dob = user.dob;
+      }
+
+      if (user.coverage_type === "family") {
+        if (!payload.family_members || payload.family_members < 2) {
+          setError("Family coverage must include at least 2 members.");
+          return;
+        }
+        if (familyDetails.length !== payload.family_members) {
+          setError("Please provide details for all family members.");
+          return;
+        }
+        const invalid = familyDetails.some(
+          (m) => !m.name?.trim() || !m.relation?.trim() || !m.dob
+        );
+        if (invalid) {
+          setError("Please fill name, relation, and DOB for all family members.");
+          return;
+        }
+      }
+
+      const res = await API.put(
         "/update-profile",
-        {
-          name: user.name,
-          phone: user.phone,
-          address: user.address,
-          dob: user.dob,
-          is_smoker: user.is_smoker ? 1 : 0,
-          budget_range: user.budget_range,
-          coverage_type: user.coverage_type,
-          family_members:
-            user.coverage_type === "family"
-              ? Number(user.family_members || 2)
-              : 1,
-          pre_existing_conditions: user.pre_existing_conditions,
-        },
+        payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      localStorage.setItem("force_recalculate", "1");
+      const nextUser = res.data?.user || user;
+      setUser(nextUser);
+      setOriginalUser(nextUser);
+      if (nextUser.coverage_type === "family") {
+        syncFamilyDetails(
+          nextUser.family_members,
+          nextUser.family_member_details || familyDetails,
+          { name: nextUser.name, dob: nextUser.dob }
+        );
+      } else {
+        setFamilyDetails([]);
+      }
+      localStorage.setItem("profile_updated_at", Date.now().toString());
+      window.dispatchEvent(
+        new CustomEvent("profile:updated", { detail: { user: nextUser } })
+      );
       setSuccess("Profile updated successfully.");
       setEditing(false);
     } catch {
@@ -191,20 +292,12 @@ const MyProfile = () => {
             }
           />
 
-          {!isLocked && (
-            <button
-              onClick={startEditing}
-              className="px-4 py-2 bg-primary-light text-white rounded-lg text-sm hover:opacity-90"
-            >
-              Edit Profile
-            </button>
-          )}
-
-          {isLocked && (
-            <div className="mt-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-lg text-green-800 dark:text-green-200 text-sm">
-              Your KYC is approved. Profile is locked and cannot be edited.
-            </div>
-          )}
+          <button
+            onClick={startEditing}
+            className="px-4 py-2 bg-primary-light text-white rounded-lg text-sm hover:opacity-90"
+          >
+            Edit Profile
+          </button>
 
           {error && <div className="text-red-500 text-sm">{error}</div>}
           {success && <div className="text-green-600 text-sm">{success}</div>}
@@ -212,7 +305,7 @@ const MyProfile = () => {
       )}
 
       {/* EDIT MODE */}
-      {editing && !isLocked && (
+      {editing && (
         <form
           onSubmit={handleUpdate}
           className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl p-6 space-y-5 shadow mt-5 text-text-light dark:text-text-dark"
@@ -242,7 +335,18 @@ const MyProfile = () => {
           {/* DOB LOCKED */}
           <div>
             <label className="text-xs opacity-80">Date of Birth</label>
-            <input type="date" disabled value={user.dob || ""} className={inputDisabled} />
+            <input
+              type="date"
+              value={user.dob || ""}
+              className={inputEnabled}
+              disabled={!allowDobEdit}
+              onChange={(e) => setUser({ ...user, dob: e.target.value })}
+            />
+            <p className="text-[11px] opacity-70 mt-1">
+              {allowDobEdit
+                ? "DOB edit is available when KYC is not submitted, rejected, or update access is granted."
+                : "Date of birth is locked after registration. To update request KYC update from support."}
+            </p>
           </div>
 
           <SelectRow
@@ -262,16 +366,93 @@ const MyProfile = () => {
           />
 
           {user.coverage_type === "family" && (
-            <InputRow
-              label="Family Members Covered"
-              field="family_members"
-              user={user}
-              setUser={setUser}
-              inputClass={inputEnabled}
-              type="number"
-              min="2"
-              max="20"
-            />
+            <>
+              <InputRow
+                label="Family Members Covered"
+                field="family_members"
+                user={user}
+                setUser={setUser}
+                inputClass={inputEnabled}
+                type="number"
+                min="2"
+                max="20"
+              />
+
+              <div>
+                <label className="text-xs opacity-80">Family Member Details</label>
+                <p className="text-[11px] opacity-70 mt-1">
+                  Add name, relation, and DOB for each covered member.
+                </p>
+
+                <div className="space-y-3 mt-3">
+                  {familyDetails.map((member, idx) => {
+                    const isSelf = idx === 0;
+                    return (
+                      <div
+                        key={idx}
+                        className="grid md:grid-cols-3 gap-3 p-3 rounded-lg border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark"
+                      >
+                        <div>
+                          <label className="text-[11px] opacity-80">Full Name</label>
+                          <input
+                            className={inputEnabled}
+                            value={isSelf ? user.name : member.name}
+                            disabled={isSelf}
+                            onChange={(e) => {
+                              const next = [...familyDetails];
+                              next[idx] = { ...next[idx], name: e.target.value };
+                              setFamilyDetails(next);
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] opacity-80">Relation</label>
+                          <select
+                            className={inputEnabled}
+                            value={isSelf ? "Self" : member.relation}
+                            disabled={isSelf}
+                            onChange={(e) => {
+                              const next = [...familyDetails];
+                              next[idx] = { ...next[idx], relation: e.target.value };
+                              setFamilyDetails(next);
+                            }}
+                          >
+                            {isSelf ? (
+                              <option value="Self">Self</option>
+                            ) : (
+                              <>
+                                <option value="">Select relation</option>
+                                {RELATIONS.map((rel) => (
+                                  <option key={rel} value={rel}>
+                                    {rel}
+                                  </option>
+                                ))}
+                              </>
+                            )}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] opacity-80">Date of Birth</label>
+                          <input
+                            type="date"
+                            className={inputEnabled}
+                            value={isSelf ? user.dob || "" : member.dob || ""}
+                            disabled={isSelf}
+                            onChange={(e) => {
+                              const next = [...familyDetails];
+                              next[idx] = { ...next[idx], dob: e.target.value };
+                              setFamilyDetails(next);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
           )}
 
           {/* SMOKER */}
