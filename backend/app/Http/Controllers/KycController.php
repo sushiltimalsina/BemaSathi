@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\KycDocument;
+use App\Models\SupportTicket;
+use App\Models\SupportMessage;
 use Illuminate\Support\Facades\Auth;
 use App\Services\NotificationService;
 
@@ -141,6 +143,25 @@ class KycController extends Controller
             $kyc = KycDocument::create($payload);
         }
 
+        if (($existing && $editPending) || $editApproved) {
+            $ticket = SupportTicket::where('user_id', $user->id)
+                ->whereIn('category', ['kyc_update', 'kyc update'])
+                ->latest()
+                ->first();
+            if ($ticket) {
+                SupportMessage::create([
+                    'ticket_id' => $ticket->id,
+                    'user_id' => $user->id,
+                    'message' => 'KYC resubmitted. Please review.',
+                    'is_admin' => false,
+                ]);
+                $ticket->update([
+                    'status' => 'open',
+                    'is_admin_seen' => false,
+                ]);
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => ($existing && $editPending) || $editApproved
@@ -231,7 +252,20 @@ class KycController extends Controller
                 $msg .= ' Remarks: ' . $kyc->remarks;
             }
 
-            $this->notifier->notify($kyc->user, $title, $msg, []);
+        $this->notifier->notify($kyc->user, $title, $msg, []);
+        }
+
+        if (in_array($kyc->status, ['approved', 'rejected'], true)) {
+            $ticket = SupportTicket::where('user_id', $kyc->user_id)
+                ->whereIn('category', ['kyc_update', 'kyc update'])
+                ->latest()
+                ->first();
+            if ($ticket) {
+                $ticket->update([
+                    'status' => 'closed',
+                    'is_admin_seen' => true,
+                ]);
+            }
         }
 
         return response()->json([

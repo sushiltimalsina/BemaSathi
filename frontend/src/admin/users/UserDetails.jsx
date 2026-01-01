@@ -262,7 +262,7 @@ const UserDetails = ({ user, onClose }) => {
                   </button>
                 </div>
               )}
-              {kyc?.status === "approved" && !kyc?.allow_edit && (
+              {kyc?.status === "approved" && !kyc?.allow_edit && kyc?.has_kyc_update_request && (
                 <div className="mt-4">
                   <button
                     onClick={allowKycEdit}

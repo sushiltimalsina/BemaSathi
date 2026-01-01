@@ -156,6 +156,7 @@ const SupportList = () => {
                   <th className="px-4 py-3 text-left">Priority</th>
                   <th className="px-4 py-3 text-left">Status</th>
                   <th className="px-4 py-3 text-left"></th>
+                  <th className="px-4 py-3 text-left"></th>
                 </tr>
               </thead>
 
@@ -211,6 +212,23 @@ const SupportList = () => {
                         "
                       >
                         <EyeIcon className="w-4 h-4" /> View
+                      </button>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => {
+                          if (t.user?.id) {
+                            navigate(`/admin/users?user=${t.user.id}`);
+                          }
+                        }}
+                        className="
+                          flex items-center gap-2 px-3 py-1 rounded-lg text-xs border
+                          border-slate-300 dark:border-slate-700
+                          hover:bg-slate-100 dark:hover:bg-slate-800
+                        "
+                        disabled={!t.user?.id}
+                      >
+                        User Details
                       </button>
                     </td>
                   </tr>

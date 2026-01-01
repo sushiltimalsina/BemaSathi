@@ -517,7 +517,11 @@ const KycPage = () => {
             {isApproved && !canEditApproved && (
               <button
                 type="button"
-                onClick={() => navigate("/client/support/new")}
+                onClick={() =>
+                  navigate(
+                    "/client/support/new?category=kyc_update&priority=high&subject=KYC%20Update%20Request"
+                  )
+                }
                 className="mt-2 text-xs text-primary-light dark:text-primary-dark hover:underline"
               >
                 Want to update KYC details? Click here.

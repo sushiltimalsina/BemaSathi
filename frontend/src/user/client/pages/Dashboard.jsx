@@ -19,6 +19,7 @@ const ClientDashboard = () => {
   const [recError, setRecError] = useState("");
   const [type, setType] = useState("health");
   const [kycStatus, setKycStatus] = useState("not_submitted");
+  const [allowEdit, setAllowEdit] = useState(false);
   const [ownedMap, setOwnedMap] = useState({});
 
   const navigate = useNavigate();
@@ -102,17 +103,22 @@ const ClientDashboard = () => {
           headers: { Authorization: `Bearer ${localStorage.getItem("client_token")}` },
         });
         const data = res.data?.data;
-        const status = Array.isArray(data) ? data[0]?.status : data?.status;
+        const latest = Array.isArray(data) ? data[0] : data;
+        const status = latest?.status;
         setKycStatus(status || "not_submitted");
+        setAllowEdit(Boolean(latest?.allow_edit));
       } catch {
         setKycStatus("not_submitted");
+        setAllowEdit(false);
       }
     };
     loadKyc();
   }, []);
 
   const badgeColor =
-    kycStatus === "approved"
+    kycStatus === "approved" && allowEdit
+      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100"
+      : kycStatus === "approved"
       ? "bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-100"
       : kycStatus === "pending"
       ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100"
@@ -193,7 +199,9 @@ const ClientDashboard = () => {
             <span
               className={`px-3 py-1 rounded-full text-xs font-semibold ${badgeColor}`}
         >
-        {kycStatus === "not_submitted"
+        {kycStatus === "approved" && allowEdit
+            ? "Reapproval Needed"
+            : kycStatus === "not_submitted"
             ? "Not Submitted"
             : kycStatus.charAt(0).toUpperCase() + kycStatus.slice(1)}
         </span>

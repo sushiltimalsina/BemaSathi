@@ -8,6 +8,7 @@ import {
   FunnelIcon,
 } from "@heroicons/react/24/outline";
 import UserDetails from "./UserDetails";
+import { useLocation } from "react-router-dom";
 
 const UserList = () => {
   const [items, setItems] = useState([]);
@@ -16,6 +17,7 @@ const UserList = () => {
   const [status, setStatus] = useState("all");
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
+  const location = useLocation();
 
   const load = async () => {
     try {
@@ -31,6 +33,17 @@ const UserList = () => {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    if (!items.length) return;
+    const query = new URLSearchParams(location.search);
+    const targetId = Number(query.get("user"));
+    if (!targetId) return;
+    const match = items.find((u) => u.id === targetId);
+    if (match) {
+      setSelectedUser(match);
+    }
+  }, [items, location.search]);
 
   const filtered = useMemo(() => {
     return items.filter((u) => {

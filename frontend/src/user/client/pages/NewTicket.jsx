@@ -1,16 +1,25 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import API from "../../../api/api";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const NewTicket = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const query = useMemo(
+    () => new URLSearchParams(location.search),
+    [location.search]
+  );
+  const initialSubject = query.get("subject") || "";
+  const initialCategory = query.get("category") || "general";
+  const initialPriority = query.get("priority") || "normal";
 
-  const [form, setForm] = useState({
-    subject: "",
-    category: "general",
-    priority: "normal",
+  const [form, setForm] = useState(() => ({
+    subject: initialSubject,
+    category: initialCategory,
+    priority: initialPriority,
     message: "",
-  });
+  }));
+  const [popup, setPopup] = useState({ open: false, message: "" });
 
   const [saving, setSaving] = useState(false);
 
@@ -18,7 +27,7 @@ const NewTicket = () => {
 
   const submit = async () => {
     if (!form.subject.trim() || !form.message.trim()) {
-      alert("Subject and message are required.");
+      setPopup({ open: true, message: "Subject and message are required." });
       return;
     }
 
@@ -28,7 +37,7 @@ const NewTicket = () => {
       navigate("/client/support");
     } catch (err) {
       console.error(err);
-      alert("Failed to create ticket.");
+      setPopup({ open: true, message: "Failed to create ticket." });
     }
     setSaving(false);
   };
@@ -100,6 +109,24 @@ const NewTicket = () => {
           {saving ? "Creating..." : "Create Ticket"}
         </button>
       </div>
+
+      {popup.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-xl">
+            <div className="text-sm font-semibold mb-2">Notice</div>
+            <div className="text-sm opacity-80">{popup.message}</div>
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setPopup({ open: false, message: "" })}
+                className="px-4 py-2 rounded-lg bg-primary-light text-white text-sm font-semibold hover:bg-primary-dark"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

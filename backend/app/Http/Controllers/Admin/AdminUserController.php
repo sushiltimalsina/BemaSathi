@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\KycDocument;
+use App\Models\SupportTicket;
 use Illuminate\Http\Request;
 
 class AdminUserController extends Controller
@@ -39,6 +40,10 @@ class AdminUserController extends Controller
         $base = request()->root();
         $frontUrl = $kyc->front_path ? $base . '/storage/' . ltrim($kyc->front_path, '/') : null;
         $backUrl = $kyc->back_path ? $base . '/storage/' . ltrim($kyc->back_path, '/') : null;
+        $hasKycUpdateRequest = SupportTicket::where('user_id', $user->id)
+            ->whereIn('category', ['kyc_update', 'kyc update'])
+            ->whereIn('status', ['open', 'in_progress'])
+            ->exists();
 
         return response()->json([
             'id' => $kyc->id,
@@ -59,6 +64,7 @@ class AdminUserController extends Controller
             'front_image' => $frontUrl,
             'back_image' => $backUrl,
             'main_image' => $frontUrl,
+            'has_kyc_update_request' => $hasKycUpdateRequest,
         ]);
     }
 
@@ -81,6 +87,19 @@ class AdminUserController extends Controller
 
         $kyc->update(['status' => $data['status'], 'allow_edit' => false]);
 
+        if (in_array($data['status'], ['approved', 'rejected'], true)) {
+            $ticket = SupportTicket::where('user_id', $user->id)
+                ->whereIn('category', ['kyc_update', 'kyc update'])
+                ->latest()
+                ->first();
+            if ($ticket) {
+                $ticket->update([
+                    'status' => 'closed',
+                    'is_admin_seen' => true,
+                ]);
+            }
+        }
+
         return response()->json(['message' => 'KYC updated', 'kyc' => $kyc]);
     }
 
@@ -94,6 +113,15 @@ class AdminUserController extends Controller
         if ($kyc->status !== 'approved') {
             return response()->json([
                 'message' => 'Only approved KYC can be reopened for edits.',
+            ], 422);
+        }
+
+        $hasRequest = SupportTicket::where('user_id', $user->id)
+            ->whereIn('category', ['kyc_update', 'kyc update'])
+            ->exists();
+        if (!$hasRequest) {
+            return response()->json([
+                'message' => 'User must request a KYC update via support before edit access can be granted.',
             ], 422);
         }
 

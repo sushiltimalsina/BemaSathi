@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from "react";
 import API from "../../../api/api";
-import {
-  ChatBubbleLeftRightIcon,
-  EyeIcon,
-} from "@heroicons/react/24/outline";
+import { EyeIcon } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 
 const MyTickets = () => {
