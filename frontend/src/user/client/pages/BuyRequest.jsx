@@ -133,7 +133,13 @@ const BuyRequest = () => {
 
         const latest = list.length ? list[0] : null;
 
-        setKycStatus(latest?.status || "not_submitted");
+        const latestStatus = latest?.status || "not_submitted";
+        setKycStatus(latestStatus);
+
+        if (latestStatus === "approved" && latest?.allow_edit) {
+          navigate("/client/kyc", { replace: true });
+          return;
+        }
 
         setForm({
           name: latest?.full_name || user.name || "",

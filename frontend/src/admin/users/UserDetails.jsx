@@ -93,6 +93,25 @@ const UserDetails = ({ user, onClose }) => {
     }
   };
 
+  const allowKycEdit = async () => {
+    const confirmed = await confirm(
+      "Allow this user to update KYC details? They will need to resubmit for approval.",
+      { title: "Allow KYC Update", confirmText: "Allow" }
+    );
+    if (!confirmed) return;
+    try {
+      const res = await API.post(`/admin/users/${user.id}/kyc-allow-edit`);
+      setKyc((prev) => ({ ...prev, ...(res.data?.kyc || {}), allow_edit: true }));
+      addToast({
+        type: "success",
+        title: "Edit access granted",
+        message: "User can now update and resubmit KYC.",
+      });
+    } catch (e) {
+      addToast({ type: "error", title: "Update failed", message: "Failed to allow KYC edit." });
+    }
+  };
+
   const formatType = (type) => {
     switch (type) {
       case "citizenship":
@@ -240,6 +259,16 @@ const UserDetails = ({ user, onClose }) => {
                     className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
                   >
                     Reject
+                  </button>
+                </div>
+              )}
+              {kyc?.status === "approved" && !kyc?.allow_edit && (
+                <div className="mt-4">
+                  <button
+                    onClick={allowKycEdit}
+                    className="px-4 py-2 rounded-lg bg-amber-600 text-white hover:bg-amber-700"
+                  >
+                    Allow KYC Update
                   </button>
                 </div>
               )}

@@ -24,6 +24,7 @@ const PaymentPage = () => {
   const [error, setError] = useState("");
   const [paying, setPaying] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
+  const [accessBlocked, setAccessBlocked] = useState(false);
 
   const fmt = (n) =>
     Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
@@ -64,6 +65,25 @@ const PaymentPage = () => {
   };
 
   useEffect(() => {
+    const checkKyc = async () => {
+      try {
+        const res = await API.get("/kyc/me");
+        const list = res.data?.data || [];
+        const latest = list.length ? list[0] : null;
+        if (latest?.status === "approved" && latest?.allow_edit) {
+          setAccessBlocked(true);
+          navigate("/client/kyc", { replace: true });
+        }
+      } catch (err) {
+        // ignore KYC lookup errors
+      }
+    };
+
+    checkKyc();
+  }, [navigate]);
+
+  useEffect(() => {
+    if (accessBlocked) return;
     if (!requestId && !paymentId) {
       setError("Invalid request ID.");
       setLoading(false);
@@ -74,7 +94,7 @@ const PaymentPage = () => {
     } else if (paymentId) {
       loadRequestByPayment(paymentId);
     }
-  }, [requestId, paymentId]);
+  }, [requestId, paymentId, accessBlocked]);
 
   const loadRequestByBuyRequest = async (reqId) => {
     try {

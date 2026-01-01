@@ -41,6 +41,12 @@ class BuyRequestController extends Controller
                 'message' => 'KYC approval required before submitting a request.'
             ], 403);
         }
+        if ($latestKyc->allow_edit) {
+            return response()->json([
+                'success' => false,
+                'message' => 'KYC edit access granted. Please resubmit KYC before submitting a request.'
+            ], 403);
+        }
 
         // Load user profile values
         $profile = $this->resolveProfile($user);

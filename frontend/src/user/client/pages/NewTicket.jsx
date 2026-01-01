@@ -58,6 +58,7 @@ const NewTicket = () => {
           >
             <option value="general">General</option>
             <option value="kyc">KYC Issue</option>
+            <option value="kyc_update">KYC Update Request</option>
             <option value="payment">Payment Issue</option>
             <option value="policy">Policy Issue</option>
             <option value="renewal">Renewal Issue</option>

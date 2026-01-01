@@ -19,6 +19,7 @@ class KycDocument extends Model
         'back_path',
         'family_members',
         'status',
+        'allow_edit',
         'remarks',
         'verified_at',
     ];
@@ -30,5 +31,6 @@ class KycDocument extends Model
 
     protected $casts = [
         'family_members' => 'array',
+        'allow_edit' => 'boolean',
     ];
 }

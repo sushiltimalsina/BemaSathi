@@ -76,6 +76,16 @@ class PaymentController extends Controller
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
+        $latestKyc = $request->user()?->kycDocuments()->latest()->first();
+        if (!$latestKyc || $latestKyc->status !== 'approved') {
+            return response()->json(['message' => 'KYC approval required before payment.'], 403);
+        }
+        if ($latestKyc->allow_edit) {
+            return response()->json([
+                'message' => 'KYC edit access granted. Please resubmit KYC before payment.'
+            ], 403);
+        }
+
         $cycle = $data['billing_cycle'] ?? $br->billing_cycle;
 
         $amount = $this->resolveAmount($br, $cycle);
@@ -204,6 +214,16 @@ class PaymentController extends Controller
 
         if ($br->user_id !== $request->user()?->id) {
             return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $latestKyc = $request->user()?->kycDocuments()->latest()->first();
+        if (!$latestKyc || $latestKyc->status !== 'approved') {
+            return response()->json(['message' => 'KYC approval required before payment.'], 403);
+        }
+        if ($latestKyc->allow_edit) {
+            return response()->json([
+                'message' => 'KYC edit access granted. Please resubmit KYC before payment.'
+            ], 403);
         }
 
         $cycle = $data['billing_cycle'] ?? $br->billing_cycle;

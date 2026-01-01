@@ -28,9 +28,11 @@ const KycPage = () => {
   const kycStatus = latestKyc?.status || "not_submitted";
   const isPending = kycStatus === "pending";
   const isApproved = kycStatus === "approved";
+  const allowEdit = Boolean(latestKyc?.allow_edit);
+  const canEditApproved = isApproved && allowEdit;
   // Lock edits if KYC is pending or approved
   const [isEditing, setIsEditing] = useState(false);
-  const isLocked = isApproved || (isPending && !isEditing);
+  const isLocked = isApproved ? !canEditApproved || !isEditing : (isPending && !isEditing);
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
@@ -207,6 +209,26 @@ const KycPage = () => {
     return true;
   };
 
+  const isDobValid = (value) => {
+    if (!value) return false;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date <= today;
+  };
+  const isNameValid = (value) => {
+    if (!value) return false;
+    const cleaned = value.trim();
+    if (cleaned.length < 2) return false;
+    return /^[A-Za-z\s]+$/.test(cleaned);
+  };
+  const isAddressValid = (value) => {
+    if (!value) return false;
+    const cleaned = value.trim();
+    return cleaned.length >= 5 && cleaned.length <= 255;
+  };
+
   // Input upload
   const handleFileInput = (e, type) => {
     if (isLocked) return;
@@ -342,6 +364,15 @@ const KycPage = () => {
     if (documentType === "citizenship" && !backPreview)
       return setError("Back document required for citizenship.");
     if (!documentNumber.trim()) return setError("Document number is required.");
+    if (!isNameValid(profile.full_name)) {
+      return setError("Name must be at least 2 characters and contain only letters and spaces.");
+    }
+    if (!isAddressValid(profile.address)) {
+      return setError("Address must be between 5 and 255 characters.");
+    }
+    if (!isDobValid(profile.dob)) {
+      return setError("Please enter a valid date of birth for yourself.");
+    }
     if (user?.coverage_type === "family") {
       const members = familyMembers.map((m, idx) =>
         idx === 0
@@ -361,6 +392,14 @@ const KycPage = () => {
       );
       if (invalid) {
         return setError("Please fill name, relation, and DOB for all family members.");
+      }
+      const invalidNames = members.some((m) => !isNameValid(m.name));
+      if (invalidNames) {
+        return setError("Family member names must be at least 2 characters and contain only letters and spaces.");
+      }
+      const invalidDob = members.some((m) => !isDobValid(m.dob));
+      if (invalidDob) {
+        return setError("Please enter a valid date of birth for all family members.");
       }
     }
 
@@ -420,40 +459,72 @@ const KycPage = () => {
       {(isPending || isApproved) && (
         <div
           className={`mb-4 p-4 rounded-xl border flex items-center gap-3 ${
-            isApproved
+            canEditApproved || isPending
+              ? "bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700"
+              : isApproved
               ? "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700"
               : "bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700"
           }`}
         >
-          <svg
-            className={`w-6 h-6 ${isApproved ? "text-green-600 dark:text-green-300" : "text-amber-600 dark:text-amber-300"}`}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 11l2 2 4-4m-2-6a9 9 0 100 18 9 9 0 000-18z" />
-          </svg>
+          {canEditApproved ? (
+            <svg
+              className="w-6 h-6 text-amber-600 dark:text-amber-300"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3m0 4h.01M10.29 3.86l-7 12a1 1 0 00.86 1.5h14.7a1 1 0 00.86-1.5l-7-12a1 1 0 00-1.72 0z" />
+            </svg>
+          ) : (
+            <svg
+              className={`w-6 h-6 ${isApproved ? "text-green-600 dark:text-green-300" : "text-amber-600 dark:text-amber-300"}`}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 11l2 2 4-4m-2-6a9 9 0 100 18 9 9 0 000-18z" />
+            </svg>
+          )}
           <div>
             <p
               className={`text-sm font-semibold ${
                 isApproved ? "text-green-800 dark:text-green-200" : "text-amber-800 dark:text-amber-100"
               }`}
             >
-              {isApproved ? "KYC Verified & Locked" : "KYC Submitted - Pending Review"}
+              {canEditApproved
+                ? "Reapproval Needed"
+                : isApproved
+                ? "KYC Verified"
+                : "KYC Submitted - Pending Review"}
             </p>
             <p
               className={`text-xs ${
-                isApproved
+                canEditApproved
+                  ? "text-amber-700/80 dark:text-amber-200/80"
+                  : isApproved
                   ? "text-green-700/80 dark:text-green-200/80"
                   : "text-amber-700/80 dark:text-amber-200/80"
               }`}
             >
-              {isApproved
+              {canEditApproved
+                ? "Admin granted edit access. Please update and resubmit."
+                : isApproved
                 ? "You can view details but cannot edit them."
                 : "Your KYC was submitted and is awaiting approval."}
             </p>
+            {isApproved && !canEditApproved && (
+              <button
+                type="button"
+                onClick={() => navigate("/client/support/new")}
+                className="mt-2 text-xs text-primary-light dark:text-primary-dark hover:underline"
+              >
+                Want to update KYC details? Click here.
+              </button>
+            )}
           </div>
-          {isPending && !isEditing && (
+          {(isPending || canEditApproved) && !isEditing && (
             <button
               type="button"
               onClick={() => setIsEditing(true)}
@@ -498,12 +569,16 @@ const KycPage = () => {
                     ? "bg-hover-light dark:bg-hover-dark text-text-light dark:text-text-dark border-border-light dark:border-border-dark"
                     : latestKyc.status === "pending"
                     ? "bg-yellow-100 dark:bg-yellow-600 text-yellow-800 dark:text-yellow-100 border-yellow-300 dark:border-yellow-700"
+                    : latestKyc.status === "approved" && allowEdit
+                    ? "bg-yellow-100 dark:bg-yellow-600 text-yellow-800 dark:text-yellow-100 border-yellow-300 dark:border-yellow-700"
                     : latestKyc.status === "approved"
                     ? "bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-100 border-green-300 dark:border-green-700"
                     : "bg-red-100 dark:bg-red-700 text-red-700 dark:text-red-200 border-red-300 dark:border-red-800"
                 }`}
             >
-              {latestKyc?.status || "Not Submitted"}
+              {latestKyc?.status === "approved" && allowEdit
+                ? "Approved (Edit Enabled)"
+                : latestKyc?.status || "Not Submitted"}
             </span>
           </div>
         </div>
@@ -529,9 +604,9 @@ const KycPage = () => {
           onSubmit={handleSubmit}
           className="p-6 rounded-xl shadow bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark space-y-8"
         >
-          {isPending && isEditing && (
+          {(isPending || canEditApproved) && isEditing && (
             <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 text-xs">
-              Editing a pending KYC requires resubmission. Please review all details before submitting.
+              Editing KYC requires resubmission. Please review all details before submitting.
             </div>
           )}
 
@@ -790,7 +865,7 @@ const KycPage = () => {
               disabled={loading}
               className="w-full py-3 rounded-lg text-white font-semibold bg-primary-light hover:bg-primary-light/90"
             >
-              {loading ? "Submitting..." : isPending && isEditing ? "Resubmit KYC" : "Submit KYC"}
+              {loading ? "Submitting..." : isEditing && (isPending || canEditApproved) ? "Resubmit KYC" : "Submit KYC"}
             </button>
           )}
         </form>
@@ -861,4 +936,3 @@ const KycPage = () => {
 };
 
 export default KycPage;
-

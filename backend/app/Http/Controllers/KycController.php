@@ -25,10 +25,20 @@ class KycController extends Controller
 
         $editPending = $request->boolean('edit_pending');
 
+        $latest = KycDocument::where('user_id', $user->id)->latest()->first();
+        $editableApproved = $latest && $latest->status === 'approved' && $latest->allow_edit ? $latest : null;
+        $editApproved = (bool) $editableApproved;
+
         if ($existing && !$editPending) {
             return response()->json([
                 'success' => false,
                 'message' => 'You already have a pending KYC.'
+            ], 422);
+        }
+        if (!$existing && !$editApproved && $latest && $latest->status === 'approved') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your KYC is approved and locked.'
             ], 422);
         }
 
@@ -37,13 +47,13 @@ class KycController extends Controller
             'document_number' => 'nullable|string',
             'front' => 'required|file|mimes:jpg,jpeg,png|max:5120',
             'back' => 'nullable|file|mimes:jpg,jpeg,png|max:5120',
-            'full_name' => 'nullable|string|max:255',
+            'full_name' => ['nullable', 'string', 'min:2', 'max:255', 'regex:/^[A-Za-z\\s]+$/'],
             'dob' => 'nullable|date',
-            'address' => 'nullable|string|max:500',
+            'address' => 'nullable|string|min:5|max:255',
             'phone' => 'nullable|string|max:50',
             'family_members' => 'nullable',
         ];
-        if ($existing && $editPending) {
+        if (($existing && $editPending) || $editApproved) {
             $rules['front'] = 'nullable|file|mimes:jpg,jpeg,png|max:5120';
             $rules['back'] = 'nullable|file|mimes:jpg,jpeg,png|max:5120';
         }
@@ -57,12 +67,14 @@ class KycController extends Controller
             $backDir = 'kyc/citizenship/back';
         }
 
-        $frontPath = $existing?->front_path;
+        $editingTarget = $existing && $editPending ? $existing : $editableApproved;
+
+        $frontPath = $editingTarget?->front_path;
         if ($request->hasFile('front')) {
             $frontPath = $request->file('front')->store($frontDir, 'public');
         }
 
-        $backPath = $existing?->back_path;
+        $backPath = $editingTarget?->back_path;
         if ($docType === 'citizenship') {
             if ($request->hasFile('back')) {
                 $backPath = $request->file('back')->store($backDir, 'public');
@@ -78,6 +90,32 @@ class KycController extends Controller
         } elseif (!is_array($familyMembers)) {
             $familyMembers = null;
         }
+        if (is_array($familyMembers)) {
+            foreach ($familyMembers as $member) {
+                $name = isset($member['name']) ? trim((string) $member['name']) : '';
+                if ($name === '' || strlen($name) < 2 || !preg_match('/^[A-Za-z\\s]+$/', $name)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Family member names must be at least 2 characters and contain only letters and spaces.'
+                    ], 422);
+                }
+            }
+        }
+
+        if (!empty($request->document_number)) {
+            $duplicateQuery = KycDocument::where('document_number', $request->document_number)
+                ->where('user_id', '!=', $user->id);
+            $duplicate = $duplicateQuery->exists();
+            $userHasSame = KycDocument::where('document_number', $request->document_number)
+                ->where('user_id', $user->id)
+                ->exists();
+            if ($duplicate && !$userHasSame) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This document number is already in use.'
+                ], 422);
+            }
+        }
 
         $payload = [
             'user_id' => $user->id,
@@ -91,20 +129,21 @@ class KycController extends Controller
             'back_path' => $backPath,
             'family_members' => $familyMembers,
             'status' => 'pending',
+            'allow_edit' => false,
             'remarks' => null,
             'verified_at' => null,
         ];
 
-        if ($existing && $editPending) {
-            $existing->update($payload);
-            $kyc = $existing->fresh();
+        if (($existing && $editPending) || $editApproved) {
+            $editingTarget->update($payload);
+            $kyc = $editingTarget->fresh();
         } else {
             $kyc = KycDocument::create($payload);
         }
 
         return response()->json([
             'success' => true,
-            'message' => $existing && $editPending
+            'message' => ($existing && $editPending) || $editApproved
                 ? 'KYC updated successfully.'
                 : 'KYC submitted successfully.',
             'data' => $kyc
@@ -173,6 +212,7 @@ class KycController extends Controller
 
         $kyc->status = $request->status;
         $kyc->remarks = $request->remarks;
+        $kyc->allow_edit = false;
         $kyc->verified_at = now();
         $kyc->save();
 

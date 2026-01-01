@@ -51,6 +51,7 @@ class AdminUserController extends Controller
             'document_number' => $kyc->document_number,
             'family_members' => $kyc->family_members,
             'status' => $kyc->status,
+            'allow_edit' => $kyc->allow_edit,
             'remarks' => $kyc->remarks,
             'verified_at' => $kyc->verified_at,
             'front_path' => $kyc->front_path,
@@ -78,8 +79,29 @@ class AdminUserController extends Controller
             ], 422);
         }
 
-        $kyc->update(['status' => $data['status']]);
+        $kyc->update(['status' => $data['status'], 'allow_edit' => false]);
 
         return response()->json(['message' => 'KYC updated', 'kyc' => $kyc]);
+    }
+
+    public function allowKycEdit(User $user)
+    {
+        $kyc = $user->kycDocuments()->latest()->first();
+        if (!$kyc) {
+            return response()->json(['message' => 'KYC not found'], 404);
+        }
+
+        if ($kyc->status !== 'approved') {
+            return response()->json([
+                'message' => 'Only approved KYC can be reopened for edits.',
+            ], 422);
+        }
+
+        $kyc->update(['allow_edit' => true]);
+
+        return response()->json([
+            'message' => 'KYC edit access granted.',
+            'kyc' => $kyc
+        ]);
     }
 }

@@ -255,6 +255,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/users', [AdminUserController::class, 'index']);
         Route::get('/users/{user}/kyc', [AdminUserController::class, 'kyc']);
         Route::post('/users/{user}/kyc-update', [AdminUserController::class, 'updateKycStatus']);
+        Route::post('/users/{user}/kyc-allow-edit', [AdminUserController::class, 'allowKycEdit']);
 
         /*
         |-------------------------
