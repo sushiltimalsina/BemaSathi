@@ -30,6 +30,7 @@ import AdminProfile from "./admin/pages/Profile";
 import Home from "./user/guest/pages/Home";
 import GuestPolicies from "./user/guest/pages/Policies";
 import GuestPolicyDetails from "./user/guest/pages/PolicyDetails";
+import PolicyComparisonGuide from "./user/guest/pages/PolicyComparisonGuide";
 import AboutUs from "./About";
 import ContactUs from "./ContactUs";
 import FAQ from "./FAQ";
@@ -75,6 +76,7 @@ const AppRoutes = () => {
       <Route path="/about" element={<AboutUs />} />
       <Route path="/contact" element={<ContactUs />} />
       <Route path="/faq" element={<FAQ />} />
+      <Route path="/policy-comparison-guide" element={<PolicyComparisonGuide />} />
 
       {/* ----- USER AUTH ----- */}
       <Route path="/login" element={<UserLogin />} />

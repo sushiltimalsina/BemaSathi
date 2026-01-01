@@ -48,7 +48,7 @@ const Footer = () => {
             <li><Link to="/faq" className="hover:opacity-100 transition">FAQ</Link></li>
             <li>
               <Link
-                to="/faq/policy-comparison-guide"
+                to="/policy-comparison-guide"
                 className="hover:opacity-100 transition"
               >
                 Policy Comparison Guide
