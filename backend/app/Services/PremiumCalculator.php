@@ -15,7 +15,8 @@ class PremiumCalculator
         bool $isSmoker,
         ?int $healthScore = null,
         ?string $coverageType = null,
-        ?string $budgetRange = null
+        ?string $budgetRange = null,
+        ?int $familyMembers = null
     ): array
     {
         $basePremium   = (float) ($policy->premium_amt ?? 0);
@@ -23,7 +24,7 @@ class PremiumCalculator
         $ageFactor     = $this->ageFactor($age);
         $smokerFactor  = $isSmoker ? 1.30 : 1.00;
         $healthFactor  = $this->healthFactor($healthScore);
-        $coverageFactor = $this->coverageFactor($coverageType);
+        $coverageFactor = $this->coverageFactor($coverageType, $familyMembers);
         $budgetFactor   = $this->budgetFactor($budgetRange);
 
         $calculated = round(
@@ -40,6 +41,7 @@ class PremiumCalculator
             'health_factor'    => $healthFactor,
             'coverage_factor'  => $coverageFactor,
             'budget_factor'    => $budgetFactor,
+            'family_members'   => $familyMembers,
             'calculated_total' => $calculated,
         ];
     }
@@ -85,12 +87,16 @@ class PremiumCalculator
         };
     }
 
-    private function coverageFactor(?string $coverage): float
+    private function coverageFactor(?string $coverage, ?int $familyMembers): float
     {
-        return match ($coverage) {
-            'family' => 1.20,
-            default  => 1.00, // individual / unknown
-        };
+        if ($coverage !== 'family') {
+            return 1.00;
+        }
+
+        $members = $familyMembers ?? 2;
+        $members = max(2, min(20, $members));
+        $factor = 1.20 + (max(0, $members - 2) * 0.10);
+        return min($factor, 1.60);
     }
 
     private function budgetFactor(?string $budget): float

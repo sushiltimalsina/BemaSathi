@@ -24,6 +24,7 @@ class AuthController extends Controller
             'dob' => 'required|date|before:today|after:1900-01-01|before:-15 years',
             'budget_range' => 'required|string',
             'coverage_type' => 'required|in:individual,family',
+            'family_members' => 'required_if:coverage_type,family|integer|min:2|max:20',
             'is_smoker' => 'required|boolean',
             'pre_existing_conditions' => 'nullable|array',
             'pre_existing_conditions.*' => 'in:diabetes,heart,hypertension,asthma',
@@ -39,6 +40,9 @@ class AuthController extends Controller
             'dob' => $data['dob'],
             'budget_range' => $data['budget_range'],
             'coverage_type' => $data['coverage_type'],
+            'family_members' => ($data['coverage_type'] === 'family')
+                ? max(2, (int) ($data['family_members'] ?? 2))
+                : 1,
             'is_smoker' => $data['is_smoker'],
             'pre_existing_conditions' => $data['pre_existing_conditions'] ?? [],
 
@@ -106,6 +110,7 @@ public function updateProfile(Request $request)
         'is_smoker' => 'nullable|boolean',
         'budget_range' => 'nullable|string',
         'coverage_type' => 'nullable|string',
+        'family_members' => 'nullable|integer|min:1|max:20',
         'pre_existing_conditions' => 'nullable|array',
         'pre_existing_conditions.*' => 'in:diabetes,heart,hypertension,asthma',
     ]);
@@ -118,6 +123,9 @@ public function updateProfile(Request $request)
         'is_smoker' => $validated['is_smoker'] ?? $user->is_smoker,
         'budget_range' => $validated['budget_range'] ?? $user->budget_range,
         'coverage_type' => $validated['coverage_type'] ?? $user->coverage_type,
+        'family_members' => ($validated['coverage_type'] ?? $user->coverage_type) === 'family'
+            ? max(2, (int) ($validated['family_members'] ?? $user->family_members ?? 2))
+            : 1,
         'pre_existing_conditions' => $validated['pre_existing_conditions']
             ?? $user->pre_existing_conditions,
     ]);

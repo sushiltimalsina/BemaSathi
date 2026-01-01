@@ -37,6 +37,7 @@ const MyProfile = () => {
             ? data.pre_existing_conditions
             : [],
           is_smoker: !!data.is_smoker,
+          family_members: data.family_members ?? 1,
         };
 
         setUser(normalized);
@@ -104,7 +105,7 @@ const MyProfile = () => {
     setSuccess("");
 
     try {
-      await API.put(
+          await API.put(
         "/update-profile",
         {
           name: user.name,
@@ -114,6 +115,10 @@ const MyProfile = () => {
           is_smoker: user.is_smoker ? 1 : 0,
           budget_range: user.budget_range,
           coverage_type: user.coverage_type,
+          family_members:
+            user.coverage_type === "family"
+              ? Number(user.family_members || 2)
+              : 1,
           pre_existing_conditions: user.pre_existing_conditions,
         },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -172,6 +177,10 @@ const MyProfile = () => {
           <ProfileRow label="Date of Birth" value={user.dob} />
           <ProfileRow label="Budget Range" value={user.budget_range} />
           <ProfileRow label="Coverage Type" value={user.coverage_type} />
+          <ProfileRow
+            label="Family Members Covered"
+            value={user.coverage_type === "family" ? user.family_members : "N/A"}
+          />
           <ProfileRow label="Smoker" value={user.is_smoker ? "Yes" : "No"} />
           <ProfileRow
             label="Pre-existing Conditions"
@@ -252,6 +261,19 @@ const MyProfile = () => {
             options={["individual", "family"]}
           />
 
+          {user.coverage_type === "family" && (
+            <InputRow
+              label="Family Members Covered"
+              field="family_members"
+              user={user}
+              setUser={setUser}
+              inputClass={inputEnabled}
+              type="number"
+              min="2"
+              max="20"
+            />
+          )}
+
           {/* SMOKER */}
           <div>
             <label className="text-xs opacity-80">Smoking Habit</label>
@@ -265,6 +287,11 @@ const MyProfile = () => {
               <option value="0">No</option>
               <option value="1">Yes</option>
             </select>
+            {user.coverage_type === "family" && (
+              <p className="text-[11px] opacity-70 mt-1">
+                Choose "Yes" if any covered family member smokes.
+              </p>
+            )}
           </div>
 
           {/* PRE-EXISTING CONDITIONS (CUSTOM CHECKBOX UI) */}
@@ -332,6 +359,11 @@ const MyProfile = () => {
                 );
               })}
             </div>
+            {user.coverage_type === "family" && (
+              <p className="text-[11px] opacity-70 mt-2">
+                Select conditions if any covered family member has them.
+              </p>
+            )}
           </div>
 
           {/* DISCLAIMER */}
@@ -378,10 +410,11 @@ const ProfileRow = ({ label, value }) => (
   </div>
 );
 
-const InputRow = ({ label, field, user, setUser, inputClass }) => (
+const InputRow = ({ label, field, user, setUser, inputClass, ...props }) => (
   <div>
     <label className="text-xs opacity-80">{label}</label>
     <input
+      {...props}
       className={inputClass}
       value={user[field] || ""}
       onChange={(e) => setUser({ ...user, [field]: e.target.value })}

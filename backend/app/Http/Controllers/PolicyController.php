@@ -32,7 +32,8 @@ class PolicyController extends Controller
                     $profile['is_smoker'],
                     $profile['health_score'],
                     $profile['coverage_type'],
-                    $profile['budget_range']
+                    $profile['budget_range'],
+                    $profile['family_members']
                 )['calculated_total'];
             } else {
                 $policy->personalized_premium = $policy->premium_amt;
@@ -63,7 +64,8 @@ class PolicyController extends Controller
                 $profile['is_smoker'],
                 $profile['health_score'],
                 $profile['coverage_type'],
-                $profile['budget_range']
+                $profile['budget_range'],
+                $profile['family_members']
             )['calculated_total'];
         } else {
             $policy->personalized_premium = $policy->premium_amt;
@@ -85,7 +87,8 @@ class PolicyController extends Controller
             'is_smoker' => (bool)$user->is_smoker,
             'health_score' => $user->health_score ?? 70,
             'coverage_type' => $user->coverage_type ?? 'individual',
-            'budget_range' => $user->budget_range
+            'budget_range' => $user->budget_range,
+            'family_members' => $user->family_members ?? 1
         ];
     }
 }

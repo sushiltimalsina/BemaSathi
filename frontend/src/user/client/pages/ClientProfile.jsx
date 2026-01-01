@@ -107,6 +107,10 @@ const ClientProfile = () => {
             <ProfileRow label="Date of Birth" value={user.dob || "Not provided"} />
             <ProfileRow label="Smoking Habit" value={user.is_smoker ? "Yes" : "No"} />
             <ProfileRow label="Coverage Type" value={user.coverage_type || "Not provided"} />
+            <ProfileRow
+              label="Family Members Covered"
+              value={user.coverage_type === "family" ? user.family_members || "-" : "N/A"}
+            />
             <ProfileRow label="Budget Range" value={user.budget_range || "Not provided"} />
 
             <div className="sm:col-span-2">

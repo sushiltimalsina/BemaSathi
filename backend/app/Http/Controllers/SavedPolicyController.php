@@ -46,7 +46,8 @@ class SavedPolicyController extends Controller
                         $profile['is_smoker'],
                         $profile['health_score'],
                         $profile['coverage_type'],
-                        $profile['budget_range']
+                        $profile['budget_range'],
+                        $profile['family_members']
                     )['calculated_total'];
                 }
                 return $item;
@@ -88,6 +89,7 @@ class SavedPolicyController extends Controller
             'health_score' => $user->health_score ?? null,
             'coverage_type' => $user->coverage_type ?? 'individual',
             'budget_range' => $user->budget_range ?? null,
+            'family_members' => $user->family_members ?? 1,
         ];
     }
 }

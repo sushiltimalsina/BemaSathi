@@ -30,6 +30,7 @@ class User extends Authenticatable implements CanResetPasswordContract
     'is_smoker',
     'budget_range',
     'coverage_type',
+    'family_members',
     'pre_existing_conditions',
     'password',
 ];
@@ -37,6 +38,8 @@ class User extends Authenticatable implements CanResetPasswordContract
 
 protected $casts = [
     'pre_existing_conditions' => 'array',
+    'family_members' => 'integer',
+    'is_smoker' => 'boolean',
 ];
 
 
