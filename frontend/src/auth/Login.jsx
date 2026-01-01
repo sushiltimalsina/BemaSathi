@@ -58,8 +58,11 @@ const Login = () => {
 
       if (res.data.token) {
         localStorage.setItem("client_token", res.data.token);
+        sessionStorage.setItem("client_token", res.data.token);
         if (res.data.user) {
-          localStorage.setItem("client_user", JSON.stringify(res.data.user));
+          const userPayload = JSON.stringify(res.data.user);
+          localStorage.setItem("client_user", userPayload);
+          sessionStorage.setItem("client_user", userPayload);
         }
         navigate(redirectPath, { replace: true });
       } else {

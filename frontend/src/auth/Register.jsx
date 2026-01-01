@@ -39,6 +39,19 @@ const Register = () => {
 
       if (res.data.token) {
         localStorage.setItem("client_token", res.data.token);
+        sessionStorage.setItem("client_token", res.data.token);
+        if (res.data.user) {
+          const userPayload = JSON.stringify(res.data.user);
+          localStorage.setItem("client_user", userPayload);
+          sessionStorage.setItem("client_user", userPayload);
+        } else if (form.name || form.email) {
+          const fallbackUser = JSON.stringify({
+            name: form.name,
+            email: form.email,
+          });
+          localStorage.setItem("client_user", fallbackUser);
+          sessionStorage.setItem("client_user", fallbackUser);
+        }
         setSuccess("Registration successful. Redirecting...");
         setTimeout(() => navigate("/client/dashboard"), 1200);
       } else {

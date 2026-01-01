@@ -13,8 +13,13 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
 
   useEffect(() => {
     const loadUser = () => {
-      const u = localStorage.getItem("client_user");
-      setUser(u ? JSON.parse(u) : null);
+      const sessionUser = sessionStorage.getItem("client_user");
+      const localUser = localStorage.getItem("client_user");
+      const raw = sessionUser || localUser;
+      if (!sessionUser && localUser) {
+        sessionStorage.setItem("client_user", localUser);
+      }
+      setUser(raw ? JSON.parse(raw) : null);
     };
 
     loadUser();
@@ -47,26 +52,39 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
     { to: "/client/dashboard", label: "Dashboard" },
     { to: "/client/policies", label: "All Policies" },
     { to: "/client/compare", label: "Compare" },
-    { to: "/client/payments", label: "Payments" },
   ];
 
   const accountLinks = [
     { to: "/client/profile", label: "My Profile" },
     { to: "/client/my-policies", label: "My Policies" },
-    { to: "/client/buy-requests", label: "My Buy Requests" },
     { to: "/client/saved", label: "Saved Policies" },
+    { to: "/client/payments", label: "Payment History" },
   ];
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const token = localStorage.getItem("client_token");
-        if (!token) return;
+        const token = sessionStorage.getItem("client_token");
+        if (!token) {
+          setUnreadCount(0);
+          return;
+        }
 
         const res = await API.get("/notifications");
         const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
-        const unread = list.filter((n) => !n.is_read).length;
+        const clearedRaw = localStorage.getItem("client_notifications_cleared_at");
+        const clearedAt = clearedRaw ? Number(clearedRaw) : null;
+        const clearedDate = clearedAt && Number.isFinite(clearedAt) ? new Date(clearedAt) : null;
+        const filtered = clearedDate
+          ? list.filter((n) => {
+              const dt = n.created_at || n.createdAt || n.time || n.date || null;
+              if (!dt) return false;
+              const d = new Date(dt);
+              return Number.isNaN(d.getTime()) ? false : d > clearedDate;
+            })
+          : list;
+        const unread = filtered.filter((n) => !n.is_read).length;
         setUnreadCount(unread);
       } catch (err) {
         console.log("Notification fetch error:", err);
@@ -79,7 +97,20 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
     // Auto-refresh every 20 seconds
     const interval = setInterval(fetchNotifications, 20000);
 
-    return () => clearInterval(interval);
+    const onNotify = (e) => {
+      const next = e?.detail?.unreadCount;
+      if (typeof next === "number") {
+        setUnreadCount(next);
+        return;
+      }
+      fetchNotifications();
+    };
+    window.addEventListener("notifications:update", onNotify);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("notifications:update", onNotify);
+    };
   }, []);
 
 
@@ -206,20 +237,19 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
 
                 {/* Logout */}
                 <button
-  onClick={() => {
-    onLogout();
-    setProfileOpen(false);
-  }}
-  className="
-    w-full text-left px-4 py-2 font-semibold
-    text-red-600 dark:text-red-400
-    hover:bg-red-100 dark:hover:bg-red-900/40
-    hover:text-red-700 dark:hover:text-red-300
-    transition
-  "
->
-  Logout
-</button>
+                  onClick={() => {
+                    onLogout();
+                    setProfileOpen(false);
+                  }}
+                  className="
+                    w-full text-left px-4 py-2 font-semibold
+                    logout-btn
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50
+                    transition
+                  "
+                >
+                  Logout
+                </button>
 
               </div>
             )}
@@ -334,11 +364,12 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
                   onLogout();
                   closeMobile();
                 }}
-                className="w-full text-left px-4 py-2 font-semibold
-    text-red-600 dark:text-red-400
-    hover:bg-red-100 dark:hover:bg-red-900/40
-    hover:text-red-700 dark:hover:text-red-300
-    transition"
+                className="
+                  w-full text-left px-4 py-2 font-semibold
+                  logout-btn
+                  focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50
+                  transition
+                "
               >
                 Logout
               </button>
@@ -351,3 +382,4 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
 };
 
 export default ClientNavbar;
+

@@ -18,7 +18,12 @@ const parseBudgetRange = (range) => {
   }
 };
 
-const RecommendationCard = ({ policy, user, kycStatus: kycStatusProp }) => {
+const RecommendationCard = ({
+  policy,
+  user,
+  kycStatus: kycStatusProp,
+  ownedRequestId,
+}) => {
   const navigate = useNavigate();
   const { compare, addToCompare, removeFromCompare } = useCompare();
   if (!policy || !policy.id) return null;
@@ -27,6 +32,7 @@ const RecommendationCard = ({ policy, user, kycStatus: kycStatusProp }) => {
   const compareDisabled = compare.length === 2 && !isAdded;
   const isClient = !!localStorage.getItem("client_token");
   const kycStatus = kycStatusProp ?? user?.kyc_status;
+  const isOwned = Boolean(ownedRequestId);
 
   const fmt = (n) =>
     Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
@@ -210,23 +216,37 @@ const RecommendationCard = ({ policy, user, kycStatus: kycStatusProp }) => {
       {/* Actions */}
       <div className="mt-6 flex flex-col md:flex-row gap-3 md:justify-between">
         <div className="flex gap-3">
-          <button
-            onClick={() => {
-              if (!isClient) return navigate("/login");
-              if (kycStatus && kycStatus !== "approved")
-                return navigate("/client/kyc");
+          {isOwned ? (
+            <button
+              onClick={() => navigate(`/client/payment?request=${ownedRequestId}`)}
+              className="
+                px-5 py-2.5 rounded-xl text-sm font-semibold text-white
+                bg-primary-light hover:brightness-110
+                shadow-md hover:shadow-lg hover:-translate-y-px
+                transition
+              "
+            >
+              Renew Now
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                if (!isClient) return navigate("/login");
+                if (kycStatus && kycStatus !== "approved")
+                  return navigate("/client/kyc");
 
-              navigate(`/client/buy?policy=${policy.id}`);
-            }}
-            className="
-              px-5 py-2.5 rounded-xl text-sm font-semibold text-white
-              bg-primary-light hover:brightness-110
-              shadow-md hover:shadow-lg hover:-translate-y-px
-              transition
-            "
-          >
-            Buy / Request
-          </button>
+                navigate(`/client/buy?policy=${policy.id}`);
+              }}
+              className="
+                px-5 py-2.5 rounded-xl text-sm font-semibold text-white
+                bg-primary-light hover:brightness-110
+                shadow-md hover:shadow-lg hover:-translate-y-px
+                transition
+              "
+            >
+              Buy / Request
+            </button>
+          )}
 
           <button
             onClick={handleCompareClick}

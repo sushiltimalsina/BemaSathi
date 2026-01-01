@@ -19,6 +19,7 @@ const ClientDashboard = () => {
   const [recError, setRecError] = useState("");
   const [type, setType] = useState("health");
   const [kycStatus, setKycStatus] = useState("not_submitted");
+  const [ownedMap, setOwnedMap] = useState({});
 
   const navigate = useNavigate();
   const { compare } = useCompare();
@@ -74,6 +75,25 @@ const ClientDashboard = () => {
   useEffect(() => {
     if (user) fetchRecommendations(type);
   }, [user, type]);
+
+  useEffect(() => {
+    const loadOwned = async () => {
+      try {
+        const res = await API.get("/my-requests", {
+          headers: { Authorization: `Bearer ${localStorage.getItem("client_token")}` },
+        });
+        const map = {};
+        (res.data || []).forEach((r) => {
+          if (r.policy_id) map[r.policy_id] = r.id;
+        });
+        setOwnedMap(map);
+      } catch {
+        setOwnedMap({});
+      }
+    };
+
+    loadOwned();
+  }, []);
 
   useEffect(() => {
     const loadKyc = async () => {
@@ -254,7 +274,13 @@ const ClientDashboard = () => {
           ) : (
             <div className="space-y-6">
               {recommended.map((policy) => (
-                <RecommendationCard key={policy.id} policy={policy} user={user} kycStatus={kycStatus} />
+                <RecommendationCard
+                  key={policy.id}
+                  policy={policy}
+                  user={user}
+                  kycStatus={kycStatus}
+                  ownedRequestId={ownedMap?.[policy.id]}
+                />
               ))}
             </div>
           )}

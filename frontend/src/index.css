@@ -19,11 +19,17 @@
   --text-light: #0f172a;
   --text-dark: #e5e7eb;
 
+  --muted-light: #64748b;
+  --muted-dark: #94a3b8;
+
   --primary-light: #2563eb;
   --primary-dark: #60a5fa;
 
   --success-light: #16a34a;
   --success-dark: #34d399;
+
+  --ring-light: rgba(37, 99, 235, 0.25);
+  --ring-dark: rgba(96, 165, 250, 0.35);
 }
 
 /* -----------------------------------------------------------
@@ -47,8 +53,30 @@
 .text-success-light { color: var(--success-light); }
 .text-success-dark { color: var(--success-dark); }
 
+.text-muted-light { color: var(--muted-light); }
+.text-muted-dark { color: var(--muted-dark); }
+
 .border-border-light { border-color: var(--border-light); }
 .border-border-dark { border-color: var(--border-dark); }
+
+/* -----------------------------------------------------------
+   LOGOUT BUTTON (LIGHT + DARK)
+----------------------------------------------------------- */
+.logout-btn {
+  color: #dc2626;
+}
+
+.logout-btn:hover {
+  background-color: #fef2f2;
+}
+
+.dark .logout-btn {
+  color: #f87171;
+}
+
+.dark .logout-btn:hover {
+  background-color: rgba(127, 29, 29, 0.3);
+}
 
 /* -----------------------------------------------------------
    DARK MODE OVERRIDES
@@ -89,7 +117,7 @@ input,
 select,
 textarea {
   appearance: none; /* removes browser auto dark mode */
-  background-color: white;
+  background-color: var(--card-light);
   color: var(--text-light);
   border: 1px solid var(--border-light);
   border-radius: 8px;
@@ -100,9 +128,19 @@ textarea {
 .dark input,
 .dark select,
 .dark textarea {
-  background-color: #1e293b; /* slate-800 */
+  background-color: var(--card-dark);
   color: var(--text-dark);
   border: 1px solid var(--border-dark);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted-light);
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: var(--muted-dark);
 }
 
 /* Restore native checkboxes/radios and keep them visible in both modes */
@@ -125,14 +163,14 @@ select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--primary-light);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 0 0 2px var(--ring-light);
 }
 
 .dark input:focus,
 .dark select:focus,
 .dark textarea:focus {
   border-color: var(--primary-dark);
-  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.35);
+  box-shadow: 0 0 0 2px var(--ring-dark);
 }
 
 /* -----------------------------------------------------------

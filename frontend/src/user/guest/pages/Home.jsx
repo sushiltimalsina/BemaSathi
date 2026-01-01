@@ -171,7 +171,7 @@ const Home = () => {
           </Link>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-3 gap-6 bg-white dark:bg-transparent rounded-2xl p-4 md:p-6">
           {[
             {
               type: "health",
@@ -185,7 +185,7 @@ const Home = () => {
               type: "term-life",
               title: "Term Life Insurance",
               desc: "High coverage at low premiums for a fixed term.",
-              icon: ShieldCheckIcon,
+              icon: ClockIcon,
               tint: "purple",
               theme: "text-purple-600 dark:text-purple-400",
             },
@@ -203,7 +203,7 @@ const Home = () => {
               to={`/policies?type=${item.type}`}
               className="
                 group bg-card-light dark:bg-card-dark rounded-2xl p-6 
-                shadow-sm hover:shadow-md hover:-translate-y-[2px] transition
+                shadow-sm hover:shadow-md hover:-translate-y-0.5 transition
                 border border-border-light dark:border-border-dark
               "
             >
@@ -216,7 +216,7 @@ const Home = () => {
 
               <div className={`mt-4 text-sm ${item.theme} flex items-center gap-1`}>
                 Explore plans
-                <ArrowRightIcon className="w-4 h-4 group-hover:translate-x-[2px] transition" />
+                <ArrowRightIcon className="w-4 h-4 group-hover:translate-x-0.5 transition" />
               </div>
             </Link>
           ))}
@@ -264,15 +264,15 @@ const Home = () => {
 
             <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-2">
-                <UserGroupIcon className="w-5 h-5 mt-[2px] text-primary-light dark:text-primary-dark" />
+                <UserGroupIcon className="w-5 h-5 mt-0.5 text-primary-light dark:text-primary-dark" />
                 <span>Compare policies from different companies.</span>
               </li>
               <li className="flex items-start gap-2">
-                <ChartBarIcon className="w-5 h-5 mt-[2px] text-primary-light dark:text-primary-dark" />
+                <ChartBarIcon className="w-5 h-5 mt-0.5 text-primary-light dark:text-primary-dark" />
                 <span>Smart recommendation logic for clients.</span>
               </li>
               <li className="flex items-start gap-2">
-                <ClockIcon className="w-5 h-5 mt-[2px] text-primary-light dark:text-primary-dark" />
+                <ClockIcon className="w-5 h-5 mt-0.5 text-primary-light dark:text-primary-dark" />
                 <span>Save time by doing everything online.</span>
               </li>
             </ul>
