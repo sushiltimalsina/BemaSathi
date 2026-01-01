@@ -42,7 +42,7 @@ const Login = () => {
 
   // If already logged in, go straight to the redirect target.
   useEffect(() => {
-    const token = localStorage.getItem("client_token");
+    const token = sessionStorage.getItem("client_token");
     if (token) {
       navigate(redirectPath, { replace: true });
     }

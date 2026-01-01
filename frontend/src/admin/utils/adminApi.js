@@ -7,7 +7,11 @@ const API = axios.create({
 
 // Attach token automatically
 API.interceptors.request.use((config) => {
-  const token = localStorage.getItem("admin_token");
+  const token = sessionStorage.getItem("admin_token");
+  if (!token) {
+    localStorage.removeItem("admin_token");
+    localStorage.removeItem("admin_user");
+  }
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -22,6 +26,8 @@ API.interceptors.response.use(
     ) {
       localStorage.removeItem("admin_token");
       localStorage.removeItem("admin_user");
+      sessionStorage.removeItem("admin_token");
+      sessionStorage.removeItem("admin_user");
       window.location.href = "/admin/login";
     }
     return Promise.reject(error);

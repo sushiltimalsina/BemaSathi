@@ -18,7 +18,7 @@ const AllPolicies = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const token = localStorage.getItem("client_token");
+  const token = sessionStorage.getItem("client_token");
   const isClient = !!token;
 
   const getTypeFromQuery = () => {

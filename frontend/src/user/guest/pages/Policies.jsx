@@ -56,7 +56,7 @@ const GuestPolicies = () => {
   const navigate = useNavigate();
 
   // Detect client login
-  const token = localStorage.getItem("client_token");
+  const token = sessionStorage.getItem("client_token");
   const isClient = !!token;
   const user = JSON.parse(localStorage.getItem("client_user") || "{}");
   const userAge = user.dob ? calculateAge(user.dob) : null;

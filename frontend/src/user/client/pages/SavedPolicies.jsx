@@ -13,7 +13,7 @@ const SavedPolicies = () => {
   const navigate = useNavigate();
 
   // Require login
-  const token = localStorage.getItem("client_token");
+  const token = sessionStorage.getItem("client_token");
   const isClient = !!token;
 
   const [savedItems, setSavedItems] = useState([]);

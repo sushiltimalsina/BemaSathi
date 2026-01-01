@@ -26,7 +26,7 @@ const MyProfile = () => {
   const [allowDobEdit, setAllowDobEdit] = useState(false);
   const [familyDetails, setFamilyDetails] = useState([]);
 
-  const token = localStorage.getItem("client_token");
+  const token = sessionStorage.getItem("client_token");
   const navigate = useNavigate();
 
   // Reset messages on mount

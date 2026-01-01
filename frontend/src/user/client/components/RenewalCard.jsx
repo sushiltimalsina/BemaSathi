@@ -61,6 +61,9 @@ const RenewalCard = ({ request }) => {
     return `${remaining} days left`;
   };
 
+  const fmt = (n) =>
+    Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
+
   const handleRenew = () => {
     navigate(`/client/payment?request=${request.id}`);
   };
@@ -84,14 +87,17 @@ const RenewalCard = ({ request }) => {
 
   // URGENCY COLOR
   const urgentColor =
-    daysLeft() <= 3 ? "text-red-500 font-bold" : "text-text-light dark:text-text-dark";
+    daysLeft() <= 3
+      ? "text-red-600 dark:text-red-400 font-semibold"
+      : "text-text-light/80 dark:text-text-dark/80";
 
   return (
     <div
       className="
-      relative p-6 rounded-2xl bg-white/60 dark:bg-black/30 backdrop-blur-xl
-      border border-border-light dark:border-border-dark shadow-[0_8px_20px_rgba(0,0,0,0.15)]
-      hover:shadow-[0_12px_25px_rgba(0,0,0,0.25)] transition-all duration-300
+      relative p-6 rounded-2xl
+      bg-card-light/80 dark:bg-card-dark/70
+      border border-border-light dark:border-border-dark
+      shadow-sm hover:shadow-md transition-all duration-300
     "
     >
       {/* HEADER */}
@@ -113,7 +119,7 @@ const RenewalCard = ({ request }) => {
         </span>
       </div>
 
-      <p className="text-sm opacity-60 mb-4">
+      <p className="text-sm text-text-light/60 dark:text-text-dark/60 mb-4">
         {request.policy?.company_name}
       </p>
 
@@ -121,8 +127,8 @@ const RenewalCard = ({ request }) => {
       <div className="space-y-3 text-sm">
         {/* BILLING CYCLE */}
         <div className="flex justify-between">
-          <span className="flex items-center gap-2 opacity-75">
-            <ClockIcon className="w-4 h-4"/>
+          <span className="flex items-center gap-2 text-text-light/70 dark:text-text-dark/70">
+            <ClockIcon className="w-4 h-4" />
             Billing Cycle:
           </span>
           <span className="font-semibold capitalize">{cycle}</span>
@@ -130,7 +136,7 @@ const RenewalCard = ({ request }) => {
 
         {/* NEXT RENEWAL */}
         <div className="flex justify-between">
-          <span className="flex items-center gap-2 opacity-75">
+          <span className="flex items-center gap-2 text-text-light/70 dark:text-text-dark/70">
             <ClockIcon className="w-4 h-4" />
             Next Renewal Date:
           </span>
@@ -141,16 +147,16 @@ const RenewalCard = ({ request }) => {
 
         {/* AMOUNT */}
         <div className="flex justify-between">
-          <span className="flex items-center gap-2 opacity-75">
+          <span className="flex items-center gap-2 text-text-light/70 dark:text-text-dark/70">
             <ArrowPathIcon className="w-4 h-4" />
             Renewal Amount:
           </span>
-          <span className="font-semibold">Rs. {amount}</span>
+          <span className="font-semibold">रु. {fmt(amount)}</span>
         </div>
 
         {/* DAYS LEFT */}
         <div className="flex justify-between">
-          <span className="flex items-center gap-2 opacity-75">
+          <span className="flex items-center gap-2 text-text-light/70 dark:text-text-dark/70">
             <ExclamationTriangleIcon className="w-4 h-4" />
             Days Left:
           </span>
@@ -164,13 +170,11 @@ const RenewalCard = ({ request }) => {
           onClick={handleRenew}
           disabled={!isRenewable}
           className="
-            w-full py-3 rounded-xl font-semibold text-white 
-            bg-linear-to-r from-primary-light to-primary-dark
-            shadow-[0_8px_20px_rgba(0,0,0,0.15)]
-            hover:-translate-y-px hover:shadow-[0_12px_28px_rgba(0,0,0,0.22)]
-            active:translate-y-0
+            w-full py-3 rounded-xl font-semibold text-white
+            bg-primary-light dark:bg-primary-dark
+            hover:bg-primary-light/90 dark:hover:bg-primary-dark/90
             transition
-            disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none
+            disabled:opacity-50 disabled:cursor-not-allowed
           "
         >
           Renew Now
@@ -183,11 +187,9 @@ const RenewalCard = ({ request }) => {
             w-full py-3 rounded-xl font-semibold
             border border-border-light dark:border-border-dark
             bg-card-light dark:bg-card-dark
-            shadow-inner
             hover:bg-hover-light dark:hover:bg-hover-dark
-            hover:shadow-[0_8px_20px_rgba(0,0,0,0.12)]
             transition
-            disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none
+            disabled:opacity-50 disabled:cursor-not-allowed
           "
         >
           Details
@@ -200,9 +202,14 @@ const RenewalCard = ({ request }) => {
           Policy expired - renewal unavailable.
         </p>
       )}
+
+      {/* REMINDER NOTE */}
+      <p className="mt-4 text-xs text-text-light/60 dark:text-text-dark/60 text-center">
+        Renewal reminders are sent by email and in-app notification. Late renewals
+        can be blocked after the grace period.
+      </p>
     </div>
   );
 };
 
 export default RenewalCard;
-

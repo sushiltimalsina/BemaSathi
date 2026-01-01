@@ -26,7 +26,7 @@ const CompareClient = () => {
   const p1 = query.get("p1");
   const p2 = query.get("p2");
 
-  const token = localStorage.getItem("client_token");
+  const token = sessionStorage.getItem("client_token");
 
   useEffect(() => {
     if (!token) {
@@ -66,7 +66,7 @@ const CompareClient = () => {
     try {
       const res = await API.get("/me", {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("client_token")}`,
+          Authorization: `Bearer ${sessionStorage.getItem("client_token")}`,
         },
       });
       setUser(res.data);

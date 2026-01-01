@@ -76,6 +76,8 @@ const Topbar = () => {
   const handleLogout = () => {
     sessionStorage.removeItem("admin_token");
     sessionStorage.removeItem("admin_user");
+    localStorage.removeItem("admin_token");
+    localStorage.removeItem("admin_user");
     window.location.href = "/admin/login";
   };
 

@@ -16,7 +16,7 @@ const Home = () => {
   const dark = theme === "dark";
 
   // Detect if client is logged in
-  const isLoggedIn = !!localStorage.getItem("client_token");
+  const isLoggedIn = !!sessionStorage.getItem("client_token");
 
   // Premium gradient using theme tokens
   const heroBg = dark

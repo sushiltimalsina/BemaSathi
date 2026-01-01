@@ -24,7 +24,7 @@ const PolicyDetails = () => {
   const [saved, setSaved] = useState(false);
   const [kycStatus, setKycStatus] = useState(null);
 
-  const token = localStorage.getItem("client_token");
+  const token = sessionStorage.getItem("client_token");
   const isClient = !!token;
   const query = new URLSearchParams(location.search);
   const [ownedRequestId, setOwnedRequestId] = useState(

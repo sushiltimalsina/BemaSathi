@@ -8,7 +8,11 @@ const API = axios.create({
 
 // Attach client auth token (if present) to every request.
 API.interceptors.request.use((config) => {
-  const token = localStorage.getItem("client_token");
+  const token = sessionStorage.getItem("client_token");
+  if (!token) {
+    localStorage.removeItem("client_token");
+    localStorage.removeItem("client_user");
+  }
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

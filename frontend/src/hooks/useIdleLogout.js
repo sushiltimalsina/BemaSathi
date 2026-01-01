@@ -12,7 +12,7 @@ const useIdleLogout = ({
     if (!enabled) return;
 
     const markActivity = () =>
-      localStorage.setItem(activityKey, Date.now().toString());
+      sessionStorage.setItem(activityKey, Date.now().toString());
 
     // Initialize last activity
     markActivity();
@@ -21,10 +21,10 @@ const useIdleLogout = ({
     events.forEach((evt) => window.addEventListener(evt, markActivity));
 
     const checkIdle = () => {
-      const token = localStorage.getItem(tokenKey);
+      const token = sessionStorage.getItem(tokenKey);
       if (!token) return;
 
-      const last = Number(localStorage.getItem(activityKey));
+      const last = Number(sessionStorage.getItem(activityKey));
       if (!Number.isFinite(last)) {
         markActivity();
         return;
@@ -38,17 +38,9 @@ const useIdleLogout = ({
     // Check every minute
     const interval = setInterval(checkIdle, 60 * 1000);
 
-    const onStorage = (e) => {
-      if (e.key === tokenKey && !e.newValue) {
-        onLogout();
-      }
-    };
-    window.addEventListener("storage", onStorage);
-
     return () => {
       events.forEach((evt) => window.removeEventListener(evt, markActivity));
       clearInterval(interval);
-      window.removeEventListener("storage", onStorage);
     };
   }, [enabled, onLogout, activityKey, tokenKey, timeoutMs]);
 };

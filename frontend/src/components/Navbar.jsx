@@ -12,17 +12,21 @@ const Navbar = () => {
   const { isDark, mode, cycleMode } = useTheme();
 
   const [isLoggedIn, setIsLoggedIn] = useState(
-    !!localStorage.getItem("client_token")
+    !!sessionStorage.getItem("client_token")
   );
 
   useEffect(() => {
-    setIsLoggedIn(!!localStorage.getItem("client_token"));
+    setIsLoggedIn(!!sessionStorage.getItem("client_token"));
+    if (!sessionStorage.getItem("client_token") && localStorage.getItem("client_token")) {
+      localStorage.removeItem("client_token");
+      localStorage.removeItem("client_user");
+    }
   }, [location.pathname]);
 
   useEffect(() => {
     const handler = (event) => {
       if (event.key === "client_token") {
-        setIsLoggedIn(!!event.newValue);
+        setIsLoggedIn(!!sessionStorage.getItem("client_token"));
       }
     };
     window.addEventListener("storage", handler);
@@ -33,7 +37,9 @@ const Navbar = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("client_token");
+    sessionStorage.removeItem("client_token");
     localStorage.removeItem("client_user");
+    sessionStorage.removeItem("client_user");
     setIsLoggedIn(false);
     navigate("/");
   };
