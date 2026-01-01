@@ -50,11 +50,11 @@ const RecommendationCard = ({
   } else if (!Number.isFinite(budgetMax)) {
     budgetText = `Evaluated against your budget preference (${user.budget_range}).`;
   } else if (fitsBudget) {
-    budgetText = `Fits your budget (Rs. ${fmt(effectivePremium)} ≤ Rs. ${fmt(
+    budgetText = `Fits your budget (रु. ${fmt(effectivePremium)} ≤ रु. ${fmt(
       budgetMax
     )}).`;
   } else {
-    budgetText = `Exceeds your budget by Rs. ${fmt(
+    budgetText = `Exceeds your budget by रु. ${fmt(
       effectivePremium - budgetMax
     )}.`;
   }
@@ -145,7 +145,7 @@ const RecommendationCard = ({
           </p>
 
           <h3 className="text-xl font-bold text-emerald-600 dark:text-emerald-300">
-            Rs. {fmt(effectivePremium)}
+            रु. {fmt(effectivePremium)}
             {isClient && (
               <span className="block text-[10px] opacity-60">personalized</span>
             )}
@@ -163,7 +163,7 @@ const RecommendationCard = ({
             Coverage
           </p>
           <h3 className="text-xl font-bold text-blue-600 dark:text-blue-300">
-            Rs. {fmt(policy.coverage_limit)}
+            रु. {fmt(policy.coverage_limit)}
           </h3>
         </div>
       </div>

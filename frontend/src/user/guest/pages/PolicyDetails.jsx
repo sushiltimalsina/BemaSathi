@@ -229,14 +229,14 @@ const PolicyDetails = () => {
 
               {isClient ? (
                 <p className="text-lg font-semibold text-success-light dark:text-success-dark flex items-center gap-1">
-                  Rs. {fmt(clientPremium)}
+                  रु. {fmt(clientPremium)}
                   <span className="block text-[10px] opacity-60 ml-1">
                     (personalized)
                   </span>
                 </p>
               ) : (
                 <p className="text-xl font-semibold">
-                  Rs. {fmt(guestMin)} - {fmt(guestMax)}
+                  रु. {fmt(guestMin)} - {fmt(guestMax)}
                   <span className="block text-[10px] opacity-60">
                     Login to see your exact premium
                   </span>
@@ -248,7 +248,7 @@ const PolicyDetails = () => {
             <div className="mb-4">
               <p className="text-xs opacity-70">Coverage Limit</p>
               <p className="text-xl font-semibold">
-                Rs. {fmt(policy.coverage_limit)}
+                रु. {fmt(policy.coverage_limit)}
               </p>
             </div>
 

@@ -233,7 +233,7 @@ const PaymentPage = () => {
         <div className="mt-4 p-4 rounded-lg bg-hover-light dark:bg-hover-dark border border-border-light dark:border-border-dark">
           <p className="text-sm">Amount to Pay Now:</p>
           <p className="text-2xl font-bold mt-1">
-            Rs. {fmt(computeCycleAmount(buyRequest))}
+            रु. {fmt(computeCycleAmount(buyRequest))}
           </p>
           {buyRequest.billing_cycle && (
             <p className="text-xs opacity-70 mt-1">

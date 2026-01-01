@@ -5,7 +5,7 @@ import { useCompare } from "../../../context/CompareContext";
 
 const formatRs = (n) => {
   const num = Number(n ?? 0);
-  return `Rs. ${num.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+  return `रु. ${num.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 };
 
 const getTitle = (p) => (p?.policy_name ? p.policy_name : "Policy");

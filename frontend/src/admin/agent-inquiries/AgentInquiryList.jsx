@@ -142,8 +142,8 @@ const AgentInquiryList = () => {
                 </td>
                 <td className="px-4 py-3 font-medium">{i.policy_name || "-"}</td>
                 <td className="px-4 py-3">{i.company_name || "-"}</td>
-                <td className="px-4 py-3">Rs.{fmt(i.yearly_premium ?? i.premium_amount)}</td>
-                <td className="px-4 py-3">Rs.{fmt(i.coverage_limit || "-")}</td>
+                <td className="px-4 py-3">रु.{fmt(i.yearly_premium ?? i.premium_amount)}</td>
+                <td className="px-4 py-3">रु.{fmt(i.coverage_limit || "-")}</td>
                 <td className="px-4 py-3">{i.agent_name || "-"}</td>
                 <td className="px-4 py-3">
                   <div>{i.agent_phone || "-"}</div>

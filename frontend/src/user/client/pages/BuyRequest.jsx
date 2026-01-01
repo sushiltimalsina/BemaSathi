@@ -326,21 +326,21 @@ const BuyRequest = () => {
             {/* YEARLY PREMIUM */}
             <Row
               label="Yearly Premium"
-              value={`Rs. ${fmt(policy.personalized_premium || policy.premium_amt)}`} 
+              value={`रु. ${fmt(policy.personalized_premium || policy.premium_amt)}`} 
             />
 
             {/* CYCLE PREMIUM */}
             {cyclePremium && (
               <Row
                 label={`Premium (${billingCycle.replace("_", " ")})`}
-                value={`Rs. ${fmt(cyclePremium)}`}
+                value={`रु. ${fmt(cyclePremium)}`}
                 highlight
               />
             )}
 
             <Row
               label="Coverage Limit"
-              value={`Rs. ${fmt(policy.coverage_limit)}`}
+              value={`रु. ${fmt(policy.coverage_limit)}`}
             />
 
             {policy.company_rating && (
@@ -422,7 +422,7 @@ const BuyRequest = () => {
             <div className="mt-6 p-4 rounded-xl bg-primary-light/10 dark:bg-primary-dark/20 border border-primary-light/30 dark:border-primary-dark/30">
               <p className="text-sm opacity-70">Total Amount To Pay Now</p>
               <p className="text-2xl font-bold text-primary-light dark:text-primary-dark">
-                Rs. {fmt(cyclePremium)}
+                रु. {fmt(cyclePremium)}
               </p>
               <p className="text-xs opacity-60 mt-1">
                 Billing Cycle: {billingCycle.replace("_", " ")}

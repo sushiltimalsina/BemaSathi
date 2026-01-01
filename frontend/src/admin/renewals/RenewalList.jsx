@@ -208,7 +208,7 @@ const RenewalList = () => {
                   {r.billing_cycle?.replace("_", " ")}
                 </td>
                 <td className="px-4 py-3 font-semibold">
-                  Rs. {r.cycle_amount}
+                  रु. {r.cycle_amount}
                 </td>
                 <td className="px-4 py-3">
                   {formatDate(r.next_renewal_date)}

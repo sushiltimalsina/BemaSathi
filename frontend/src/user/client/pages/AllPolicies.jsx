@@ -281,7 +281,7 @@ const AllPolicies = () => {
                     Personalized Premium:
                   </span>
                   <span className="font-semibold">
-                    Rs. {fmt(effectivePremium(p))}
+                    रु. {fmt(effectivePremium(p))}
                   </span>
                 </div>
 
@@ -290,7 +290,7 @@ const AllPolicies = () => {
                     Coverage:
                   </span>
                   <span className="font-semibold">
-                    Rs. {fmt(p.coverage_limit)}
+                    रु.{fmt(p.coverage_limit)}
                   </span>
                 </div>
 

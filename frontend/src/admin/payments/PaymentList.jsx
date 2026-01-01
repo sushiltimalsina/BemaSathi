@@ -216,7 +216,7 @@ const PaymentList = () => {
                 </td>
 
                 <td className="px-4 py-3 font-semibold">
-                  Rs. {fmt(p.amount)}
+                  रु. {fmt(p.amount)}
                 </td>
 
                 <td className="px-4 py-3 capitalize flex items-center gap-1">
