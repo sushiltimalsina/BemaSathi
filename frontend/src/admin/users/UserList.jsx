@@ -60,7 +60,14 @@ const UserList = () => {
     });
   }, [items, status, search]);
 
-  const badge = (s) => {
+  const badge = (s, allowEdit) => {
+    if (allowEdit) {
+      return (
+        <span className="inline-flex items-center gap-1 text-yellow-700 dark:text-yellow-300 text-xs font-semibold">
+          <ExclamationTriangleIcon className="w-4 h-4" /> REAPPROVAL NEEDED
+        </span>
+      );
+    }
     switch (s) {
       case "approved":
         return (
@@ -133,7 +140,7 @@ const UserList = () => {
             <tr>
               <th className="px-4 py-3 text-left">User</th>
               <th className="px-4 py-3 text-left">Phone</th>
-              <th className="px-4 py-3 text-left">KYC</th>
+              <th className="px-4 py-3 text-left">KYC Status</th>
               <th className="px-4 py-3 text-left">Joined</th>
               <th className="px-4 py-3 text-left"></th>
             </tr>
@@ -151,7 +158,7 @@ const UserList = () => {
                 </td>
 
                 <td className="px-4 py-3">{u.phone}</td>
-                <td className="px-4 py-3">{badge(u.kyc_status)}</td>
+                <td className="px-4 py-3">{badge(u.kyc_status, u.allow_edit)}</td>
                 <td className="px-4 py-3">
                   {new Date(u.created_at).toLocaleDateString()}
                 </td>
@@ -176,7 +183,38 @@ const UserList = () => {
 
       {/* SLIDE OVER */}
       {selectedUser && (
-        <UserDetails user={selectedUser} onClose={() => setSelectedUser(null)} />
+        <UserDetails
+          user={selectedUser}
+          onClose={() => setSelectedUser(null)}
+          onKycEditAllowed={(userId) => {
+            setItems((prev) =>
+              prev.map((item) =>
+                item.id === userId
+                  ? { ...item, allow_edit: true, kyc_status: "approved" }
+                  : item
+              )
+            );
+            setSelectedUser((prev) =>
+              prev && prev.id === userId
+                ? { ...prev, allow_edit: true, kyc_status: "approved" }
+                : prev
+            );
+          }}
+          onKycStatusUpdated={(userId, status, remarks) => {
+            setItems((prev) =>
+              prev.map((item) =>
+                item.id === userId
+                  ? { ...item, allow_edit: false, kyc_status: status }
+                  : item
+              )
+            );
+            setSelectedUser((prev) =>
+              prev && prev.id === userId
+                ? { ...prev, allow_edit: false, kyc_status: status, has_kyc_update_request: false }
+                : prev
+            );
+          }}
+        />
       )}
     </div>
   );

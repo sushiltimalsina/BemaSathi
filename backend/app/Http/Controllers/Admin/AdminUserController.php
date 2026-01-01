@@ -6,7 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\KycDocument;
 use App\Models\SupportTicket;
+use App\Models\SupportMessage;
+use App\Models\Notification;
+use App\Mail\KycApprovedMail;
+use App\Mail\KycRejectedMail;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class AdminUserController extends Controller
 {
@@ -24,6 +29,7 @@ class AdminUserController extends Controller
                     'phone' => $user->phone,
                     'created_at' => $user->created_at,
                     'kyc_status' => $latestKyc?->status ?? 'pending',
+                    'allow_edit' => (bool) ($latestKyc?->allow_edit ?? false),
                 ];
             });
 
@@ -72,6 +78,7 @@ class AdminUserController extends Controller
     {
         $data = $request->validate([
             'status' => 'required|in:approved,rejected,pending',
+            'remarks' => 'required_if:status,rejected|nullable|string',
         ]);
 
         $kyc = $user->kycDocuments()->latest()->first();
@@ -85,7 +92,44 @@ class AdminUserController extends Controller
             ], 422);
         }
 
-        $kyc->update(['status' => $data['status'], 'allow_edit' => false]);
+        $kyc->update([
+            'status' => $data['status'],
+            'allow_edit' => false,
+            'remarks' => $data['remarks'] ?? null,
+        ]);
+
+        $kyc->loadMissing('user');
+        if ($kyc->user) {
+            $title = $data['status'] === 'approved'
+                ? 'KYC Approved'
+                : 'KYC Rejected';
+            $msg = $data['status'] === 'approved'
+                ? 'Your KYC has been verified. You can now continue with purchases.'
+                : 'Your KYC was rejected. Please review the remarks and resubmit.';
+            if (!empty($data['remarks'])) {
+                $msg .= ' Remarks: ' . $data['remarks'];
+            }
+
+            Notification::create([
+                'user_id' => $kyc->user->id,
+                'title' => $title,
+                'message' => $msg,
+                'is_read' => false,
+                'type' => 'system',
+            ]);
+
+            if ($kyc->user->email) {
+                try {
+                    if ($data['status'] === 'approved') {
+                        Mail::to($kyc->user->email)->send(new KycApprovedMail($kyc->user));
+                    } else {
+                        Mail::to($kyc->user->email)->send(new KycRejectedMail($kyc->user, $data['remarks'] ?? null));
+                    }
+                } catch (\Throwable $e) {
+                    // ignore email failures
+                }
+            }
+        }
 
         if (in_array($data['status'], ['approved', 'rejected'], true)) {
             $ticket = SupportTicket::where('user_id', $user->id)
@@ -93,6 +137,16 @@ class AdminUserController extends Controller
                 ->latest()
                 ->first();
             if ($ticket) {
+                $message = $data['status'] === 'approved'
+                    ? 'KYC update approved. Your updated details are verified.'
+                    : 'KYC update rejected.' . (!empty($data['remarks']) ? ' Remarks: ' . $data['remarks'] : '');
+                SupportMessage::create([
+                    'ticket_id' => $ticket->id,
+                    'admin_id' => $request->user()?->id,
+                    'message' => $message,
+                    'is_admin' => true,
+                    'is_user_seen' => false,
+                ]);
                 $ticket->update([
                     'status' => 'closed',
                     'is_admin_seen' => true,
@@ -126,6 +180,22 @@ class AdminUserController extends Controller
         }
 
         $kyc->update(['allow_edit' => true]);
+
+        $ticket = SupportTicket::where('user_id', $user->id)
+            ->whereIn('category', ['kyc_update', 'kyc update'])
+            ->latest()
+            ->first();
+        if ($ticket) {
+            SupportMessage::create([
+                'ticket_id' => $ticket->id,
+                'admin_id' => auth()->id(),
+                'message' => 'Admin granted KYC update access. Please update and resubmit.',
+                'is_admin' => true,
+                'is_user_seen' => false,
+            ]);
+            $ticket->update(['is_admin_seen' => true]);
+            $ticket->touch();
+        }
 
         return response()->json([
             'message' => 'KYC edit access granted.',

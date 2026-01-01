@@ -10,7 +10,7 @@ import {
 import { useAdminToast } from "../ui/AdminToast";
 import { useAdminConfirm } from "../ui/AdminConfirm";
 
-const UserDetails = ({ user, onClose }) => {
+const UserDetails = ({ user, onClose, onKycEditAllowed, onKycStatusUpdated }) => {
   const currentOrigin = typeof window !== "undefined" ? window.location.origin : "";
   const fallbackOrigin =
     currentOrigin && currentOrigin.includes("5173")
@@ -42,6 +42,8 @@ const UserDetails = ({ user, onClose }) => {
   const [fullImage, setFullImage] = useState("");
   const { addToast } = useAdminToast();
   const confirm = useAdminConfirm();
+  const [remarksModal, setRemarksModal] = useState({ open: false, value: "" });
+  const [pendingAction, setPendingAction] = useState(null);
 
   useEffect(() => {
     loadKyc();
@@ -66,6 +68,7 @@ const UserDetails = ({ user, onClose }) => {
       });
       return;
     }
+    let remarks;
     if (status === "approved") {
       const confirmed = await confirm(
         "Approve this KYC? This action cannot be undone.",
@@ -79,16 +82,37 @@ const UserDetails = ({ user, onClose }) => {
         { title: "Reject KYC", confirmText: "Reject" }
       );
       if (!confirmed) return;
+      setPendingAction(status);
+      setRemarksModal({ open: true, value: "" });
+      return;
     }
+    const nextRemarks = remarks?.trim() || null;
+    const previous = kyc;
+    setKyc((prev) => ({
+      ...prev,
+      status,
+      remarks: nextRemarks,
+      allow_edit: false,
+      has_kyc_update_request: false,
+    }));
+    if (onKycStatusUpdated) {
+      onKycStatusUpdated(user.id, status, nextRemarks);
+    }
+    addToast({
+      type: status === "approved" ? "success" : "error",
+      title: status === "approved" ? "KYC Approved" : "KYC Rejected",
+      message: `KYC status set to ${status}.`,
+    });
     try {
-      await API.post(`/admin/users/${user.id}/kyc-update`, { status });
-      setKyc((prev) => ({ ...prev, status }));
-      addToast({
-        type: "success",
-        title: status === "approved" ? "KYC Approved" : "KYC Rejected",
-        message: `KYC status set to ${status}.`,
+      await API.post(`/admin/users/${user.id}/kyc-update`, {
+        status,
+        remarks: nextRemarks,
       });
     } catch (e) {
+      setKyc(previous);
+      if (onKycStatusUpdated) {
+        onKycStatusUpdated(user.id, previous?.status, previous?.remarks || null);
+      }
       addToast({ type: "error", title: "Update failed", message: "Failed to update KYC." });
     }
   };
@@ -107,8 +131,53 @@ const UserDetails = ({ user, onClose }) => {
         title: "Edit access granted",
         message: "User can now update and resubmit KYC.",
       });
+      if (onKycEditAllowed) {
+        onKycEditAllowed(user.id);
+      }
     } catch (e) {
       addToast({ type: "error", title: "Update failed", message: "Failed to allow KYC edit." });
+    }
+  };
+
+  const submitRemarks = async () => {
+    const trimmed = remarksModal.value.trim();
+    if (!trimmed) {
+      addToast({
+        type: "warning",
+        title: "Remarks required",
+        message: "Please provide remarks to reject KYC.",
+      });
+      return;
+    }
+    const previous = kyc;
+    setKyc((prev) => ({
+      ...prev,
+      status: pendingAction,
+      remarks: trimmed,
+      allow_edit: false,
+      has_kyc_update_request: false,
+    }));
+    if (onKycStatusUpdated) {
+      onKycStatusUpdated(user.id, pendingAction, trimmed);
+    }
+    addToast({
+      type: "error",
+      title: "KYC Rejected",
+      message: "KYC status set to rejected.",
+    });
+    setRemarksModal({ open: false, value: "" });
+    setPendingAction(null);
+    try {
+      await API.post(`/admin/users/${user.id}/kyc-update`, {
+        status: pendingAction,
+        remarks: trimmed,
+      });
+    } catch (e) {
+      setKyc(previous);
+      if (onKycStatusUpdated) {
+        onKycStatusUpdated(user.id, previous?.status, previous?.remarks || null);
+      }
+      addToast({ type: "error", title: "Update failed", message: "Failed to update KYC." });
     }
   };
 
@@ -280,6 +349,45 @@ const UserDetails = ({ user, onClose }) => {
       {/* FULLSCREEN IMAGE MODAL */}
       {fullImage && (
         <FullImageModal src={fullImage} onClose={() => setFullImage("")} />
+      )}
+
+      {remarksModal.open && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
+          <div className="max-w-md w-full mx-4 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-300 dark:border-slate-700 p-5 relative">
+            <h3 className="text-lg font-semibold mb-2">Rejection Remarks</h3>
+            <p className="text-xs opacity-70 mb-3">
+              Provide a clear reason so the user can fix and resubmit.
+            </p>
+            <textarea
+              value={remarksModal.value}
+              onChange={(e) =>
+                setRemarksModal((prev) => ({ ...prev, value: e.target.value }))
+              }
+              rows={4}
+              className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-sm"
+              placeholder="Enter rejection remarks..."
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setRemarksModal({ open: false, value: "" });
+                  setPendingAction(null);
+                }}
+                className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-sm hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitRemarks}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm hover:bg-red-700"
+              >
+                Reject KYC
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

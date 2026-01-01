@@ -140,6 +140,10 @@ const BuyRequest = () => {
           navigate("/client/kyc", { replace: true });
           return;
         }
+        if (latestStatus === "rejected" || latestStatus === "not_submitted") {
+          navigate("/client/kyc", { replace: true });
+          return;
+        }
 
         setForm({
           name: latest?.full_name || user.name || "",

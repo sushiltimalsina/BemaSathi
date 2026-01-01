@@ -70,7 +70,13 @@ const PaymentPage = () => {
         const res = await API.get("/kyc/me");
         const list = res.data?.data || [];
         const latest = list.length ? list[0] : null;
-        if (latest?.status === "approved" && latest?.allow_edit) {
+        const status = latest?.status || "not_submitted";
+        if (status === "approved" && latest?.allow_edit) {
+          setAccessBlocked(true);
+          navigate("/client/kyc", { replace: true });
+          return;
+        }
+        if (status === "rejected" || status === "not_submitted") {
           setAccessBlocked(true);
           navigate("/client/kyc", { replace: true });
         }

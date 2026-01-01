@@ -585,6 +585,11 @@ const KycPage = () => {
                 : latestKyc?.status || "Not Submitted"}
             </span>
           </div>
+          {latestKyc?.status === "rejected" && latestKyc?.remarks && (
+            <div className="mt-3 rounded-lg border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/600 p-3 text-xs text-red-700 dark:text-red-600">
+              <strong>Rejection Remarks:</strong> {latestKyc.remarks}
+            </div>
+          )}
         </div>
                 {/* IMPORTANT NOTICE WHEN NOT SUBMITTED */}
         {(kycStatus === "not_submitted" || kycStatus === "rejected") && (

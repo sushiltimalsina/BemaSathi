@@ -6,8 +6,12 @@ use Illuminate\Http\Request;
 use App\Models\KycDocument;
 use App\Models\SupportTicket;
 use App\Models\SupportMessage;
+use App\Models\Notification;
+use App\Mail\KycApprovedMail;
+use App\Mail\KycRejectedMail;
 use Illuminate\Support\Facades\Auth;
 use App\Services\NotificationService;
+use Illuminate\Support\Facades\Mail;
 
 class KycController extends Controller
 {
@@ -30,6 +34,8 @@ class KycController extends Controller
         $latest = KycDocument::where('user_id', $user->id)->latest()->first();
         $editableApproved = $latest && $latest->status === 'approved' && $latest->allow_edit ? $latest : null;
         $editApproved = (bool) $editableApproved;
+        $editableRejected = $latest && $latest->status === 'rejected' ? $latest : null;
+        $editRejected = (bool) $editableRejected;
 
         if ($existing && !$editPending) {
             return response()->json([
@@ -37,7 +43,7 @@ class KycController extends Controller
                 'message' => 'You already have a pending KYC.'
             ], 422);
         }
-        if (!$existing && !$editApproved && $latest && $latest->status === 'approved') {
+        if (!$existing && !$editApproved && !$editRejected && $latest && $latest->status === 'approved') {
             return response()->json([
                 'success' => false,
                 'message' => 'Your KYC is approved and locked.'
@@ -55,7 +61,7 @@ class KycController extends Controller
             'phone' => 'nullable|string|max:50',
             'family_members' => 'nullable',
         ];
-        if (($existing && $editPending) || $editApproved) {
+        if (($existing && $editPending) || $editApproved || $editRejected) {
             $rules['front'] = 'nullable|file|mimes:jpg,jpeg,png|max:5120';
             $rules['back'] = 'nullable|file|mimes:jpg,jpeg,png|max:5120';
         }
@@ -69,7 +75,9 @@ class KycController extends Controller
             $backDir = 'kyc/citizenship/back';
         }
 
-        $editingTarget = $existing && $editPending ? $existing : $editableApproved;
+        $editingTarget = $existing && $editPending
+            ? $existing
+            : ($editApproved ? $editableApproved : $editableRejected);
 
         $frontPath = $editingTarget?->front_path;
         if ($request->hasFile('front')) {
@@ -136,7 +144,7 @@ class KycController extends Controller
             'verified_at' => null,
         ];
 
-        if (($existing && $editPending) || $editApproved) {
+        if (($existing && $editPending) || $editApproved || $editRejected) {
             $editingTarget->update($payload);
             $kyc = $editingTarget->fresh();
         } else {
@@ -164,7 +172,7 @@ class KycController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => ($existing && $editPending) || $editApproved
+            'message' => ($existing && $editPending) || $editApproved || $editRejected
                 ? 'KYC updated successfully.'
                 : 'KYC submitted successfully.',
             'data' => $kyc
@@ -219,7 +227,7 @@ class KycController extends Controller
     {
         $request->validate([
             'status' => 'required|in:approved,rejected',
-            'remarks' => 'nullable|string'
+            'remarks' => 'required_if:status,rejected|nullable|string'
         ]);
 
         $kyc = KycDocument::findOrFail($id);
@@ -237,7 +245,7 @@ class KycController extends Controller
         $kyc->verified_at = now();
         $kyc->save();
 
-        // Notify user about verification result (with email if available)
+        // Notify user about verification result (in-app + template email)
         $kyc->loadMissing('user');
         if ($kyc->user) {
             $title = $kyc->status === 'approved'
@@ -252,7 +260,25 @@ class KycController extends Controller
                 $msg .= ' Remarks: ' . $kyc->remarks;
             }
 
-        $this->notifier->notify($kyc->user, $title, $msg, []);
+            Notification::create([
+                'user_id' => $kyc->user->id,
+                'title' => $title,
+                'message' => $msg,
+                'is_read' => false,
+                'type' => 'system',
+            ]);
+
+            if ($kyc->user->email) {
+                try {
+                    if ($kyc->status === 'approved') {
+                        Mail::to($kyc->user->email)->send(new KycApprovedMail($kyc->user));
+                    } else {
+                        Mail::to($kyc->user->email)->send(new KycRejectedMail($kyc->user, $kyc->remarks));
+                    }
+                } catch (\Throwable $e) {
+                    // ignore email failures
+                }
+            }
         }
 
         if (in_array($kyc->status, ['approved', 'rejected'], true)) {
@@ -261,6 +287,16 @@ class KycController extends Controller
                 ->latest()
                 ->first();
             if ($ticket) {
+                $message = $kyc->status === 'approved'
+                    ? 'KYC update approved. Your updated details are verified.'
+                    : 'KYC update rejected.' . (!empty($kyc->remarks) ? ' Remarks: ' . $kyc->remarks : '');
+                SupportMessage::create([
+                    'ticket_id' => $ticket->id,
+                    'admin_id' => auth()->id(),
+                    'message' => $message,
+                    'is_admin' => true,
+                    'is_user_seen' => false,
+                ]);
                 $ticket->update([
                     'status' => 'closed',
                     'is_admin_seen' => true,

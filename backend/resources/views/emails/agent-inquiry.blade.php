@@ -24,6 +24,10 @@
             <td style="padding:8px 0; font-size:14px;">{{ $clientEmail ?? 'N/A' }}</td>
           </tr>
           <tr>
+            <td style="padding:8px 0; font-size:14px;"><strong>Phone</strong></td>
+            <td style="padding:8px 0; font-size:14px;">{{ $clientPhone ?? 'N/A' }}</td>
+          </tr>
+          <tr>
             <td style="padding:8px 0; font-size:14px;"><strong>Policy</strong></td>
             <td style="padding:8px 0; font-size:14px;">{{ $policyName ?? 'N/A' }}</td>
           </tr>
