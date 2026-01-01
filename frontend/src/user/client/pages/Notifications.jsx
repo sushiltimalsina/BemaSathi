@@ -287,7 +287,7 @@ const Notifications = () => {
               disabled={working || unreadCount === 0}
               className="
                 px-4 py-2 rounded-xl text-sm font-semibold text-white
-                bg-gradient-to-r from-primary-light to-primary-dark
+                bg-linear-to-r from-primary-light to-primary-dark
                 hover:opacity-90 transition
                 disabled:opacity-60 disabled:cursor-not-allowed
                 inline-flex items-center gap-2
