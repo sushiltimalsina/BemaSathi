@@ -20,7 +20,8 @@ const GuestNavbar = ({ isDark, mode, onToggleMode }) => {
     <nav
       className="
         sticky top-0 z-50
-        bg-nav-light dark:bg-nav-dark
+        bg-nav-light/70 dark:bg-nav-dark/70
+        backdrop-blur-md
         text-text-light dark:text-text-dark
         border-b border-border-light dark:border-border-dark
         transition-colors duration-300
