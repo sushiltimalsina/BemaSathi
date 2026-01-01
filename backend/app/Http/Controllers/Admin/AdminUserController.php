@@ -36,8 +36,9 @@ class AdminUserController extends Controller
             return response()->json(['message' => 'KYC not found'], 404);
         }
 
-        $frontUrl = $kyc->front_path ? url('/storage/' . ltrim($kyc->front_path, '/')) : null;
-        $backUrl = $kyc->back_path ? url('/storage/' . ltrim($kyc->back_path, '/')) : null;
+        $base = request()->root();
+        $frontUrl = $kyc->front_path ? $base . '/storage/' . ltrim($kyc->front_path, '/') : null;
+        $backUrl = $kyc->back_path ? $base . '/storage/' . ltrim($kyc->back_path, '/') : null;
 
         return response()->json([
             'id' => $kyc->id,
@@ -48,9 +49,12 @@ class AdminUserController extends Controller
             'phone' => $kyc->phone,
             'document_type' => $kyc->document_type,
             'document_number' => $kyc->document_number,
+            'family_members' => $kyc->family_members,
             'status' => $kyc->status,
             'remarks' => $kyc->remarks,
             'verified_at' => $kyc->verified_at,
+            'front_path' => $kyc->front_path,
+            'back_path' => $kyc->back_path,
             'front_image' => $frontUrl,
             'back_image' => $backUrl,
             'main_image' => $frontUrl,

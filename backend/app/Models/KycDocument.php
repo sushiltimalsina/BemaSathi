@@ -17,6 +17,7 @@ class KycDocument extends Model
         'document_number',
         'front_path',
         'back_path',
+        'family_members',
         'status',
         'remarks',
         'verified_at',
@@ -26,4 +27,8 @@ class KycDocument extends Model
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
+
+    protected $casts = [
+        'family_members' => 'array',
+    ];
 }

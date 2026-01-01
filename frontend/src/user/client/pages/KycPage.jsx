@@ -43,6 +43,9 @@ const KycPage = () => {
     email: "",
   });
 
+  const [familyMembers, setFamilyMembers] = useState([]);
+  const [familyCount, setFamilyCount] = useState(0);
+
   const [documentType, setDocumentType] = useState("citizenship");
   const [documentNumber, setDocumentNumber] = useState("");
 
@@ -58,23 +61,57 @@ const KycPage = () => {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
+  const relationOptions = [
+    "Spouse",
+    "Son",
+    "Daughter",
+    "Father",
+    "Mother",
+    "Brother",
+    "Sister",
+    "Grandfather",
+    "Grandmother",
+  ];
 
   const currentOrigin = typeof window !== "undefined" ? window.location.origin : "";
   const fallbackOrigin =
     currentOrigin && currentOrigin.includes("5173")
       ? currentOrigin.replace("5173", "8000")
       : currentOrigin;
-  const apiBase = (
-    import.meta?.env?.VITE_API_BASE_URL ||
-    import.meta?.env?.VITE_BACKEND_URL ||
-    fallbackOrigin ||
-    ""
-  ).replace(/\/$/, "");
+  const apiBase = (() => {
+    const apiUrl = import.meta?.env?.VITE_API_BASE_URL;
+    if (apiUrl && /^https?:\/\//i.test(apiUrl)) {
+      return apiUrl.replace(/\/$/, "");
+    }
+    const backendUrl = import.meta?.env?.VITE_BACKEND_URL;
+    if (backendUrl) return backendUrl.replace(/\/$/, "");
+    return (fallbackOrigin || "").replace(/\/$/, "");
+  })();
   const buildUrl = (path) => {
     if (!path) return null;
     if (path.startsWith("http")) return path;
     const cleaned = path.replace(/^\/?storage\//, "");
     return `${apiBase || ""}/storage/${cleaned}`;
+  };
+
+  const syncFamilyMembers = (count, existing = [], selfProfile = null) => {
+    const total = Math.max(0, Number(count || 0));
+    const next = Array.from({ length: total }).map((_, idx) => {
+      const prev = existing[idx] || {};
+      if (idx === 0 && selfProfile) {
+        return {
+          name: selfProfile.full_name || "",
+          relation: "Self",
+          dob: selfProfile.dob || "",
+        };
+      }
+      return {
+        name: prev.name || "",
+        relation: prev.relation || "",
+        dob: prev.dob || "",
+      };
+    });
+    setFamilyMembers(next);
   };
 
   // Load user + KYC
@@ -91,6 +128,10 @@ const KycPage = () => {
         email: u.data?.email || "",
       });
 
+      const isFamily = u.data?.coverage_type === "family";
+      const count = isFamily ? Number(u.data?.family_members || 2) : 0;
+      setFamilyCount(count);
+
       const k = await API.get("/kyc/me");
       const list = k.data.data || [];
       setKycList(list);
@@ -99,14 +140,45 @@ const KycPage = () => {
         const info = list[0];
         if (info.document_type) setDocumentType(info.document_type);
         if (info.document_number) setDocumentNumber(info.document_number);
-        const frontUrl = buildUrl(info.front_path || info.front_image_url);
-        const backUrl = buildUrl(info.back_path || info.back_image_url);
-        if (frontUrl) setFrontPreview(frontUrl);
-        if (backUrl) setBackPreview(backUrl);
+        if (info.family_members && Array.isArray(info.family_members)) {
+          syncFamilyMembers(info.family_members.length, info.family_members, {
+            full_name: u.data?.name || "",
+            dob: u.data?.dob || "",
+          });
+        } else {
+          syncFamilyMembers(count, [], {
+            full_name: u.data?.name || "",
+            dob: u.data?.dob || "",
+          });
+        }
+        if (info.status === "rejected") {
+          setFrontFile(null);
+          setBackFile(null);
+          setFrontPreview(null);
+          setBackPreview(null);
+          setDocumentNumber("");
+        } else {
+          const frontUrl = buildUrl(info.front_path || info.front_image_url);
+          const backUrl = buildUrl(info.back_path || info.back_image_url);
+          if (frontUrl) setFrontPreview(frontUrl);
+          if (backUrl) setBackPreview(backUrl);
+        }
       }
     };
     load();
   }, []);
+
+  useEffect(() => {
+    if (user?.coverage_type === "family") {
+      syncFamilyMembers(familyCount, familyMembers, {
+        full_name: profile.full_name || user?.name || "",
+        dob: profile.dob || user?.dob || "",
+      });
+    } else {
+      setFamilyMembers([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [familyCount, user?.coverage_type, profile.full_name, profile.dob]);
 
   // Redirect only when approved and a policy redirect is present
   useEffect(() => {
@@ -271,6 +343,27 @@ const KycPage = () => {
     if (documentType === "citizenship" && !backPreview)
       return setError("Back document required for citizenship.");
     if (!documentNumber.trim()) return setError("Document number is required.");
+    if (user?.coverage_type === "family") {
+      const members = familyMembers.map((m, idx) =>
+        idx === 0
+          ? {
+              name: profile.full_name || "",
+              relation: "Self",
+              dob: profile.dob || "",
+            }
+          : m
+      );
+      const required = Math.max(0, Number(familyCount || 0));
+      if (members.length !== required) {
+        return setError("Please add details for all family members.");
+      }
+      const invalid = members.some(
+        (m) => !m.name?.trim() || !m.relation?.trim() || !m.dob
+      );
+      if (invalid) {
+        return setError("Please fill name, relation, and DOB for all family members.");
+      }
+    }
 
     try {
       setLoading(true);
@@ -284,6 +377,18 @@ const KycPage = () => {
       fd.append("dob", profile.dob);
       fd.append("phone", profile.phone);
       fd.append("address", profile.address);
+      if (user?.coverage_type === "family") {
+        const members = familyMembers.map((m, idx) =>
+          idx === 0
+            ? {
+                name: profile.full_name || "",
+                relation: "Self",
+                dob: profile.dob || "",
+              }
+            : m
+        );
+        fd.append("family_members", JSON.stringify(members));
+      }
 
       const res = await API.post("/kyc/submit", fd);
       setMsg(res.data.message);
@@ -539,9 +644,92 @@ const KycPage = () => {
             </div>
           </div>
 
+          {/* FAMILY MEMBERS (IF FAMILY COVERAGE) */}
+          {user?.coverage_type === "family" && familyCount > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold mb-4">
+                Family Members Covered
+              </h3>
+              <p className="text-xs opacity-70 mb-4">
+                Add name, relation, and date of birth for each covered member.
+              </p>
+
+              <div className="space-y-4">
+                {familyMembers.map((member, idx) => {
+                  const isSelf = idx === 0;
+                  return (
+                  <div
+                    key={idx}
+                    className="grid md:grid-cols-3 gap-3 p-4 rounded-lg border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark"
+                  >
+                    <div>
+                      <label className="text-xs font-semibold">Full Name</label>
+                      <input
+                        className={inputClass}
+                        value={isSelf ? profile.full_name : member.name}
+                        disabled={isLocked || isSelf}
+                        onChange={(e) => {
+                          const next = [...familyMembers];
+                          next[idx] = { ...next[idx], name: e.target.value };
+                          setFamilyMembers(next);
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold">Relation</label>
+                      <select
+                        className={inputClass}
+                        value={isSelf ? "Self" : member.relation}
+                        disabled={isLocked || isSelf}
+                        onChange={(e) => {
+                          const next = [...familyMembers];
+                          next[idx] = { ...next[idx], relation: e.target.value };
+                          setFamilyMembers(next);
+                        }}
+                      >
+                        {isSelf ? (
+                          <option value="Self">Self</option>
+                        ) : (
+                          <>
+                            <option value="">Select relation</option>
+                            {relationOptions.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </>
+                        )}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold">Date of Birth</label>
+                      <input
+                        type="date"
+                        className={inputClass}
+                        value={isSelf ? profile.dob : member.dob}
+                        disabled={isLocked || isSelf}
+                        onChange={(e) => {
+                          const next = [...familyMembers];
+                          next[idx] = { ...next[idx], dob: e.target.value };
+                          setFamilyMembers(next);
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* DOCUMENT INFO */}
           <div>
             <h3 className="text-lg font-semibold mb-4">Document Information</h3>
+            <p className="text-xs opacity-70 mb-3">
+              Please upload the registered user's document details.
+            </p>
 
             <label className="text-xs font-semibold">Document Type</label>
             <select
@@ -680,6 +868,18 @@ const KycPage = () => {
               <p><strong>Document Type:</strong> {documentType}</p>
               <p><strong>Document Number:</strong> {documentNumber || "—"}</p>
               <p><strong>Status:</strong> {latestKyc?.status || "Not Submitted"}</p>
+              {user?.coverage_type === "family" && (
+                <div>
+                  <p><strong>Family Members:</strong></p>
+                  <div className="mt-2 space-y-2">
+                    {familyMembers.map((m, idx) => (
+                      <div key={idx} className="text-xs opacity-80">
+                        {idx + 1}. {m.name || "-"} ({m.relation || "-"}) — {m.dob || "-"}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="mt-4 grid md:grid-cols-2 gap-4">

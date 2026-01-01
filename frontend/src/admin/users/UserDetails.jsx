@@ -11,6 +11,32 @@ import { useAdminToast } from "../ui/AdminToast";
 import { useAdminConfirm } from "../ui/AdminConfirm";
 
 const UserDetails = ({ user, onClose }) => {
+  const currentOrigin = typeof window !== "undefined" ? window.location.origin : "";
+  const fallbackOrigin =
+    currentOrigin && currentOrigin.includes("5173")
+      ? currentOrigin.replace("5173", "8000")
+      : currentOrigin;
+  const backendBase = (() => {
+    const apiUrl = import.meta?.env?.VITE_API_BASE_URL;
+    if (apiUrl && /^https?:\/\//i.test(apiUrl)) {
+      return apiUrl.replace(/\/$/, "");
+    }
+    const backendUrl = import.meta?.env?.VITE_BACKEND_URL;
+    if (backendUrl) return backendUrl.replace(/\/$/, "");
+    return (fallbackOrigin || "").replace(/\/$/, "");
+  })();
+
+  const normalizeImageUrl = (value) => {
+    if (!value) return "";
+    if (value.startsWith("http")) {
+      return value;
+    }
+    if (value.startsWith("/storage/")) {
+      return `${backendBase}${value}`;
+    }
+    return `${backendBase}/storage/${value.replace(/^\/?storage\//, "")}`;
+  };
+
   const [kyc, setKyc] = useState(null);
   const [loading, setLoading] = useState(true);
   const [fullImage, setFullImage] = useState("");
@@ -40,6 +66,13 @@ const UserDetails = ({ user, onClose }) => {
       });
       return;
     }
+    if (status === "approved") {
+      const confirmed = await confirm(
+        "Approve this KYC? This action cannot be undone.",
+        { title: "Approve KYC", confirmText: "Approve" }
+      );
+      if (!confirmed) return;
+    }
     if (status === "rejected") {
       const confirmed = await confirm(
         "Reject this KYC? The user will need to resubmit.",
@@ -50,6 +83,11 @@ const UserDetails = ({ user, onClose }) => {
     try {
       await API.post(`/admin/users/${user.id}/kyc-update`, { status });
       setKyc((prev) => ({ ...prev, status }));
+      addToast({
+        type: "success",
+        title: status === "approved" ? "KYC Approved" : "KYC Rejected",
+        message: `KYC status set to ${status}.`,
+      });
     } catch (e) {
       addToast({ type: "error", title: "Update failed", message: "Failed to update KYC." });
     }
@@ -59,7 +97,7 @@ const UserDetails = ({ user, onClose }) => {
     switch (type) {
       case "citizenship":
         return "Citizenship (Front + Back)";
-      case "driving_license":
+      case "license":
         return "Driving License";
       case "passport":
         return "Passport";
@@ -110,6 +148,18 @@ const UserDetails = ({ user, onClose }) => {
               <p><span className="font-semibold">DOB:</span> {kyc.dob}</p>
 
               <p><span className="font-semibold">Address:</span> {kyc.address}</p>
+              {Array.isArray(kyc.family_members) && kyc.family_members.length > 0 && (
+                <div>
+                  <p><span className="font-semibold">Family Members:</span></p>
+                  <div className="mt-2 space-y-2 text-xs opacity-80">
+                    {kyc.family_members.map((m, idx) => (
+                      <div key={idx}>
+                        {idx + 1}. {m?.name || "-"} ({m?.relation || "-"}) — {m?.dob || "-"}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* STATUS */}
               <div className="flex items-center gap-2">
@@ -121,6 +171,9 @@ const UserDetails = ({ user, onClose }) => {
                 ) : (
                   <XCircleIcon className="w-5 h-5 text-red-600" />
                 )}
+                <span className="text-sm capitalize">
+                  {kyc.status}
+                </span>
               </div>
 
               {/* DOCUMENT PREVIEW SECTION */}
@@ -130,32 +183,38 @@ const UserDetails = ({ user, onClose }) => {
                 {/* CITIZENSHIP (FRONT + BACK) */}
                 {kyc.document_type === "citizenship" && (
                   <div className="grid grid-cols-2 gap-4">
-                    {kyc.front_image && (
+                    {(kyc.front_image || kyc.front_path) && (
                       <DocumentThumb
                         label="Front Side"
-                        src={kyc.front_image}
-                        onClick={() => setFullImage(kyc.front_image)}
+                        src={normalizeImageUrl(kyc.front_image || kyc.front_path)}
+                        onClick={() =>
+                          setFullImage(normalizeImageUrl(kyc.front_image || kyc.front_path))
+                        }
                       />
                     )}
-                    {kyc.back_image && (
+                    {(kyc.back_image || kyc.back_path) && (
                       <DocumentThumb
                         label="Back Side"
-                        src={kyc.back_image}
-                        onClick={() => setFullImage(kyc.back_image)}
+                        src={normalizeImageUrl(kyc.back_image || kyc.back_path)}
+                        onClick={() =>
+                          setFullImage(normalizeImageUrl(kyc.back_image || kyc.back_path))
+                        }
                       />
                     )}
                   </div>
                 )}
 
                 {/* DRIVING LICENSE / PASSPORT (ONE IMAGE ONLY) */}
-                {(kyc.document_type === "driving_license" ||
+                {(kyc.document_type === "license" ||
                   kyc.document_type === "passport") && (
                   <div className="grid grid-cols-1 gap-4">
-                    {kyc.main_image ? (
+                    {kyc.main_image || kyc.front_path ? (
                       <DocumentThumb
                         label="Main Page"
-                        src={kyc.main_image}
-                        onClick={() => setFullImage(kyc.main_image)}
+                        src={normalizeImageUrl(kyc.main_image || kyc.front_path)}
+                        onClick={() =>
+                          setFullImage(normalizeImageUrl(kyc.main_image || kyc.front_path))
+                        }
                       />
                     ) : (
                       <p className="opacity-60 text-sm">
@@ -167,23 +226,23 @@ const UserDetails = ({ user, onClose }) => {
               </div>
 
               {/* APPROVE / REJECT BUTTONS */}
-              <div className="flex gap-3 mt-4">
-                <button
-                  onClick={() => updateKyc("approved")}
-                  disabled={kyc?.status !== "pending"}
-                  className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  Approve
-                </button>
+              {kyc?.status === "pending" && (
+                <div className="flex gap-3 mt-4">
+                  <button
+                    onClick={() => updateKyc("approved")}
+                    className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700"
+                  >
+                    Approve
+                  </button>
 
-                <button
-                  onClick={() => updateKyc("rejected")}
-                  disabled={kyc?.status !== "pending"}
-                  className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  Reject
-                </button>
-              </div>
+                  <button
+                    onClick={() => updateKyc("rejected")}
+                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+                  >
+                    Reject
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
