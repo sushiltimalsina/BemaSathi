@@ -60,6 +60,17 @@ class AuditLogMiddleware
         $description = trim("{$resourceLabel} {$actionLabel}" . ($id ? " (ID: {$id})" : ''));
 
         try {
+            $recentDuplicate = AuditLog::query()
+                ->where('admin_id', $admin->id)
+                ->where('event', $event)
+                ->where('description', $description)
+                ->where('created_at', '>=', now()->subSeconds(10))
+                ->exists();
+
+            if ($recentDuplicate) {
+                return $response;
+            }
+
             AuditLog::create([
                 'admin_id' => $admin->id,
                 'admin_name' => $admin->name ?? $admin->email ?? 'Admin',

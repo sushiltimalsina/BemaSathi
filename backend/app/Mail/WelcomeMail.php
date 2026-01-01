@@ -17,7 +17,7 @@ class WelcomeMail extends Mailable
 
     public function build()
     {
-        $frontend = rtrim(env('APP_FRONTEND_URL', config('app.url')), '/');
+        $frontend = rtrim(config('app.frontend_url', config('app.url')), '/');
 
         return $this->subject('Welcome to BeemaSathi')
             ->view('emails.welcome')

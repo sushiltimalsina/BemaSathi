@@ -78,6 +78,8 @@ class AdminSettingsController extends Controller
         Storage::disk('local')->put($this->file, json_encode($data));
 
         $this->updateEnv([
+            'RENEWAL_GRACE_DAYS' => $data['renewal_grace_days'] ?? null,
+            'DEFAULT_BILLING_CYCLE' => $data['default_billing_cycle'] ?? null,
             'ESEWA_MERCHANT_CODE' => $data['esewa_merchant_id'] ?? null,
             'ESEWA_SECRET_KEY' => $data['esewa_secret_key'] ?? null,
             'KHALTI_PUBLIC_KEY' => $data['khalti_public_key'] ?? null,
@@ -94,6 +96,13 @@ class AdminSettingsController extends Controller
 
         config([
             'app.name' => $data['system_name'] ?? config('app.name'),
+            'app.frontend_url' => $data['website_url'] ?? config('app.frontend_url'),
+            'renewal_grace_days' => $data['renewal_grace_days'] ?? config('renewal_grace_days'),
+            'default_billing_cycle' => $data['default_billing_cycle'] ?? config('default_billing_cycle'),
+            'services.esewa.merchant_code' => $data['esewa_merchant_id'] ?? config('services.esewa.merchant_code'),
+            'services.esewa.secret_key' => $data['esewa_secret_key'] ?? config('services.esewa.secret_key'),
+            'services.khalti.public_key' => $data['khalti_public_key'] ?? config('services.khalti.public_key'),
+            'services.khalti.secret_key' => $data['khalti_secret_key'] ?? config('services.khalti.secret_key'),
             'mail.mailers.smtp.host' => $data['smtp_host'] ?? config('mail.mailers.smtp.host'),
             'mail.mailers.smtp.port' => $data['smtp_port'] ?? config('mail.mailers.smtp.port'),
             'mail.mailers.smtp.username' => $data['smtp_username'] ?? config('mail.mailers.smtp.username'),

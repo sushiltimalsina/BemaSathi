@@ -17,7 +17,7 @@ class KycRejectedMail extends Mailable
 
     public function build()
     {
-        $frontend = rtrim(env('APP_FRONTEND_URL', config('app.url')), '/');
+        $frontend = rtrim(config('app.frontend_url', config('app.url')), '/');
 
         return $this->subject('Your KYC needs attention')
             ->view('emails.kyc-rejected')

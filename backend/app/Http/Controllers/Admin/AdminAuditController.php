@@ -9,19 +9,30 @@ class AdminAuditController extends Controller
 {
     public function index()
     {
-        $logs = AuditLog::query()
-            ->orderByDesc('created_at')
-            ->limit(500)
-            ->get();
+        try {
+            $logs = AuditLog::query()
+                ->orderByDesc('created_at')
+                ->limit(500)
+                ->get();
+        } catch (\Throwable $e) {
+            return response()->json([
+                'data' => [],
+                'message' => 'Audit logs unavailable. Run migrations to enable audit logging.',
+            ]);
+        }
 
         return response()->json($logs);
     }
 
     public function export()
     {
-        $logs = AuditLog::query()
-            ->orderByDesc('created_at')
-            ->get(['event', 'description', 'admin_name', 'created_at']);
+        try {
+            $logs = AuditLog::query()
+                ->orderByDesc('created_at')
+                ->get(['event', 'description', 'admin_name', 'created_at']);
+        } catch (\Throwable $e) {
+            $logs = collect();
+        }
 
         return response()->streamDownload(function () use ($logs) {
             $handle = fopen('php://output', 'w');

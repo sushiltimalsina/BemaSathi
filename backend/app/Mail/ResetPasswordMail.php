@@ -28,7 +28,8 @@ class ResetPasswordMail extends Mailable
      */
     public function build()
     {
-        $resetLink = env('APP_FRONTEND_URL', 'http://localhost:5173') .
+        $base = rtrim(config('app.frontend_url', config('app.url')), '/');
+        $resetLink = $base .
             '/reset-password?token=' . urlencode($this->token) .
             '&email=' . urlencode($this->user->email);
 

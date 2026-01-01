@@ -24,6 +24,7 @@ import Settings from "./admin/settings/Settings";
 import SupportList from "./admin/support/SupportList";
 import SupportView from "./admin/support/SupportView";
 import AgentInquiryList from "./admin/agent-inquiries/AgentInquiryList";
+import AdminProfile from "./admin/pages/Profile";
 
 /* -------- Guest Pages -------- */
 import Home from "./user/guest/pages/Home";
@@ -299,6 +300,7 @@ const AppRoutes = () => {
         <Route path="renewals" element={<RenewalList />} />
         <Route path="payments" element={<PaymentList />} />
         <Route path="users" element={<UserList />} />
+        <Route path="profile" element={<AdminProfile />} />
         <Route path="notifications" element={<NotificationCenter />} />
         <Route path="reports" element={<Reports />} />
         <Route path="audit" element={<AuditLog />} />

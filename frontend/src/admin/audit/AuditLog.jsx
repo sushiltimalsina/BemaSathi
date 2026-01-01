@@ -27,10 +27,11 @@ const AuditLog = () => {
   const load = async () => {
     try {
       const res = await API.get("/admin/audit-logs");
-      setLogs(res.data || []);
+      const data = Array.isArray(res.data) ? res.data : res.data?.data || [];
+      setLogs(data);
 
       // PICK IMPORTANT EVENTS FOR TIMELINE
-      const critical = res.data.filter((log) =>
+      const critical = data.filter((log) =>
         [
           "payment_verified",
           "kyc_approved",
@@ -56,9 +57,9 @@ const AuditLog = () => {
       const s = search.toLowerCase();
 
       const matchSearch =
-        l.event.toLowerCase().includes(s) ||
-        l.description.toLowerCase().includes(s) ||
-        l.admin_name.toLowerCase().includes(s);
+        (l.event || "").toLowerCase().includes(s) ||
+        (l.description || "").toLowerCase().includes(s) ||
+        (l.admin_name || "").toLowerCase().includes(s);
 
       const matchCat = category === "all" || l.category === category;
 
@@ -146,7 +147,7 @@ const AuditLog = () => {
 
                 <div className="flex items-center gap-2 mt-2 text-xs opacity-70">
                   <UserCircleIcon className="w-4 h-4" />
-                  {item.admin_name}
+                  {item.admin_name || "System"}
                 </div>
               </div>
             </div>
@@ -224,7 +225,7 @@ const AuditLog = () => {
 
                 <td className="px-4 py-3 flex items-center gap-2">
                   <UserCircleIcon className="w-4 h-4 opacity-60" />
-                  {log.admin_name}
+                  {log.admin_name || "System"}
                 </td>
 
                 <td className="px-4 py-3">

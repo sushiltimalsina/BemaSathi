@@ -21,7 +21,7 @@ class PaymentFailureMail extends Mailable
 
         $policy = $this->payment->policy ?? $this->payment->buyRequest?->policy;
         $user = $this->payment->user;
-        $frontend = rtrim(env('APP_FRONTEND_URL', config('app.url')), '/');
+        $frontend = rtrim(config('app.frontend_url', config('app.url')), '/');
 
         return $this->subject('Payment Failed')
             ->view('emails.payment-failure')

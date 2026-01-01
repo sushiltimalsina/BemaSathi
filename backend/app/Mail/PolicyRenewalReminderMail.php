@@ -18,7 +18,7 @@ class PolicyRenewalReminderMail extends Mailable
     public function build()
     {
         $this->buyRequest->loadMissing('user', 'policy');
-        $frontend = rtrim(env('APP_FRONTEND_URL', config('app.url')), '/');
+        $frontend = rtrim(config('app.frontend_url', config('app.url')), '/');
 
         $renewPath = '/client/payment?request=' . $this->buyRequest->id;
         $renewalUrl = $frontend . '/login?redirect=' . rawurlencode($renewPath);

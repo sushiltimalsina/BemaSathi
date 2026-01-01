@@ -487,9 +487,9 @@ class PaymentController extends Controller
     private function frontendBase(): string
     {
         return rtrim(
-            env('APP_FRONTEND_URL')
+            config('app.frontend_url')
+            ?? env('APP_FRONTEND_URL')
             ?? env('FRONTEND_URL')
-            ?? config('app.frontend_url')
             ?? config('app.url')
             ?? url('/'),
             '/'

@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import {
   HomeIcon,
   ShieldCheckIcon,
@@ -13,6 +13,7 @@ import {
   ClipboardDocumentListIcon,
   Cog6ToothIcon,
   LifebuoyIcon,
+  EnvelopeIcon,
 } from "@heroicons/react/24/outline";
 
 const navItems = [
@@ -22,7 +23,7 @@ const navItems = [
   { name: "Companies", path: "/admin/companies", icon: BuildingOffice2Icon },
   { name: "Renewals", path: "/admin/renewals", icon: ArrowPathIcon },
   { name: "Payments", path: "/admin/payments", icon: BanknotesIcon },
-  { name: "Agent Inquiries", path: "/admin/agent-inquiries", icon: ClipboardDocumentListIcon },
+  { name: "Agent Inquiries", path: "/admin/agent-inquiries", icon: EnvelopeIcon },
   { name: "Users", path: "/admin/users", icon: UserGroupIcon },
   { name: "Notifications", path: "/admin/notifications", icon: BellIcon },
   { name: "Reports", path: "/admin/reports", icon: ChartBarSquareIcon },
@@ -33,16 +34,18 @@ const navItems = [
 
 const Sidebar = () => {
   return (
-    <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col min-h-0">
+    <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col">
       {/* Brand */}
       <div className="h-16 flex items-center px-6 border-b border-slate-200 dark:border-slate-800">
         <span className="text-xl font-bold text-primary-light dark:text-primary-dark">
-          BeemaSathi
+          <Link to="dashboard">
+            BemaSathi
+          </Link>
         </span>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-4 py-4 space-y-1">
         {navItems.map((item) => (
           <NavLink
             key={item.name}
@@ -65,10 +68,6 @@ const Sidebar = () => {
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-800 text-xs opacity-60">
-        Admin Panel
-      </div>
     </aside>
   );
 };
