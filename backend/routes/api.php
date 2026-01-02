@@ -8,7 +8,7 @@ use App\Http\Controllers\PolicyController;
 use App\Http\Controllers\ComparisonController;
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\InquiryController;
-use App\Http\Controllers\AdminAuthController;
+use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\RecommendationController;

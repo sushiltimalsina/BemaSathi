@@ -1,10 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowRightOnRectangleIcon, ChatBubbleLeftRightIcon, UserCircleIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowRightOnRectangleIcon,
+  Bars3Icon,
+  ChatBubbleLeftRightIcon,
+  UserCircleIcon,
+} from "@heroicons/react/24/outline";
 import { Link, useNavigate } from "react-router-dom";
 import API from "../utils/adminApi";
 import { useAdminToast } from "../ui/AdminToast";
 
-const Topbar = () => {
+const Topbar = ({ onToggleSidebar }) => {
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
   const prevCountRef = useRef(0);
@@ -84,10 +89,20 @@ const Topbar = () => {
   const avatar = admin?.name ? admin.name.charAt(0).toUpperCase() : "A";
 
   return (
-    <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6">
-      <Link to="/admin/dashboard" className="text-xl font-bold text-primary-light dark:text-primary-dark">
-        <h1 className="text-lg font-semibold">Admin</h1>
-      </Link>
+    <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 sm:px-6">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onToggleSidebar}
+          className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 md:hidden"
+          aria-label="Toggle sidebar"
+        >
+          <Bars3Icon className="w-5 h-5" />
+        </button>
+        <Link to="/admin/dashboard" className="text-xl font-bold text-primary-light dark:text-primary-dark">
+          <h1 className="text-lg font-semibold">Admin</h1>
+        </Link>
+      </div>
 
       <div className="flex items-center gap-4">
         {/* Support */}

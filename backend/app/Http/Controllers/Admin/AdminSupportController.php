@@ -25,6 +25,10 @@ class AdminSupportController extends Controller
             $query->orderBy('created_at');
         }]);
 
+        SupportMessage::where('ticket_id', $ticket->id)
+            ->where('is_admin', false)
+            ->update(['is_admin_seen' => true]);
+
         $ticket->update(['is_admin_seen' => true]);
 
         return response()->json($ticket);
@@ -42,6 +46,7 @@ class AdminSupportController extends Controller
             'message' => $data['message'],
             'is_admin' => true,
             'is_user_seen' => false,
+            'is_admin_seen' => true,
         ]);
 
         $ticket->update(['is_admin_seen' => true]);
@@ -88,6 +93,9 @@ class AdminSupportController extends Controller
 
     public function markSeen(SupportTicket $ticket)
     {
+        SupportMessage::where('ticket_id', $ticket->id)
+            ->where('is_admin', false)
+            ->update(['is_admin_seen' => true]);
         $ticket->update(['is_admin_seen' => true]);
         return response()->json(['message' => 'Ticket marked as seen']);
     }

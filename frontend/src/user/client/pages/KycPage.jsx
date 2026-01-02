@@ -482,6 +482,11 @@ const KycPage = () => {
 
   return (
     <div className="max-w-3xl mx-auto p-6 pb-24">
+      {((redirectPolicyId && !isApproved) || kycStatus === "not_submitted") && (
+        <div className="mb-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4 text-sm text-amber-900 dark:text-amber-100">
+          Please complete your KYC to proceed with buying the policy.
+        </div>
+      )}
 
       {/* VERIFIED BANNER */}
       {(isPending || isApproved) && (
