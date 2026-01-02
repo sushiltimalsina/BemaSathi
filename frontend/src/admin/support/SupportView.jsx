@@ -5,6 +5,7 @@ import {
   PaperAirplaneIcon,
   ChatBubbleOvalLeftIcon,
   ClockIcon,
+  CheckIcon,
 } from "@heroicons/react/24/outline";
 import { useAdminToast } from "../ui/AdminToast";
 import { useAdminConfirm } from "../ui/AdminConfirm";
@@ -127,6 +128,16 @@ const SupportView = () => {
             <div className="text-[10px] opacity-70 mt-1 flex items-center gap-1">
               <ClockIcon className="w-3 h-3" />
               {new Date(m.created_at).toLocaleString()}
+              {m.is_admin && (
+                <span
+                  className={`ml-1 inline-flex items-center ${
+                    m.is_user_seen ? "text-sky-300" : "text-white/70"
+                  }`}
+                >
+                  <CheckIcon className="w-3 h-3" />
+                  <CheckIcon className="-ml-1 w-3 h-3" />
+                </span>
+              )}
             </div>
           </div>
         ))}

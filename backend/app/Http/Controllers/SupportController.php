@@ -42,6 +42,7 @@ class SupportController extends Controller
             'message' => $data['message'],
             'is_admin' => false,
             'is_user_seen' => true,
+            'is_admin_seen' => false,
         ]);
 
         $ticket->update(['is_admin_seen' => false]);
@@ -83,6 +84,7 @@ class SupportController extends Controller
             'message' => $data['message'],
             'is_admin' => false,
             'is_user_seen' => true,
+            'is_admin_seen' => false,
         ]);
 
         $ticket->update(['is_admin_seen' => false]);

@@ -13,11 +13,13 @@ class SupportMessage extends Model
         'message',
         'is_admin',
         'is_user_seen',
+        'is_admin_seen',
     ];
 
     protected $casts = [
         'is_admin' => 'boolean',
         'is_user_seen' => 'boolean',
+        'is_admin_seen' => 'boolean',
     ];
 
     public function ticket()
