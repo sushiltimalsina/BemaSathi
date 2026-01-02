@@ -52,7 +52,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         {/* Brand */}
         <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200 dark:border-slate-800">
           <span className="text-xl font-bold text-primary-light dark:text-primary-dark">
-            <Link to="dashboard">BemaSathi</Link>
+            <Link to="dashboard">BeemaSathi</Link>
           </span>
           <button
             type="button"

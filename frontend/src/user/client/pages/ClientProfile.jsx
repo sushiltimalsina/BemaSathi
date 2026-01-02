@@ -93,7 +93,7 @@ const ClientProfile = () => {
 
             <div>
               <h2 className="text-2xl font-semibold">{user.name}</h2>
-              <p className="text-sm opacity-70">BemaSathi Member</p>
+              <p className="text-sm opacity-70">BeemaSathi Member</p>
             </div>
           </div>
 

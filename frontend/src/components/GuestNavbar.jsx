@@ -35,7 +35,7 @@ const GuestNavbar = ({ isDark, mode, onToggleMode }) => {
           className="text-2xl font-bold text-primary-light dark:text-primary-dark flex items-center space-x-2"
         >
           <img src="/logo.png" alt="BeemaSathi Logo" className="h-8 w-8" />
-          <span>BemaSathi</span>
+          <span>BeemaSathi</span>
         </Link>
 
         {/* RIGHT: NAV ITEMS (Desktop) */}

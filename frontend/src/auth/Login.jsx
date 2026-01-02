@@ -101,7 +101,7 @@ const Login = () => {
           </h1>
 
           <p className="text-sm opacity-70 mt-1">
-            Access your BemaSathi account
+            Access your BeemaSathi account
           </p>
         </div>
 

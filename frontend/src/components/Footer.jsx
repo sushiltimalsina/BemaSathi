@@ -16,7 +16,7 @@ const Footer = () => {
         {/* BRAND */}
         <div>
           <h2 className="text-xl font-bold text-primary-light dark:text-primary-dark mb-3">
-            BemaSathi
+            BeemaSathi
           </h2>
           <p className="text-text-light dark:text-text-dark text-xs leading-relaxed opacity-80">
             Smart insurance comparison platform helping users choose better
@@ -103,7 +103,7 @@ const Footer = () => {
           border-t border-border-light dark:border-border-dark
         "
       >
-        © {new Date().getFullYear()} BemaSathi. All rights reserved.
+        © {new Date().getFullYear()} BeemaSathi. All rights reserved.
       </div>
     </footer>
   );

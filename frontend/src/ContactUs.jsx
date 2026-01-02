@@ -70,7 +70,7 @@ const ContactUs = () => {
 
               <div className="flex items-center gap-3">
                 <EnvelopeIcon className="w-5 h-5 text-primary-light dark:text-primary-dark" />
-                <span>support@bemasathi.com</span>
+                <span>support@beemasathi.com</span>
               </div>
 
               <div className="flex items-center gap-3">

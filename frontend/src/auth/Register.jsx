@@ -154,7 +154,7 @@ const Register = () => {
           <h1 className="text-2xl font-bold mt-2">Register</h1>
 
           <p className="text-sm opacity-70">
-            Create your BemaSathi account
+            Create your BeemaSathi account
           </p>
         </div>
 

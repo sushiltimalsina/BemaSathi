@@ -26,12 +26,12 @@ const AboutUs = () => {
         </button>
 
         {/* Title */}
-        <h1 className="text-3xl font-bold mb-6">About BemaSathi</h1>
+        <h1 className="text-3xl font-bold mb-6">About BeemaSathi</h1>
 
         {/* Intro Card */}
         <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark shadow rounded-2xl p-8 mb-10">
           <p className="text-sm leading-relaxed opacity-90">
-            BemaSathi is a modern insurance comparison platform designed to help
+            BeemaSathi is a modern insurance comparison platform designed to help
             Nepali customers find the best insurance policy quickly and easily.
             We remove confusion, eliminate misinformation, and give users the tools
             to make confident decisions.
@@ -75,7 +75,7 @@ const AboutUs = () => {
 
         {/* Why Choose Us */}
         <Section
-          title="Why Choose BemaSathi?"
+          title="Why Choose BeemaSathi?"
           list={[
             "Honest and unbiased recommendations",
             "User-first design with dark/light mode support",

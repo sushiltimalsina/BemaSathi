@@ -120,7 +120,7 @@ const Home = () => {
             </h1>
 
             <p className="mt-4 text-sm md:text-base opacity-80 max-w-xl">
-              BemaSathi helps you explore Health, Term Life, and Whole Life insurance
+              BeemaSathi helps you explore Health, Term Life, and Whole Life insurance
               policies from multiple companies, compare them side by side, and make smarter decisions.
             </p>
 
@@ -308,7 +308,7 @@ const Home = () => {
       {/* HOW IT WORKS */}
       <section className="bg-card-light dark:bg-card-dark border-y border-border-light dark:border-border-dark">
         <div className="max-w-6xl mx-auto px-6 py-12 md:py-16">
-          <h2 className="text-2xl md:text-3xl font-bold mb-6">How BemaSathi Works</h2>
+          <h2 className="text-2xl md:text-3xl font-bold mb-6">How BeemaSathi Works</h2>
 
           <div className="grid md:grid-cols-3 gap-6">
             {[
@@ -335,13 +335,13 @@ const Home = () => {
         </div>
       </section>
 
-      {/* WHY BEMASATHI */}
+      {/* WHY BEEMASATHI */}
       <section className="max-w-6xl mx-auto px-6 py-12 md:py-16">
         <div className="grid md:grid-cols-2 gap-10 items-center">
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">Why people prefer BemaSathi</h2>
+            <h2 className="text-2xl md:text-3xl font-bold mb-4">Why people prefer BeemaSathi</h2>
             <p className="text-sm md:text-base opacity-80 mb-5">
-              BemaSathi brings everything into one smart platform.
+              BeemaSathi brings everything into one smart platform.
             </p>
 
             <ul className="space-y-3 text-sm">

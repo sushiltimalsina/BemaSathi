@@ -6,7 +6,7 @@ const faqs = [
     answer: (
       <div className="space-y-3 leading-relaxed text-sm">
         <p>
-          BemaSathi uses a structured and intelligent comparison system to help
+          BeemaSathi uses a structured and intelligent comparison system to help
           you evaluate insurance policies based on multiple criteria:
         </p>
 
