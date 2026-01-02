@@ -3,10 +3,14 @@ import React, { createContext, useCallback, useContext, useMemo, useState } from
 const ToastContext = createContext(null);
 
 const typeStyles = {
-  success: "bg-emerald-600 text-white",
-  error: "bg-red-600 text-white",
-  warning: "bg-amber-500 text-white",
-  info: "bg-blue-600 text-white",
+  success:
+    "bg-emerald-600 text-white dark:bg-emerald-500/90 dark:text-slate-900",
+  error:
+    "bg-red-600 text-white dark:bg-red-500/90 dark:text-slate-900",
+  warning:
+    "bg-amber-500 text-white dark:bg-amber-400/90 dark:text-slate-900",
+  info:
+    "bg-blue-600 text-white dark:bg-blue-400/90 dark:text-slate-900",
 };
 
 export const AdminToastProvider = ({ children }) => {
@@ -41,7 +45,7 @@ export const AdminToastProvider = ({ children }) => {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`min-w-60 max-w-[320px] rounded-lg px-4 py-3 shadow-lg ${typeStyles[t.type] || typeStyles.info}`}
+            className={`min-w-60 max-w-[320px] rounded-lg px-4 py-3 shadow-lg border border-white/10 dark:border-slate-900/50 ${typeStyles[t.type] || typeStyles.info}`}
           >
             {t.title && <div className="text-sm font-semibold">{t.title}</div>}
             <div className="text-sm">{t.message}</div>
