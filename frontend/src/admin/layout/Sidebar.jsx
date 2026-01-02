@@ -35,34 +35,15 @@ const navItems = [
 
 const Sidebar = ({ isOpen, onClose }) => {
   return (
-    <>
-      {isOpen && (
-        <button
-          type="button"
-          onClick={onClose}
-          className="fixed inset-0 bg-black/40 z-30 md:hidden"
-          aria-label="Close sidebar"
-        />
-      )}
-      <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transform transition-transform duration-200 md:static md:translate-x-0 ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        {/* Brand */}
-        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200 dark:border-slate-800">
-          <span className="text-xl font-bold text-primary-light dark:text-primary-dark">
-            <Link to="dashboard">BeemaSathi</Link>
-          </span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 md:hidden"
-            aria-label="Close sidebar"
-          >
-            <XMarkIcon className="w-5 h-5" />
-          </button>
-        </div>
+    <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col">
+      {/* Brand */}
+      <div className="h-16 flex items-center px-6 border-b border-slate-200 dark:border-slate-800">
+        <span className="text-xl font-bold text-primary-light dark:text-primary-dark">
+          <Link to="dashboard">
+            BemaSathi
+          </Link>
+        </span>
+      </div>
 
         {/* Nav */}
         <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">

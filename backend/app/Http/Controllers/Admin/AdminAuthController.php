@@ -66,7 +66,6 @@ class AdminAuthController extends Controller
         ], 201);
     }
 
-
     /**
      * Admin Logout
      */
