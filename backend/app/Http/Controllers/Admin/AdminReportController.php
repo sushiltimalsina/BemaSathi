@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Schema;
 
 class AdminReportController extends Controller
 {
+    private const NEPAL_TZ = 'Asia/Kathmandu';
+
     public function export(Request $request)
     {
         $data = $request->validate([
@@ -94,7 +96,7 @@ class AdminReportController extends Controller
             $u->name,
             $u->email,
             $u->phone,
-            $u->created_at,
+            $this->formatNepalTime($u->created_at),
         ])->all();
     }
 
@@ -117,7 +119,7 @@ class AdminReportController extends Controller
             $p->premium_amt,
             $p->coverage_limit,
             $p->is_active ? 'active' : 'inactive',
-            $p->created_at,
+            $this->formatNepalTime($p->created_at),
         ])->all();
     }
 
@@ -140,7 +142,7 @@ class AdminReportController extends Controller
             $p->method,
             $p->status,
             $p->is_verified ? 'verified' : 'unverified',
-            $p->created_at,
+            $this->formatNepalTime($p->created_at),
         ])->all();
     }
 
@@ -169,9 +171,9 @@ class AdminReportController extends Controller
             $r->policy_id,
             $r->billing_cycle,
             $r->cycle_amount,
-            $r->next_renewal_date,
+            $this->formatNepalTime($r->next_renewal_date),
             $r->renewal_status,
-            $r->created_at,
+            $this->formatNepalTime($r->created_at),
         ])->all();
     }
 
@@ -199,8 +201,19 @@ class AdminReportController extends Controller
             $k->document_type,
             $k->document_number,
             $k->status,
-            $k->verified_at,
-            $k->created_at,
+            $this->formatNepalTime($k->verified_at),
+            $this->formatNepalTime($k->created_at),
         ])->all();
+    }
+
+    private function formatNepalTime($value): ?string
+    {
+        if (!$value) {
+            return null;
+        }
+
+        return Carbon::parse($value)
+            ->timezone(self::NEPAL_TZ)
+            ->format('Y-m-d H:i:s');
     }
 }

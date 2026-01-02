@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use Carbon\Carbon;
 
 class AdminAuditController extends Controller
 {
@@ -34,7 +35,8 @@ class AdminAuditController extends Controller
             $logs = collect();
         }
 
-        return response()->streamDownload(function () use ($logs) {
+        $tz = 'Asia/Kathmandu';
+        return response()->streamDownload(function () use ($logs, $tz) {
             $handle = fopen('php://output', 'w');
             fputcsv($handle, ['event', 'description', 'admin', 'created_at']);
             foreach ($logs as $log) {
@@ -42,7 +44,9 @@ class AdminAuditController extends Controller
                     $log->event,
                     $log->description,
                     $log->admin_name,
-                    $log->created_at,
+                    $log->created_at
+                        ? Carbon::parse($log->created_at)->timezone($tz)->format('Y-m-d H:i:s')
+                        : null,
                 ]);
             }
             fclose($handle);
