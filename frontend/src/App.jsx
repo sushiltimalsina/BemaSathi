@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter, useLocation } from "react-router-dom";
 import AppRoutes from "./routes";
 
@@ -18,6 +18,11 @@ const AppShell = () => {
   const hideGlobalFooter =
     location.pathname.startsWith("/client") ||
     location.pathname.startsWith("/admin");
+
+  useEffect(() => {
+    const isAdmin = location.pathname.startsWith("/admin");
+    document.title = isAdmin ? "BeemaSathi Admin" : "BeemaSathi";
+  }, [location.pathname]);
 
   return (
     <>
