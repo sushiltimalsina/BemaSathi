@@ -47,15 +47,18 @@ class AdminPaymentController extends Controller
         $recipient = $payment->buyRequest?->email ?: $payment->user?->email;
 
         if (!$isSuccess) {
-            if ($payment->user) {
+            $notifyUser = $payment->user ?? $payment->buyRequest?->user;
+            if ($notifyUser) {
                 $this->notifier->notify(
-                    $payment->user,
+                    $notifyUser,
                     'Payment failed',
                     "Your payment for {$policyName} failed. Please repay to continue your coverage.",
                     [
                         'buy_request_id' => $payment->buy_request_id,
                         'policy_id' => $payment->policy_id,
-                    ]
+                    ],
+                    'system',
+                    false
                 );
             }
             if ($payment->user && $recipient) {
@@ -88,18 +91,21 @@ class AdminPaymentController extends Controller
         $payment->verified_at = now();
         $payment->save();
 
-        if ($payment->user) {
+        $notifyUser = $payment->user ?? $payment->buyRequest?->user;
+        if ($notifyUser) {
             $this->notifier->notify(
-                $payment->user,
+                $notifyUser,
                 'Payment verified',
                 "Your payment for {$policyName} has been verified. Your policy is now active and policy documents will be sent to you shortly via email.",
                 [
                     'buy_request_id' => $payment->buy_request_id,
                     'policy_id' => $payment->policy_id,
-                ]
+                ],
+                'system',
+                false
             );
         }
-        if ($payment->user && $recipient) {
+        if ($recipient) {
             try {
                 Mail::to($recipient)->send(new PaymentSuccessMail($payment));
                 if ($this->shouldSendPolicyDocument($payment)) {

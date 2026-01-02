@@ -82,7 +82,7 @@ const KycPage = () => {
   const apiBase = (() => {
     const apiUrl = import.meta?.env?.VITE_API_BASE_URL;
     if (apiUrl && /^https?:\/\//i.test(apiUrl)) {
-      return apiUrl.replace(/\/$/, "");
+      return apiUrl.replace(/\/$/, "").replace(/\/api$/, "");
     }
     const backendUrl = import.meta?.env?.VITE_BACKEND_URL;
     if (backendUrl) return backendUrl.replace(/\/$/, "");

@@ -5,9 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Payment;
 use App\Models\BuyRequest;
 use App\Models\Policy;
-use App\Mail\PaymentSuccessMail;
 use App\Mail\PaymentFailureMail;
-use App\Mail\PolicyPurchaseConfirmationMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Database\QueryException;
@@ -228,6 +226,11 @@ class PaymentController extends Controller
             'meta'   => ['reason' => $isCancelled ? 'User cancelled payment' : 'Payment failed', 'transaction_uuid' => $transactionUuid]
         ]);
         $this->notifyPayment($payment, $status);
+        if (!$payment->failed_notified) {
+            $payment->failed_notified = true;
+            $payment->failed_notified_at = now();
+            $payment->save();
+        }
 
         $failureRedirect = $this->frontendBase() . "/client/payment-failure?payment={$payment->id}";
 
@@ -620,7 +623,7 @@ class PaymentController extends Controller
     private function notifyPayment(Payment $payment, string $status): void
     {
         $payment->loadMissing('user', 'policy', 'buyRequest.policy');
-        $user = $payment->user;
+        $user = $payment->user ?? $payment->buyRequest?->user;
         if (!$user) {
             return;
         }
@@ -646,7 +649,7 @@ class PaymentController extends Controller
             'policy_id' => $payment->policy_id,
         ];
 
-        $this->notifier->notify($user, $title, $message, $context);
+        $this->notifier->notify($user, $title, $message, $context, 'system', false);
 
         $recipient = $payment->buyRequest?->email ?: $user->email;
         if (!$recipient) {
@@ -654,13 +657,6 @@ class PaymentController extends Controller
         }
 
         try {
-            if (in_array($status, ['completed', 'success'], true)) {
-                Mail::to($recipient)->send(new PaymentSuccessMail($payment));
-                if ($this->shouldSendPolicyDocument($payment)) {
-                    Mail::to($recipient)->send(new PolicyPurchaseConfirmationMail($payment));
-                }
-            }
-
             if (in_array($status, ['failed', 'cancelled'], true)) {
                 $reason = $payment->meta['reason'] ?? null;
                 Mail::to($recipient)->send(new PaymentFailureMail($payment, $reason));
