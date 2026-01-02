@@ -4,7 +4,7 @@
   <table align="center" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:auto;">
     <tr>
       <td style="background:#0f2d52; padding:20px 30px; text-align:center;">
-        <h1 style="margin:0; color:#ffffff; font-size:24px;">BemaSathi</h1>
+        <h1 style="margin:0; color:#ffffff; font-size:24px;">BeemaSathi</h1>
         <p style="margin:6px 0 0; color:#cfe0ff; font-size:12px;">Agent Inquiry Notification</p>
       </td>
     </tr>
@@ -51,7 +51,7 @@
     </tr>
     <tr>
       <td style="padding:18px; text-align:center; font-size:12px; color:#6b7280;">
-        &copy; {{ date('Y') }} BemaSathi. All rights reserved.
+        &copy; {{ date('Y') }} BeemaSathi. All rights reserved.
       </td>
     </tr>
   </table>

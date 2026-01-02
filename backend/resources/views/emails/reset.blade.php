@@ -7,7 +7,7 @@
     <!-- HEADER -->
     <tr>
       <td style="background:#2563EB; padding:20px 30px; text-align:center; border-radius:0 0 8px 8px;">
-        <h1 style="margin:0; color:#ffffff; font-size:24px; letter-spacing:0.5px;">BemaSathi</h1>
+        <h1 style="margin:0; color:#ffffff; font-size:24px; letter-spacing:0.5px;">BeemaSathi</h1>
         <p style="margin:5px 0 0; color:#dbe9ff; font-size:13px;">Smart Digital Insurance Companion</p>
       </td>
     </tr>
@@ -21,7 +21,7 @@
         </p>
 
         <p style="font-size:14px; line-height:1.6; margin:0 0 20px;">
-          We received a request to reset your BemaSathi account password.
+          We received a request to reset your BeemaSathi account password.
           You can reset it using the verification code below or by clicking the secure link.
         </p>
 
@@ -73,7 +73,7 @@
     <!-- FOOTER -->
     <tr>
       <td style="padding:20px; text-align:center; font-size:12px; color:#6b7280;">
-        © {{ date('Y') }} BemaSathi · All rights reserved
+        © {{ date('Y') }} BeemaSathi · All rights reserved
         <br>Smart Insurance Comparison Made Simple
       </td>
     </tr>

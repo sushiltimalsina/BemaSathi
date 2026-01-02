@@ -106,7 +106,7 @@
 <div class="letterhead">
   <div class="company-name">{{ $companyName ?? 'Insurance Company' }}</div>
   <div class="document-type">Official Policy Document</div>
-  <div class="issued-via">Issued digitally via BemaSathi</div>
+  <div class="issued-via">Issued digitally via BeemaSathi</div>
 </div>
 
 <!-- POLICY SUMMARY -->
@@ -184,7 +184,7 @@
 <!-- FOOTER -->
 <div class="footer">
   This document is electronically generated and does not require a physical signature.<br>
-  © {{ date('Y') }} {{ $companyName }} • Issued via BemaSathi
+  © {{ date('Y') }} {{ $companyName }} • Issued via BeemaSathi
 </div>
 
 </body>

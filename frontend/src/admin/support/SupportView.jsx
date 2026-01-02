@@ -88,6 +88,10 @@ const SupportView = () => {
 
   if (loading) return <p className="opacity-70">Loading ticket...</p>;
 
+  const displayName = ticket.user?.name || ticket.guest_name || "Guest";
+  const displayEmail = ticket.user?.email || ticket.guest_email || "-";
+  const displayPhone = ticket.guest_phone || "-";
+
   return (
     <div className="space-y-6 max-w-3xl">
 
@@ -95,8 +99,11 @@ const SupportView = () => {
       <div>
         <h1 className="text-2xl font-bold">{ticket.subject}</h1>
         <p className="text-sm opacity-70">
-          From: {ticket.user?.name} ({ticket.user?.email})
+          From: {displayName} ({displayEmail})
         </p>
+        {!ticket.user?.id && (
+          <p className="text-xs opacity-60">Guest phone: {displayPhone}</p>
+        )}
       </div>
 
       {/* STATUS BUTTON */}

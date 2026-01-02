@@ -7,6 +7,7 @@ use App\Models\SupportTicket;
 use App\Models\SupportMessage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class AdminSupportController extends Controller
 {
@@ -49,6 +50,16 @@ class AdminSupportController extends Controller
             'is_admin_seen' => true,
         ]);
 
+        if (!$ticket->user_id && $ticket->guest_email) {
+            Mail::raw(
+                $data['message'],
+                function ($message) use ($ticket) {
+                    $message->to($ticket->guest_email)
+                        ->subject('BeemaSathi Support Reply');
+                }
+            );
+        }
+
         $ticket->update(['is_admin_seen' => true]);
         $ticket->touch();
 
@@ -86,7 +97,7 @@ class AdminSupportController extends Controller
         return response()->json([
             'count' => $count,
             'latest_unread_at' => $latestTicket?->updated_at,
-            'latest_unread_user' => $latestTicket?->user?->name,
+            'latest_unread_user' => $latestTicket?->user?->name ?? $latestTicket?->guest_name ?? 'guest',
             'latest_unread_message' => $latestMessage,
         ]);
     }
