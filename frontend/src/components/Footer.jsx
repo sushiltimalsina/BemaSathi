@@ -2,6 +2,11 @@ import React from "react";
 import { Link } from "react-router-dom";
 
 const Footer = () => {
+  const scrollToTop = () => {
+    if (typeof window === "undefined") return;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
     <footer
       className="
@@ -30,10 +35,10 @@ const Footer = () => {
             Quick Links
           </h3>
           <ul className="space-y-2 text-text-light dark:text-text-dark opacity-80">
-            <li><Link to="/" className="hover:opacity-100 transition">Home</Link></li>
-            <li><Link to="/policies" className="hover:opacity-100 transition">All Policies</Link></li>
-            <li><Link to="/compare" className="hover:opacity-100 transition">Compare</Link></li>
-            <li><Link to="/login" className="hover:opacity-100 transition">Login</Link></li>
+            <li><Link to="/" onClick={scrollToTop} className="hover:opacity-100 transition">Home</Link></li>
+            <li><Link to="/policies" onClick={scrollToTop} className="hover:opacity-100 transition">All Policies</Link></li>
+            <li><Link to="/compare" onClick={scrollToTop} className="hover:opacity-100 transition">Compare</Link></li>
+            <li><Link to="/login" onClick={scrollToTop} className="hover:opacity-100 transition">Login</Link></li>
           </ul>
         </div>
 
@@ -43,12 +48,13 @@ const Footer = () => {
             Resources
           </h3>
           <ul className="space-y-2 text-text-light dark:text-text-dark opacity-80">
-            <li><Link to="/about" className="hover:opacity-100 transition">About Us</Link></li>
-            <li><Link to="/contact" className="hover:opacity-100 transition">Contact</Link></li>
-            <li><Link to="/faq" className="hover:opacity-100 transition">FAQ</Link></li>
+            <li><Link to="/about" onClick={scrollToTop} className="hover:opacity-100 transition">About Us</Link></li>
+            <li><Link to="/contact" onClick={scrollToTop} className="hover:opacity-100 transition">Contact</Link></li>
+            <li><Link to="/faq" onClick={scrollToTop} className="hover:opacity-100 transition">FAQ</Link></li>
             <li>
               <Link
                 to="/policy-comparison-guide"
+                onClick={scrollToTop}
                 className="hover:opacity-100 transition"
               >
                 Policy Comparison Guide
@@ -67,6 +73,7 @@ const Footer = () => {
             <li>
               <Link
                 to="/policies?type=health"
+                onClick={scrollToTop}
                 className="hover:opacity-100 transition"
               >
                 Health Insurance
@@ -76,6 +83,7 @@ const Footer = () => {
             <li>
               <Link
                 to="/policies?type=term-life"
+                onClick={scrollToTop}
                 className="hover:opacity-100 transition"
               >
                 Term Life Insurance
@@ -85,6 +93,7 @@ const Footer = () => {
             <li>
               <Link
                 to="/policies?type=whole-life"
+                onClick={scrollToTop}
                 className="hover:opacity-100 transition"
               >
                 Whole Life Insurance

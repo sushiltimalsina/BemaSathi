@@ -29,24 +29,24 @@ export const AdminConfirmProvider = ({ children }) => {
     <ConfirmContext.Provider value={value}>
       {children}
       {dialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-md rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-xl bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark p-5 shadow-xl text-text-light dark:text-text-dark">
             <h3 className="text-lg font-semibold mb-2">{dialog.title}</h3>
-            <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
+            <p className="text-sm opacity-80 mb-4">
               {dialog.message}
             </p>
             <div className="flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => close(false)}
-                className="px-3 py-1 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm"
+                className="px-3 py-1 rounded-lg border border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark text-sm"
               >
                 {dialog.cancelText}
               </button>
               <button
                 type="button"
                 onClick={() => close(true)}
-                className="px-3 py-1 rounded-lg bg-primary-light text-white hover:bg-primary-dark text-sm"
+                className="px-3 py-1 rounded-lg bg-primary-light text-white hover:bg-primary-dark dark:bg-primary-dark dark:hover:bg-primary-light text-sm"
               >
                 {dialog.confirmText}
               </button>

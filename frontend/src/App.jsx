@@ -42,6 +42,16 @@ const AppShell = () => {
   );
 };
 
+const ScrollToTop = () => {
+  const { pathname, search } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+  }, [pathname, search]);
+
+  return null;
+};
+
 const AppFrame = () => {
   return (
     <div
@@ -55,6 +65,7 @@ const AppFrame = () => {
       <ToastProvider>
         <AdminAuthProvider>
           <BrowserRouter>
+            <ScrollToTop />
             <AppShell />
           </BrowserRouter>
         </AdminAuthProvider>

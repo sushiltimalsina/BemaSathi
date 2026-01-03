@@ -12,10 +12,25 @@ import { useAdminConfirm } from "../ui/AdminConfirm";
 
 const UserDetails = ({ user, onClose, onKycEditAllowed, onKycStatusUpdated }) => {
   const currentOrigin = typeof window !== "undefined" ? window.location.origin : "";
+  const deriveApiOrigin = (origin) => {
+    if (!origin) return "";
+    try {
+      const url = new URL(origin);
+      if (!url.host.includes("beemasathi.")) return origin;
+      const parts = url.host.split(".");
+      if (parts.length > 2) {
+        parts[0] = "api";
+        url.host = parts.join(".");
+      }
+      return url.origin;
+    } catch {
+      return origin;
+    }
+  };
   const fallbackOrigin =
     currentOrigin && currentOrigin.includes("5173")
       ? currentOrigin.replace("5173", "8000")
-      : currentOrigin;
+      : deriveApiOrigin(currentOrigin);
   const backendBase = (() => {
     const apiUrl = import.meta?.env?.VITE_API_BASE_URL;
     if (apiUrl && /^https?:\/\//i.test(apiUrl)) {

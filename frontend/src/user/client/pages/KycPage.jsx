@@ -75,10 +75,25 @@ const KycPage = () => {
   ];
 
   const currentOrigin = typeof window !== "undefined" ? window.location.origin : "";
+  const deriveApiOrigin = (origin) => {
+    if (!origin) return "";
+    try {
+      const url = new URL(origin);
+      if (!url.host.includes("beemasathi.")) return origin;
+      const parts = url.host.split(".");
+      if (parts.length > 2) {
+        parts[0] = "api";
+        url.host = parts.join(".");
+      }
+      return url.origin;
+    } catch {
+      return origin;
+    }
+  };
   const fallbackOrigin =
     currentOrigin && currentOrigin.includes("5173")
       ? currentOrigin.replace("5173", "8000")
-      : currentOrigin;
+      : deriveApiOrigin(currentOrigin);
   const apiBase = (() => {
     const apiUrl = import.meta?.env?.VITE_API_BASE_URL;
     if (apiUrl && /^https?:\/\//i.test(apiUrl)) {
@@ -494,10 +509,10 @@ const KycPage = () => {
         <div
           className={`mb-4 p-4 rounded-xl border flex items-center gap-3 ${
             canEditApproved || isPending
-              ? "bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700"
+              ? "bg-amber-300 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700"
               : isApproved
-              ? "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700"
-              : "bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700"
+              ? "bg-green-300 dark:bg-green-900/20 border-green-300 dark:border-green-700"
+              : "bg-amber-300 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700"
           }`}
         >
           {canEditApproved ? (
@@ -512,7 +527,7 @@ const KycPage = () => {
             </svg>
           ) : (
             <svg
-              className={`w-6 h-6 ${isApproved ? "text-green-600 dark:text-green-300" : "text-amber-600 dark:text-amber-300"}`}
+              className={`w-6 h-6 ${isApproved ? "text-green-600 dark:text-green-800" : "text-amber-600 dark:text-amber-300"}`}
               fill="none"
               stroke="currentColor"
               strokeWidth="1.5"
@@ -524,7 +539,7 @@ const KycPage = () => {
           <div>
             <p
               className={`text-sm font-semibold ${
-                isApproved ? "text-green-800 dark:text-green-200" : "text-amber-800 dark:text-amber-100"
+                isApproved ? "text-green-800 dark:text-green-800" : "text-amber-800 dark:text-amber-100"
               }`}
             >
               {canEditApproved
@@ -538,7 +553,7 @@ const KycPage = () => {
                 canEditApproved
                   ? "text-amber-700/80 dark:text-amber-200/80"
                   : isApproved
-                  ? "text-green-700/80 dark:text-green-200/80"
+                  ? "text-green-700/80 dark:text-green-800/80"
                   : "text-amber-700/80 dark:text-amber-200/80"
               }`}
             >
