@@ -30,6 +30,15 @@ class AdminPaymentController extends Controller
             $payment->payment_method = $payment->method;
             $payment->transaction_id = $payment->provider_reference ?? ($payment->meta['transaction_uuid'] ?? null);
             $payment->billing_cycle = optional($payment->buyRequest)->billing_cycle ?? $payment->billing_cycle;
+            if ($payment->buy_request_id) {
+                $otherVerified = Payment::where('buy_request_id', $payment->buy_request_id)
+                    ->where('is_verified', true)
+                    ->where('id', '!=', $payment->id)
+                    ->exists();
+                $payment->payment_type = $otherVerified ? 'renewal' : 'new';
+            } else {
+                $payment->payment_type = 'new';
+            }
             return $payment;
         });
 
@@ -57,16 +66,20 @@ class AdminPaymentController extends Controller
                         'buy_request_id' => $payment->buy_request_id,
                         'policy_id' => $payment->policy_id,
                     ],
-                    'system',
+                    'payment',
                     false
                 );
             }
-            if ($payment->user && $recipient) {
+            if ($recipient) {
                 try {
                     $reason = $payment->meta['reason'] ?? null;
                     Mail::to($recipient)->send(new PaymentFailureMail($payment, $reason));
                 } catch (\Throwable $e) {
-                    // ignore email failures
+                    \Log::warning('Payment failure email send failed', [
+                        'payment_id' => $payment->id,
+                        'recipient' => $recipient,
+                        'error' => $e->getMessage(),
+                    ]);
                 }
             }
 
@@ -90,18 +103,19 @@ class AdminPaymentController extends Controller
         $payment->is_verified = true;
         $payment->verified_at = now();
         $payment->save();
+        $this->updateRenewalAfterVerification($payment);
 
         $notifyUser = $payment->user ?? $payment->buyRequest?->user;
         if ($notifyUser) {
             $this->notifier->notify(
                 $notifyUser,
                 'Payment verified',
-                "Your payment for {$policyName} is verified.",
+                "Your payment for {$policyName} is verified. Please find the policy document and receipt in your email.",
                 [
                     'buy_request_id' => $payment->buy_request_id,
                     'policy_id' => $payment->policy_id,
                 ],
-                'system',
+                'payment',
                 false
             );
         }
@@ -134,5 +148,40 @@ class AdminPaymentController extends Controller
             ->exists();
 
         return !$otherVerified;
+    }
+
+    private function updateRenewalAfterVerification(Payment $payment): void
+    {
+        $buyRequest = $payment->buyRequest;
+        if (!$buyRequest) {
+            return;
+        }
+
+        $otherVerified = Payment::where('buy_request_id', $buyRequest->id)
+            ->where('is_verified', true)
+            ->where('id', '!=', $payment->id)
+            ->exists();
+
+        if (!$otherVerified) {
+            return;
+        }
+
+        $cycle = $buyRequest->billing_cycle ?? 'yearly';
+        $baseDate = $buyRequest->next_renewal_date
+            ? \Illuminate\Support\Carbon::parse($buyRequest->next_renewal_date)
+            : now();
+        $start = $baseDate->greaterThan(now()) ? $baseDate : now();
+
+        $next = match ($cycle) {
+            'monthly' => $start->copy()->addMonth(),
+            'quarterly' => $start->copy()->addMonths(3),
+            'half_yearly' => $start->copy()->addMonths(6),
+            default => $start->copy()->addYear(),
+        };
+
+        $buyRequest->update([
+            'next_renewal_date' => $next->toDateString(),
+            'renewal_status' => 'active',
+        ]);
     }
 }

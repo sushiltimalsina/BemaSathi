@@ -7,6 +7,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class PaymentSuccessMail extends Mailable
 {
@@ -31,22 +32,30 @@ class PaymentSuccessMail extends Mailable
         $policyNumber = $this->resolvePolicyNumber();
         $nextRenewalDate = $this->payment->buyRequest?->next_renewal_date;
 
-        $pdf = Pdf::loadView('pdfs.payment-receipt', [
-            'receiptNumber' => $receiptNumber,
-            'policyNumber' => $policyNumber,
-            'transactionId' => $transactionId,
-            'amount' => $this->payment->amount,
-            'currency' => $this->payment->currency ?? 'NPR',
-            'paidAt' => $paidAt,
-            'policyName' => $policy?->policy_name ?? 'Policy',
-            'companyName' => $policy?->company_name ?? 'Insurance Company',
-            'billingCycle' => $billingCycle,
-            'userName' => $user?->name ?? 'Customer',
-            'userEmail' => $recipientEmail,
-            'nextRenewalDate' => $nextRenewalDate,
-        ]);
+        $pdf = null;
+        try {
+            $pdf = Pdf::loadView('pdfs.payment-receipt', [
+                'receiptNumber' => $receiptNumber,
+                'policyNumber' => $policyNumber,
+                'transactionId' => $transactionId,
+                'amount' => $this->payment->amount,
+                'currency' => $this->payment->currency ?? 'NPR',
+                'paidAt' => $paidAt,
+                'policyName' => $policy?->policy_name ?? 'Policy',
+                'companyName' => $policy?->company_name ?? 'Insurance Company',
+                'billingCycle' => $billingCycle,
+                'userName' => $user?->name ?? 'Customer',
+                'userEmail' => $recipientEmail,
+                'nextRenewalDate' => $nextRenewalDate,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Payment receipt PDF generation failed', [
+                'payment_id' => $this->payment->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
-        return $this->subject('Payment Successful - Receipt')
+        $mail = $this->subject('Payment Successful - Receipt')
             ->view('emails.payment-success')
             ->with([
                 'name' => $user?->name ?? 'there',
@@ -58,10 +67,15 @@ class PaymentSuccessMail extends Mailable
                 'transactionId' => $transactionId,
                 'paidAt' => $paidAt,
                 'nextRenewalDate' => $nextRenewalDate,
-            ])
-            ->attachData($pdf->output(), "receipt-{$receiptNumber}.pdf", [
+            ]);
+
+        if ($pdf) {
+            $mail->attachData($pdf->output(), "receipt-{$receiptNumber}.pdf", [
                 'mime' => 'application/pdf',
             ]);
+        }
+
+        return $mail;
     }
 
     private function resolvePolicyNumber(): string

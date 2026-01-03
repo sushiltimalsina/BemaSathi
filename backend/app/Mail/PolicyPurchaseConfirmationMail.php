@@ -7,6 +7,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class PolicyPurchaseConfirmationMail extends Mailable
 {
@@ -31,32 +32,40 @@ class PolicyPurchaseConfirmationMail extends Mailable
         $premium = $this->payment->buyRequest?->cycle_amount ?? $this->payment->amount ?? 0;
         $nextRenewalDate = $this->payment->buyRequest?->next_renewal_date;
 
-        $pdf = Pdf::loadView('pdfs.policy-document', [
-            'policyNumber' => $policyNumber,
-            'policyName' => $policy?->policy_name ?? 'Policy',
-            'companyName' => $policy?->company_name ?? 'Insurance Company',
-            'insuranceType' => $policy?->insurance_type,
-            'coverageLimit' => $policy?->coverage_limit ?? 'N/A',
-            'premium' => $premium,
-            'billingCycle' => $billingCycle,
-            'effectiveDate' => $effectiveDate,
-            'nextRenewalDate' => $nextRenewalDate,
-            'policyDescription' => $policy?->policy_description,
-            'coveredConditions' => $policy?->covered_conditions,
-            'exclusions' => $policy?->exclusions,
-            'waitingPeriodDays' => $policy?->waiting_period_days,
-            'copayPercent' => $policy?->copay_percent,
-            'claimSettlementRatio' => $policy?->claim_settlement_ratio,
-            'supportsSmokers' => $policy?->supports_smokers,
-            'userName' => $kyc?->full_name ?? $user?->name ?? 'Policy Holder',
-            'userEmail' => $recipientEmail,
-            'userPhone' => $kyc?->phone ?? $user?->phone,
-            'userAddress' => $kyc?->address ?? $user?->address,
-            'userDob' => $kyc?->dob ?? $user?->dob,
-            'userDocumentNumber' => $kyc?->document_number,
-        ]);
+        $pdf = null;
+        try {
+            $pdf = Pdf::loadView('pdfs.policy-document', [
+                'policyNumber' => $policyNumber,
+                'policyName' => $policy?->policy_name ?? 'Policy',
+                'companyName' => $policy?->company_name ?? 'Insurance Company',
+                'insuranceType' => $policy?->insurance_type,
+                'coverageLimit' => $policy?->coverage_limit ?? 'N/A',
+                'premium' => $premium,
+                'billingCycle' => $billingCycle,
+                'effectiveDate' => $effectiveDate,
+                'nextRenewalDate' => $nextRenewalDate,
+                'policyDescription' => $policy?->policy_description,
+                'coveredConditions' => $policy?->covered_conditions,
+                'exclusions' => $policy?->exclusions,
+                'waitingPeriodDays' => $policy?->waiting_period_days,
+                'copayPercent' => $policy?->copay_percent,
+                'claimSettlementRatio' => $policy?->claim_settlement_ratio,
+                'supportsSmokers' => $policy?->supports_smokers,
+                'userName' => $kyc?->full_name ?? $user?->name ?? 'Policy Holder',
+                'userEmail' => $recipientEmail,
+                'userPhone' => $kyc?->phone ?? $user?->phone,
+                'userAddress' => $kyc?->address ?? $user?->address,
+                'userDob' => $kyc?->dob ?? $user?->dob,
+                'userDocumentNumber' => $kyc?->document_number,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Policy document PDF generation failed', [
+                'payment_id' => $this->payment->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
-        return $this->subject('Policy Purchase Confirmation')
+        $mail = $this->subject('Policy Purchase Confirmation')
             ->view('emails.policy-purchase-confirmation')
             ->with([
                 'name' => $user?->name ?? 'there',
@@ -67,9 +76,14 @@ class PolicyPurchaseConfirmationMail extends Mailable
                 'premium' => $premium,
                 'billingCycle' => $billingCycle,
                 'effectiveDate' => $effectiveDate,
-            ])
-            ->attachData($pdf->output(), "policy-{$policyNumber}.pdf", [
+            ]);
+
+        if ($pdf) {
+            $mail->attachData($pdf->output(), "policy-{$policyNumber}.pdf", [
                 'mime' => 'application/pdf',
             ]);
+        }
+
+        return $mail;
     }
 }

@@ -192,6 +192,7 @@ class PaymentController extends Controller
                 'verified_at' => now(),
             ]);
             $this->notifyPayment($payment, 'completed');
+            $this->updateRenewalAfterVerification($payment);
         } catch (QueryException $e) {
             // If status enum mismatches existing schema, keep flow moving and continue to redirect
         }
@@ -390,6 +391,7 @@ class PaymentController extends Controller
                 'meta' => array_merge($payment->meta ?? [], ['pidx' => $pidx, 'khalti_status' => $status]),
             ]);
             $this->notifyPayment($payment, 'completed');
+            $this->updateRenewalAfterVerification($payment);
         } catch (QueryException $e) {
             // ignore
         }
@@ -636,7 +638,7 @@ class PaymentController extends Controller
         };
 
         $message = match ($status) {
-            'completed', 'success' => "Your payment for {$policyName} was completed successfully.",
+            'completed', 'success', 'Payment verified' => "Your payment for {$policyName} is verified. Please find the policy document and receipt in your email.",
             'failed', 'cancelled' => "Your payment for {$policyName} did not complete. Please try again.",
             default => "Your payment status for {$policyName} is {$status}.",
         };
@@ -646,7 +648,7 @@ class PaymentController extends Controller
             'policy_id' => $payment->policy_id,
         ];
 
-        $this->notifier->notify($user, $title, $message, $context, 'system', false);
+        $this->notifier->notify($user, $title, $message, $context, 'payment', false);
 
         $recipient = $payment->buyRequest?->email ?: $user->email;
         if (!$recipient) {
@@ -682,5 +684,40 @@ class PaymentController extends Controller
             ->exists();
 
         return !$otherVerified;
+    }
+
+    private function updateRenewalAfterVerification(Payment $payment): void
+    {
+        $buyRequest = $payment->buyRequest;
+        if (!$buyRequest) {
+            return;
+        }
+
+        $otherVerified = Payment::where('buy_request_id', $buyRequest->id)
+            ->where('is_verified', true)
+            ->where('id', '!=', $payment->id)
+            ->exists();
+
+        if (!$otherVerified) {
+            return; // first payment is the initial purchase
+        }
+
+        $cycle = $buyRequest->billing_cycle ?? 'yearly';
+        $baseDate = $buyRequest->next_renewal_date
+            ? Carbon::parse($buyRequest->next_renewal_date)
+            : now();
+        $start = $baseDate->greaterThan(now()) ? $baseDate : now();
+
+        $next = match ($cycle) {
+            'monthly' => $start->copy()->addMonth(),
+            'quarterly' => $start->copy()->addMonths(3),
+            'half_yearly' => $start->copy()->addMonths(6),
+            default => $start->copy()->addYear(),
+        };
+
+        $buyRequest->update([
+            'next_renewal_date' => $next->toDateString(),
+            'renewal_status' => 'active',
+        ]);
     }
 }

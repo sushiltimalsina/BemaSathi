@@ -27,7 +27,7 @@ class NotificationService
             'type' => $type,
         ]);
 
-        if ($sendEmail) {
+        if ($sendEmail && $type !== 'payment') {
             $this->sendEmailIfPossible($user, $title, $message);
         }
 

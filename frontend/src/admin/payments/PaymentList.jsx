@@ -54,6 +54,7 @@ const PaymentList = () => {
       const matchSearch =
         p.transaction_id?.toLowerCase().includes(q) ||
         p.payment_method?.toLowerCase().includes(q) ||
+        p.payment_type?.toLowerCase().includes(q) ||
         p.user?.name?.toLowerCase().includes(q) ||
         p.user?.email?.toLowerCase().includes(q) ||
         p.buy_request?.policy?.policy_name?.toLowerCase().includes(q);
@@ -187,6 +188,7 @@ const PaymentList = () => {
               <th className="px-4 py-3 text-left">Transaction ID</th>
               <th className="px-4 py-3 text-left">Amount</th>
               <th className="px-4 py-3 text-left">Method</th>
+              <th className="px-4 py-3 text-left">Type</th>
               <th className="px-4 py-3 text-left">Cycle</th>
               <th className="px-4 py-3 text-left">Status</th>
               <th className="px-4 py-3 text-left">Date</th>
@@ -222,6 +224,22 @@ const PaymentList = () => {
                 <td className="px-4 py-3 capitalize flex items-center gap-1">
                   <BanknotesIcon className="w-4 h-4 opacity-70" />
                   {p.payment_method}
+                </td>
+
+                <td className="px-4 py-3 capitalize">
+                  {p.payment_type ? (
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        p.payment_type === "renewal"
+                          ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300"
+                          : "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
+                      }`}
+                    >
+                      {p.payment_type}
+                    </span>
+                  ) : (
+                    "-"
+                  )}
                 </td>
 
                 <td className="px-4 py-3 capitalize">
