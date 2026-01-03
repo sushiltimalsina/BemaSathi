@@ -15,7 +15,7 @@
 </head>
 <body>
   <div class="header">
-    <div class="brand">BeemaSathi</div>
+    <div class="brand">BemaSathi</div>
     <div class="tagline">Payment Receipt</div>
   </div>
 

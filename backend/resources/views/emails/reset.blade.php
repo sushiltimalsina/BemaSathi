@@ -21,7 +21,7 @@
         </p>
 
         <p style="font-size:14px; line-height:1.6; margin:0 0 20px;">
-          We received a request to reset your BeemaSathi account password.
+          We received a request to reset your BemaSathi account password.
           You can reset it using the verification code below or by clicking the secure link.
         </p>
 
@@ -73,7 +73,7 @@
     <!-- FOOTER -->
     <tr>
       <td style="padding:20px; text-align:center; font-size:12px; color:#6b7280;">
-        © {{ date('Y') }} BeemaSathi · All rights reserved
+        © {{ date('Y') }} BemaSathi · All rights reserved
         <br>Smart Insurance Comparison Made Simple
       </td>
     </tr>

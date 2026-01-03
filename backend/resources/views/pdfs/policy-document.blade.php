@@ -184,7 +184,7 @@
 <!-- FOOTER -->
 <div class="footer">
   This document is electronically generated and does not require a physical signature.<br>
-  © {{ date('Y') }} {{ $companyName }} • Issued via BeemaSathi
+  © {{ date('Y') }} {{ $companyName }} • Issued via BemaSathi
 </div>
 
 </body>

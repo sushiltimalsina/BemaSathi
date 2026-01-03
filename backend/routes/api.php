@@ -62,8 +62,6 @@ Route::get('/agents/{agent}', [AgentController::class, 'show']);
 // Public inquiries (allow logging agent view without auth)
 Route::post('/inquiries', [InquiryController::class, 'store']);
 
-// Guest support (Contact Us)
-Route::post('/contact', [SupportController::class, 'guestCreate']);
 
 // Premium calculator (public, no auth needed)
 Route::post('/premium/calculate', [PolicyController::class, 'calculatePremium']);

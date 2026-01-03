@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\SupportTicket;
 use App\Models\SupportMessage;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 
 class SupportController extends Controller
 {
@@ -51,55 +49,6 @@ class SupportController extends Controller
         $ticket->touch();
 
         return response()->json($ticket, 201);
-    }
-
-    public function guestCreate(Request $request)
-    {
-        $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'phone' => 'nullable|string|max:30',
-            'message' => 'required|string',
-        ]);
-
-        $subjectBase = "Guest Support - {$data['name']}";
-        $subject = Str::limit($subjectBase, 255, '');
-
-        $ticket = SupportTicket::create([
-            'user_id' => null,
-            'guest_name' => $data['name'],
-            'guest_email' => $data['email'],
-            'guest_phone' => $data['phone'] ?? null,
-            'subject' => $subject,
-            'category' => 'guest_support',
-            'priority' => 'normal',
-            'status' => 'open',
-            'is_admin_seen' => false,
-        ]);
-
-        SupportMessage::create([
-            'ticket_id' => $ticket->id,
-            'user_id' => null,
-            'message' => $data['message'],
-            'is_admin' => false,
-            'is_user_seen' => true,
-            'is_admin_seen' => false,
-        ]);
-
-        $ticket->touch();
-
-        Mail::raw(
-            "New guest support message\n\nName: {$data['name']}\nEmail: {$data['email']}\nPhone: " .
-                ($data['phone'] ?? '-') .
-                "\n\nMessage:\n{$data['message']}\n",
-            function ($message) use ($data) {
-                $message->to('sushiltimalsina06@gmail.com')
-                    ->replyTo($data['email'], $data['name'])
-                    ->subject('New Guest Support Message');
-            }
-        );
-
-        return response()->json(['message' => 'Contact request submitted.'], 201);
     }
 
     public function show(Request $request, SupportTicket $ticket)

@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\BuyRequest;
 use App\Services\NotificationService;
+use App\Mail\PolicyRenewalReminderMail;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class AdminRenewalController extends Controller
 {
@@ -71,11 +73,31 @@ class AdminRenewalController extends Controller
                 'buy_request_id' => $buyRequest->id,
                 'policy_id' => $buyRequest->policy_id,
             ],
-            'system'
+            'system',
+            false
         );
+        $this->sendRenewalEmail($buyRequest);
 
         return response()->json([
             'message' => 'Renewal notification sent.',
         ]);
+    }
+
+    private function sendRenewalEmail(BuyRequest $buyRequest): void
+    {
+        $buyRequest->loadMissing('user', 'policy');
+        $emails = array_filter([
+            $buyRequest->user?->email,
+            $buyRequest->email,
+        ]);
+        $unique = array_values(array_unique($emails));
+
+        foreach ($unique as $email) {
+            try {
+                Mail::to($email)->send(new PolicyRenewalReminderMail($buyRequest));
+            } catch (\Throwable $e) {
+                // ignore email failures
+            }
+        }
     }
 }

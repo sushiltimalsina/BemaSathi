@@ -19,22 +19,24 @@ const UserDetails = ({ user, onClose, onKycEditAllowed, onKycStatusUpdated }) =>
   const backendBase = (() => {
     const apiUrl = import.meta?.env?.VITE_API_BASE_URL;
     if (apiUrl && /^https?:\/\//i.test(apiUrl)) {
-      return apiUrl.replace(/\/$/, "");
+      return apiUrl.replace(/\/$/, "").replace(/\/api$/, "");
     }
     const backendUrl = import.meta?.env?.VITE_BACKEND_URL;
     if (backendUrl) return backendUrl.replace(/\/$/, "");
     return (fallbackOrigin || "").replace(/\/$/, "");
   })();
 
-  const normalizeImageUrl = (value) => {
+  const normalizeImageUrl = (value, previewVersion) => {
     if (!value) return "";
     if (value.startsWith("http")) {
-      return value;
+      return previewVersion ? `${value}?v=${encodeURIComponent(previewVersion)}` : value;
     }
     if (value.startsWith("/storage/")) {
-      return `${backendBase}${value}`;
+      const baseUrl = `${backendBase}${value}`;
+      return previewVersion ? `${baseUrl}?v=${encodeURIComponent(previewVersion)}` : baseUrl;
     }
-    return `${backendBase}/storage/${value.replace(/^\/?storage\//, "")}`;
+    const baseUrl = `${backendBase}/storage/${value.replace(/^\/?storage\//, "")}`;
+    return previewVersion ? `${baseUrl}?v=${encodeURIComponent(previewVersion)}` : baseUrl;
   };
 
   const [kyc, setKyc] = useState(null);
@@ -194,6 +196,8 @@ const UserDetails = ({ user, onClose, onKycEditAllowed, onKycStatusUpdated }) =>
     }
   };
 
+  const previewVersion = kyc?.updated_at || kyc?.verified_at || kyc?.created_at || "";
+
   return (
     <>
       {/* SIDE PANEL */}
@@ -242,7 +246,7 @@ const UserDetails = ({ user, onClose, onKycEditAllowed, onKycStatusUpdated }) =>
                   <div className="mt-2 space-y-2 text-xs opacity-80">
                     {kyc.family_members.map((m, idx) => (
                       <div key={idx}>
-                        {idx + 1}. {m?.name || "-"} ({m?.relation || "-"}) — {m?.dob || "-"}
+                        {idx + 1}. {m?.name || "-"} ({m?.relation || "-"}) - {m?.dob || "-"}
                       </div>
                     ))}
                   </div>
@@ -267,6 +271,8 @@ const UserDetails = ({ user, onClose, onKycEditAllowed, onKycStatusUpdated }) =>
               {/* DOCUMENT PREVIEW SECTION */}
               <div>
                 <h4 className="font-semibold mb-2">Uploaded Documents</h4>
+                {/** Use updated_at as a cache-buster for newly uploaded files */}
+                {/** This prevents stale previews after resubmission */}
 
                 {/* CITIZENSHIP (FRONT + BACK) */}
                 {kyc.document_type === "citizenship" && (
@@ -274,18 +280,22 @@ const UserDetails = ({ user, onClose, onKycEditAllowed, onKycStatusUpdated }) =>
                     {(kyc.front_image || kyc.front_path) && (
                       <DocumentThumb
                         label="Front Side"
-                        src={normalizeImageUrl(kyc.front_image || kyc.front_path)}
+                        src={normalizeImageUrl(kyc.front_image || kyc.front_path, previewVersion)}
                         onClick={() =>
-                          setFullImage(normalizeImageUrl(kyc.front_image || kyc.front_path))
+                          setFullImage(
+                            normalizeImageUrl(kyc.front_image || kyc.front_path, previewVersion)
+                          )
                         }
                       />
                     )}
                     {(kyc.back_image || kyc.back_path) && (
                       <DocumentThumb
                         label="Back Side"
-                        src={normalizeImageUrl(kyc.back_image || kyc.back_path)}
+                        src={normalizeImageUrl(kyc.back_image || kyc.back_path, previewVersion)}
                         onClick={() =>
-                          setFullImage(normalizeImageUrl(kyc.back_image || kyc.back_path))
+                          setFullImage(
+                            normalizeImageUrl(kyc.back_image || kyc.back_path, previewVersion)
+                          )
                         }
                       />
                     )}
@@ -299,9 +309,11 @@ const UserDetails = ({ user, onClose, onKycEditAllowed, onKycStatusUpdated }) =>
                     {kyc.main_image || kyc.front_path ? (
                       <DocumentThumb
                         label="Main Page"
-                        src={normalizeImageUrl(kyc.main_image || kyc.front_path)}
+                        src={normalizeImageUrl(kyc.main_image || kyc.front_path, previewVersion)}
                         onClick={() =>
-                          setFullImage(normalizeImageUrl(kyc.main_image || kyc.front_path))
+                          setFullImage(
+                            normalizeImageUrl(kyc.main_image || kyc.front_path, previewVersion)
+                          )
                         }
                       />
                     ) : (
@@ -433,3 +445,5 @@ const FullImageModal = ({ src, onClose }) => (
 );
 
 export default UserDetails;
+
+

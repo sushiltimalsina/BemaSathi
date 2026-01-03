@@ -81,6 +81,12 @@ const UserList = () => {
             <ExclamationTriangleIcon className="w-4 h-4" /> PENDING
           </span>
         );
+      case "not_submitted":
+        return (
+          <span className="inline-flex items-center gap-1 text-slate-500 dark:text-slate-400 text-xs font-semibold">
+            <ExclamationTriangleIcon className="w-4 h-4" /> NOT SUBMITTED
+          </span>
+        );
       case "rejected":
         return (
           <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 text-xs font-semibold">
@@ -128,6 +134,7 @@ const UserList = () => {
             <option value="all">All</option>
             <option value="approved">Approved</option>
             <option value="pending">Pending</option>
+            <option value="not_submitted">Not submitted</option>
             <option value="rejected">Rejected</option>
           </select>
         </div>

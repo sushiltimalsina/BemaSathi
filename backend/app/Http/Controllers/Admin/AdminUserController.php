@@ -28,7 +28,7 @@ class AdminUserController extends Controller
                     'email' => $user->email,
                     'phone' => $user->phone,
                     'created_at' => $user->created_at,
-                    'kyc_status' => $latestKyc?->status ?? 'pending',
+                    'kyc_status' => $latestKyc?->status ?? 'not_submitted',
                     'allow_edit' => (bool) ($latestKyc?->allow_edit ?? false),
                 ];
             });

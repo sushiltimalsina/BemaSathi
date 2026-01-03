@@ -298,7 +298,7 @@ const KycPage = () => {
   };
 
   // Upload Box UI
-  const UploadBox = ({ label, preview, dragActive, setDragActive, onDrop, onClick }) => (
+  const UploadBox = ({ label, preview, dragActive, setDragActive, onDrop, inputId }) => (
     <div>
       <div className="flex items-center justify-between">
         <label className="text-xs font-semibold">{label}</label>
@@ -313,8 +313,9 @@ const KycPage = () => {
         )}
       </div>
 
-      <div
-        onClick={() => !isLocked && onClick()}
+      <label
+        htmlFor={inputId}
+        aria-disabled={isLocked}
         onDragEnter={(e) => {
           if (!isLocked) {
             e.preventDefault();
@@ -332,7 +333,7 @@ const KycPage = () => {
         className={`mt-2 relative flex flex-col items-center justify-center p-6 rounded-xl
         border-2 border-dashed transition-all
         bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark
-        ${!isLocked ? "cursor-pointer hover:border-primary-light dark:hover:border-primary-dark" : "opacity-70 cursor-not-allowed"}
+        ${!isLocked ? "cursor-pointer hover:border-primary-light dark:hover:border-primary-dark" : "opacity-70 cursor-not-allowed pointer-events-none"}
         ${dragActive ? "border-primary-light bg-hover-light" : ""}
       `}
       >
@@ -360,7 +361,7 @@ const KycPage = () => {
             <p className="text-sm opacity-70">Click or Drag to Upload</p>
           </>
         )}
-      </div>
+      </label>
 
       {preview && (
         <div className="mt-3 rounded-xl overflow-hidden shadow border border-border-light dark:border-border-dark relative">
@@ -833,13 +834,13 @@ const KycPage = () => {
                   dragActive={dragFront}
                   setDragActive={setDragFront}
                   onDrop={(e) => handleDrop(e, "front")}
-                  onClick={() => document.getElementById("frontInput")?.click()}
+                  inputId="frontInput"
                 />
                 <input
                   id="frontInput"
                   type="file"
                   disabled={isLocked}
-                  className="hidden"
+                  className="sr-only"
                   accept="image/*"
                   onChange={(e) => handleFileInput(e, "front")}
                 />
@@ -851,13 +852,13 @@ const KycPage = () => {
                   dragActive={dragBack}
                   setDragActive={setDragBack}
                   onDrop={(e) => handleDrop(e, "back")}
-                  onClick={() => document.getElementById("backInput")?.click()}
+                  inputId="backInput"
                 />
                 <input
                   id="backInput"
                   type="file"
                   disabled={isLocked}
-                  className="hidden"
+                  className="sr-only"
                   accept="image/*"
                   onChange={(e) => handleFileInput(e, "back")}
                 />
@@ -874,13 +875,13 @@ const KycPage = () => {
                   dragActive={dragFront}
                   setDragActive={setDragFront}
                   onDrop={(e) => handleDrop(e, "front")}
-                  onClick={() => document.getElementById("frontInput")?.click()}
+                  inputId="frontInput"
                 />
                 <input
                   id="frontInput"
                   type="file"
                   disabled={isLocked}
-                  className="hidden"
+                  className="sr-only"
                   accept="image/*"
                   onChange={(e) => handleFileInput(e, "front")}
                 />

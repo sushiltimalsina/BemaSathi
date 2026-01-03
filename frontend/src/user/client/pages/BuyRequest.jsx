@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import API from "../../../api/api";
 import {
@@ -31,11 +31,15 @@ const BuyRequest = () => {
   const [billingCycle, setBillingCycle] = useState("yearly");
   const [cyclePremium, setCyclePremium] = useState(null);
 
-  const [form, setForm] = useState({
-    name: "",
-    phone: "",
-    email: "",
-  });
+  const [form, setForm] = useState({ name: "", phone: "" });
+
+  // ✅ Email is UNCONTROLLED (ref-based) to avoid per-letter typing glitches
+  const emailRef = useRef(null);
+  const [emailDefault, setEmailDefault] = useState("");
+  const [emailError, setEmailError] = useState("");
+
+  const hasPrefilledForm = useRef(false);
+  const hasPrefilledEmail = useRef(false);
 
   const fmt = (n) => Number(n || 0).toLocaleString("en-IN");
   const basePremium = policy?.personalized_premium || policy?.premium_amt || 0;
@@ -53,6 +57,35 @@ const BuyRequest = () => {
     }
   };
 
+  // ✅ practical email check
+  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+
+  // OPTIONAL email by default: empty is allowed
+  const validateEmail = () => {
+    const raw = emailRef.current?.value ?? "";
+    const email = raw.trim();
+
+   if (!email) {
+  setEmailError("Email is required.");
+  return false;
+}
+
+
+    if (!isValidEmail(email)) {
+      setEmailError("Please enter a valid email address.");
+      return false;
+    }
+
+    setEmailError("");
+    return true;
+  };
+
+  const getEmailValue = () => {
+    const raw = emailRef.current?.value ?? "";
+    const email = raw.trim();
+    return email || undefined;
+  };
+
   const Row = ({ label, value, highlight }) => (
     <div className="flex justify-between">
       <span className="opacity-70">{label}</span>
@@ -66,18 +99,27 @@ const BuyRequest = () => {
     </div>
   );
 
-  const Input = ({ label, value, onChange }) => (
+  const Input = ({
+    label,
+    value,
+    onChange,
+    readOnly = false,
+    type = "text",
+  }) => (
     <div>
       <label className="text-xs font-semibold">{label}</label>
       <input
-        className="
-          w-full mt-1 px-3 py-2 border rounded-lg 
-          bg-white dark:bg-slate-900 
-          border-border-light dark:border-border-dark 
+        className={`
+          w-full mt-1 px-3 py-2 border rounded-lg
+          bg-white dark:bg-slate-900
+          border-border-light dark:border-border-dark
           text-sm
-        "
+          ${readOnly ? "opacity-70 cursor-not-allowed" : ""}
+        `}
+        type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        readOnly={readOnly}
       />
     </div>
   );
@@ -111,11 +153,9 @@ const BuyRequest = () => {
       try {
         const res = await API.get("/settings/public");
         const cycle = res.data?.default_billing_cycle;
-        if (cycle) {
-          setBillingCycle(cycle);
-        }
-      } catch (err) {
-        // ignore - fallback to local default
+        if (cycle) setBillingCycle(cycle);
+      } catch {
+        // ignore
       }
     };
     loadDefaults();
@@ -130,7 +170,6 @@ const BuyRequest = () => {
 
         const k = await API.get("/kyc/me");
         const list = k.data?.data || [];
-
         const latest = list.length ? list[0] : null;
 
         const latestStatus = latest?.status || "not_submitted";
@@ -145,17 +184,25 @@ const BuyRequest = () => {
           return;
         }
 
-        setForm({
-          name: latest?.full_name || user.name || "",
-          phone: latest?.phone || user.phone || "",
-          email: user.email || "",
-        });
+        if (!hasPrefilledForm.current) {
+          setForm({
+            name: latest?.full_name || user.name || "",
+            phone: latest?.phone || user.phone || "",
+          });
+          hasPrefilledForm.current = true;
+        }
+
+        if (!hasPrefilledEmail.current) {
+          setEmailDefault(user.email || "");
+          hasPrefilledEmail.current = true;
+        }
       } catch (err) {
         console.log(err);
       }
     };
 
     loadUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Preview premium when billing cycle changes
@@ -199,22 +246,25 @@ const BuyRequest = () => {
     f.remove();
   };
 
-  // Create buy request with billing_cycle
+  const disableEsewa = payingEsewa || kycStatus !== "approved";
+  const disableKhalti = payingKhalti || kycStatus !== "approved";
+
   // Pay via eSewa
   const handlePayNow = async () => {
+    setError("");
     if (kycStatus !== "approved") {
       setError("Your KYC must be approved before you can purchase a policy.");
       return;
     }
+    if (!validateEmail()) return;
 
     setPayingEsewa(true);
-    setError("");
 
     try {
       const payRes = await API.post("/payments/esewa", {
         policy_id: Number(policyId),
         billing_cycle: billingCycle,
-        email: form.email.trim() || undefined,
+        email: getEmailValue(),
       });
 
       const { redirect_url, payload } = payRes.data;
@@ -235,19 +285,20 @@ const BuyRequest = () => {
 
   // Pay via Khalti
   const handlePayKhalti = async () => {
+    setError("");
     if (kycStatus !== "approved") {
       setError("Your KYC must be approved before you can purchase a policy.");
       return;
     }
+    if (!validateEmail()) return;
 
     setPayingKhalti(true);
-    setError("");
 
     try {
       const payRes = await API.post("/payments/khalti", {
         policy_id: Number(policyId),
         billing_cycle: billingCycle,
-        email: form.email.trim() || undefined,
+        email: getEmailValue(),
       });
 
       if (payRes.data?.payment_url) {
@@ -264,11 +315,8 @@ const BuyRequest = () => {
     }
   };
 
-  if (loading)
-    return <p className="text-center mt-20 opacity-75">Loading...</p>;
-
-  if (!policy)
-    return <p className="text-center mt-20 text-red-500">{error}</p>;
+  if (loading) return <p className="text-center mt-20 opacity-75">Loading...</p>;
+  if (!policy) return <p className="text-center mt-20 text-red-500">{error}</p>;
 
   return (
     <div
@@ -279,7 +327,6 @@ const BuyRequest = () => {
         transition
       "
     >
-      {/* BACK BUTTON */}
       <button
         onClick={() => navigate(-1)}
         className="
@@ -293,11 +340,10 @@ const BuyRequest = () => {
       <h1 className="text-3xl font-bold mb-6">Buy Insurance Policy</h1>
 
       <div className="grid md:grid-cols-2 gap-8">
-
         {/* POLICY CARD */}
         <div
           className="
-            p-6 rounded-2xl shadow-md 
+            p-6 rounded-2xl shadow-md
             border border-border-light dark:border-border-dark
             bg-card-light dark:bg-card-dark
           "
@@ -311,7 +357,7 @@ const BuyRequest = () => {
 
           <span
             className="
-              inline-block px-3 py-1 text-xs mt-3 rounded-full 
+              inline-block px-3 py-1 text-xs mt-3 rounded-full
               bg-primary-light/10 dark:bg-primary-dark/20
               text-primary-light dark:text-primary-dark
               border border-primary-light/30 dark:border-primary-dark/30
@@ -323,14 +369,12 @@ const BuyRequest = () => {
           <p className="text-sm mt-4 opacity-80">{policy.policy_description}</p>
 
           <div className="mt-6 space-y-3 text-sm">
-            {/* YEARLY PREMIUM */}
             <Row
               label="Yearly Premium"
-              value={`रु. ${fmt(policy.personalized_premium || policy.premium_amt)}`} 
+              value={`रु. ${fmt(policy.personalized_premium || policy.premium_amt)}`}
             />
 
-            {/* CYCLE PREMIUM */}
-            {cyclePremium && (
+            {cyclePremium !== null && (
               <Row
                 label={`Premium (${billingCycle.replace("_", " ")})`}
                 value={`रु. ${fmt(cyclePremium)}`}
@@ -338,10 +382,7 @@ const BuyRequest = () => {
               />
             )}
 
-            <Row
-              label="Coverage Limit"
-              value={`रु. ${fmt(policy.coverage_limit)}`}
-            />
+            <Row label="Coverage Limit" value={`रु. ${fmt(policy.coverage_limit)}`} />
 
             {policy.company_rating && (
               <Row
@@ -360,7 +401,7 @@ const BuyRequest = () => {
         {/* USER FORM */}
         <div
           className="
-            p-6 rounded-2xl shadow-md 
+            p-6 rounded-2xl shadow-md
             border border-border-light dark:border-border-dark
             bg-card-light dark:bg-card-dark
           "
@@ -371,32 +412,54 @@ const BuyRequest = () => {
             <Input
               label="Full Name"
               value={form.name}
-              onChange={(v) => setForm({ ...form, name: v })}
+              onChange={(v) => setForm((prev) => ({ ...prev, name: v }))}
+              readOnly
             />
+
             <Input
               label="Phone Number"
               value={form.phone}
-              onChange={(v) => setForm({ ...form, phone: v })}
+              onChange={(v) => setForm((prev) => ({ ...prev, phone: v }))}
+              readOnly
             />
-            <tr>
-              <label className="text-xs font-semibold">Please provide a  email where you want to receive policy documents and reciepts.</label>
-            </tr>
-            
-            <Input
-              label="Email"
-              value={form.email}
-              onChange={(v) => setForm({ ...form, email: v })}
-            />
-            
+
+            <p className="text-xs font-semibold">
+              Please provide an email where you want to receive policy documents,
+              receipts, and renewal reminders.
+            </p>
+
+            {/* ✅ UNCONTROLLED EMAIL + validation */}
+            <div>
+              <label className="text-xs font-semibold">Email</label>
+              <input
+                ref={emailRef}
+                type="email"
+                defaultValue={emailDefault}
+                onBlur={validateEmail}
+                onInput={() => {
+                  if (emailError) setEmailError("");
+                }}
+                className={`
+                  w-full mt-1 px-3 py-2 border rounded-lg
+                  bg-white dark:bg-slate-900
+                  border-border-light dark:border-border-dark
+                  text-sm
+                  ${emailError ? "border-red-500" : ""}
+                `}
+              />
+              {emailError && (
+                <p className="text-xs mt-1 text-red-500">{emailError}</p>
+              )}
+            </div>
 
             {/* BILLING CYCLE */}
             <div>
               <label className="text-xs font-semibold">Billing Cycle</label>
               <select
                 className="
-                  w-full mt-1 px-3 py-2 border rounded-lg 
-                  bg-white dark:bg-slate-900 
-                  border-border-light dark:border-border-dark 
+                  w-full mt-1 px-3 py-2 border rounded-lg
+                  bg-white dark:bg-slate-900
+                  border-border-light dark:border-border-dark
                   text-sm
                 "
                 value={billingCycle}
@@ -418,7 +481,7 @@ const BuyRequest = () => {
           )}
 
           {/* TOTAL PAYING AMOUNT */}
-          {cyclePremium && (
+          {cyclePremium !== null && (
             <div className="mt-6 p-4 rounded-xl bg-primary-light/10 dark:bg-primary-dark/20 border border-primary-light/30 dark:border-primary-dark/30">
               <p className="text-sm opacity-70">Total Amount To Pay Now</p>
               <p className="text-2xl font-bold text-primary-light dark:text-primary-dark">
@@ -431,114 +494,107 @@ const BuyRequest = () => {
           )}
 
           {/* PAYMENT BUTTONS */}
-         <div className="grid gap-5 mt-10 sm:grid-cols-2">
+          <div className="grid gap-5 mt-10 sm:grid-cols-2">
+            {/* ==================== eSewa Ultra Premium Button ==================== */}
+            <button
+              type="button"
+              disabled={disableEsewa}
+              onClick={handlePayNow}
+              className={`
+                relative group w-full py-3 px-5 rounded-2xl font-semibold overflow-hidden
+                flex items-center justify-center gap-3
+                transition-all duration-300 active:scale-95
+                ${disableEsewa ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
+              `}
+            >
+              {/* Gradient Border Layer */}
+              <span className="absolute inset-0 rounded-2xl bg-linear-to-br from-[#3CB043] via-[#49d157] to-[#2f8a37] p-0.5 group-hover:from-[#49d157] group-hover:to-[#3CB043] transition-all duration-500"></span>
 
-  {/* ==================== eSewa Ultra Premium Button ==================== */}
-                <button
-                  type="button"
-                  disabled={payingEsewa || kycStatus !== "approved"}
-                  onClick={handlePayNow}
-                  className={`
-                    relative group w-full py-3 px-5 rounded-2xl font-semibold overflow-hidden
-                    flex items-center justify-center gap-3
-                    transition-all duration-300 active:scale-95
+              {/* Inner Glass Card */}
+              <span
+                className="
+                  absolute inset-0.5 rounded-2xl
+                  bg-white/10 dark:bg-black/20
+                  backdrop-blur-xl
+                  shadow-[0_8px_20px_rgba(0,0,0,0.3)]
+                  group-hover:shadow-[0_12px_28px_rgba(0,0,0,0.45)]
+                  transition-all duration-300
+                "
+              >
+                <img
+                  src="/esewa.png"
+                  alt="eSewa"
+                  className="absolute inset-0 m-auto w-20 opacity-10 pointer-events-none select-none"
+                />
+              </span>
 
-                    ${payingEsewa
-                      ? "cursor-not-allowed opacity-60"
-                      : "cursor-pointer"
-                    }
-                  `}
-                >
+              {/* Text */}
+              <span className="relative z-10 text-base tracking-wide text-black dark:text-white">
+                {payingEsewa ? "Processing..." : "Pay via eSewa"}
+              </span>
 
-                  {/* Gradient Border Layer */}
-                  <span className="absolute inset-0 rounded-2xl bg-linear-to-br from-[#3CB043] via-[#49d157] to-[#2f8a37] p-0.5 group-hover:from-[#49d157] group-hover:to-[#3CB043] transition-all duration-500"></span>
+              {/* Glow Pulse */}
+              {!payingEsewa && (
+                <span
+                  className="
+                    absolute inset-0 rounded-2xl
+                    bg-[#3CB043]/40 blur-xl opacity-0
+                    group-hover:opacity-50 transition duration-500
+                  "
+                ></span>
+              )}
+            </button>
 
-                  {/* Inner Glass Card */}
-                  <span className="
-                    absolute inset-0.5 rounded-2xl 
-                    bg-white/10 dark:bg-black/20 
-                    backdrop-blur-xl 
-                    shadow-[0_8px_20px_rgba(0,0,0,0.3)]
-                    group-hover:shadow-[0_12px_28px_rgba(0,0,0,0.45)]
-                    transition-all duration-300
-                  ">
-                    <img
-                      src="/esewa.png"
-                      alt="eSewa"
-                      className="h z-100 opacity-10"
-                    />
-                  </span>
+            {/* ==================== Khalti Ultra Premium Button ==================== */}
+            <button
+              type="button"
+              disabled={disableKhalti}
+              onClick={handlePayKhalti}
+              className={`
+                relative group w-full py-3 px-5 rounded-2xl font-semibold overflow-hidden
+                flex items-center justify-center gap-3
+                transition-all duration-300 active:scale-95
+                ${disableKhalti ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
+              `}
+            >
+              {/* Gradient Border Layer */}
+              <span className="absolute inset-0 rounded-2xl bg-linear-to-br from-[#8B0000] via-[#a30f0f] to-[#600000] p-0.5 group-hover:from-[#a30f0f] group-hover:to-[#8B0000] transition-all duration-500"></span>
 
-                  {/* Text */}
-                  <span className="relative z-10 text-base tracking-wide text-black dark:text-white">
-                    {payingEsewa ? "Processing..." : "Pay via eSewa"}
-                  </span>
+              {/* Inner Glass Card */}
+              <span
+                className="
+                  absolute inset-0.5 rounded-2xl
+                  bg-white/10 dark:bg-black/20
+                  backdrop-blur-xl
+                  shadow-[0_8px_20px_rgba(0,0,0,0.3)]
+                  group-hover:shadow-[0_12px_28px_rgba(0,0,0,0.45)]
+                  transition-all duration-300
+                "
+              >
+                <img
+                  src="/khalti.png"
+                  alt="Khalti"
+                  className="absolute inset-0 m-auto w-20 opacity-10 pointer-events-none select-none"
+                />
+              </span>
 
-                  {/* Glow Pulse */}
-                  {!payingEsewa && (
-                    <span className="
-                      absolute inset-0 rounded-2xl
-                      bg-[#3CB043]/40 blur-xl opacity-0 
-                      group-hover:opacity-50 transition duration-500
-                    "></span>
-                  )}
-                </button>
+              {/* Text */}
+              <span className="relative z-10 text-base tracking-wide text-black dark:text-white">
+                {payingKhalti ? "Processing..." : "Pay via Khalti"}
+              </span>
 
-
-                {/* ==================== Khalti Ultra Premium Button ==================== */}
-                <button
-                  type="button"
-                  disabled={payingKhalti || kycStatus !== "approved"}
-                  onClick={handlePayKhalti}
-                  className={`
-                    relative group w-full py-3 px-5 rounded-2xl font-semibold overflow-hidden
-                    flex items-center justify-center gap-3
-                    transition-all duration-300 active:scale-95
-
-                    ${payingKhalti
-                      ? "cursor-not-allowed opacity-60"
-                      : "cursor-pointer"
-                    }
-                  `}
-                >
-
-                  {/* Gradient Border Layer */}
-                  <span className="absolute inset-0 rounded-2xl bg-linear-to-br from-[#8B0000] via-[#a30f0f] to-[#600000] p-0.5 group-hover:from-[#a30f0f] group-hover:to-[#8B0000] transition-all duration-500"></span>
-
-                  {/* Inner Glass Card */}
-                  <span className="
-                    absolute inset-0.5 rounded-2xl 
-                    bg-white/10 dark:bg-black/20 
-                    backdrop-blur-xl 
-                    shadow-[0_8px_20px_rgba(0,0,0,0.3)]
-                    group-hover:shadow-[0_12px_28px_rgba(0,0,0,0.45)]
-                    transition-all duration-300
-                  ">
-                    <img
-                      src="/khalti.png"
-                      alt="Khalti"
-                      className="relative z-10 opacity-10"
-                    />
-                  </span>
-
-                  {/* Text */}
-                  <span className="relative z-10 text-base tracking-wide text-black dark:text-white">
-                    {payingKhalti ? "Processing..." : "Pay via Khalti"}
-                  </span>
-
-                  {/* Glow Pulse */}
-                  {!payingKhalti && (
-                    <span className="
-                      absolute inset-0 rounded-2xl
-                      bg-[#8B0000]/35 blur-xl opacity-0 
-                      group-hover:opacity-50 transition duration-500
-                    "></span>
-                  )}
-                </button>
-
-
-</div>
-
+              {/* Glow Pulse */}
+              {!payingKhalti && (
+                <span
+                  className="
+                    absolute inset-0 rounded-2xl
+                    bg-[#8B0000]/35 blur-xl opacity-0
+                    group-hover:opacity-50 transition duration-500
+                  "
+                ></span>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

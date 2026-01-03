@@ -15,22 +15,23 @@ import CompareBar from "./user/client/components/CompareBar";
 
 const AppShell = () => {
   const location = useLocation();
-  const hideGlobalFooter =
-    location.pathname.startsWith("/client") ||
-    location.pathname.startsWith("/admin");
+
+  const isAdmin = location.pathname.startsWith("/admin");
+  const isClient = location.pathname.startsWith("/client");
+
+  const hideGlobalFooter = isClient || isAdmin;
 
   useEffect(() => {
-    const isAdmin = location.pathname.startsWith("/admin");
     document.title = isAdmin ? "BeemaSathi Admin" : "BeemaSathi";
-  }, [location.pathname]);
+  }, [isAdmin]);
 
   return (
     <>
       {/* Global Navbar */}
       <Navbar />
 
-      {/* Client compare bar */}
-      <CompareBar />
+      {/* Client compare bar (only show in /client routes) */}
+      {isClient && <CompareBar />}
 
       {/* Routes */}
       <AppRoutes />
@@ -45,7 +46,7 @@ const AppFrame = () => {
   return (
     <div
       className="
-        min-h-screen 
+        min-h-screen
         bg-background-light dark:bg-background-dark
         text-text-light dark:text-text-dark
         transition-colors duration-300

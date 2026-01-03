@@ -47,7 +47,7 @@
     </tr>
     <tr>
       <td style="padding:18px; text-align:center; font-size:12px; color:#6b7280;">
-        &copy; {{ date('Y') }} BeemaSathi. All rights reserved.
+        &copy; {{ date('Y') }} BemaSathi. All rights reserved.
       </td>
     </tr>
   </table>
