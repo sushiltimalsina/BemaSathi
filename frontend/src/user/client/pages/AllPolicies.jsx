@@ -45,6 +45,7 @@ const AllPolicies = () => {
   });
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const effectivePremium = (p) => {
     const val =
@@ -92,10 +93,17 @@ const AllPolicies = () => {
 
   const fetchPolicies = async () => {
     try {
+      setError("");
       const res = await API.get("/policies");
       setPolicies(res.data || []);
     } catch (err) {
       console.error("Error loading policies:", err);
+      const status = err?.response?.status;
+      if (!err?.response || status >= 500) {
+        setError("Server down, please try again later.");
+      } else {
+        setError("Unable to load policies at the moment.");
+      }
     }
     setLoading(false);
   };
@@ -180,6 +188,13 @@ const AllPolicies = () => {
     return (
       <p className="text-center mt-20 text-text-light dark:text-text-dark opacity-80">
         Loading policies...
+      </p>
+    );
+  }
+  if (error) {
+    return (
+      <p className="text-center mt-20 text-red-500">
+        {error}
       </p>
     );
   }

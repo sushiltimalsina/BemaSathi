@@ -120,11 +120,16 @@ const Register = () => {
         setError("Unexpected response from server.");
       }
     } catch (err) {
-      const msg =
-        err.response?.data?.message ||
-        Object.values(err.response?.data?.errors || {}).flat().join(" ") ||
-        "Registration failed.";
-      setError(msg);
+      const status = err?.response?.status;
+      if (!err?.response || status >= 500) {
+        setError("Server down, please try again later.");
+      } else {
+        const msg =
+          err.response?.data?.message ||
+          Object.values(err.response?.data?.errors || {}).flat().join(" ") ||
+          "Registration failed.";
+        setError(msg);
+      }
     }
 
     setLoading(false);

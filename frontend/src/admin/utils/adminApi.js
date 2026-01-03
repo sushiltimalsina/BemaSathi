@@ -20,10 +20,10 @@ API.interceptors.request.use((config) => {
 API.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (
-      error.response &&
-      (error.response.status === 401 || error.response.status === 419)
-    ) {
+    const status = error.response?.status;
+    const url = error.config?.url || "";
+    const isAuthRequest = url.includes("/admin/login");
+    if (!isAuthRequest && (status === 401 || status === 419)) {
       localStorage.removeItem("admin_token");
       localStorage.removeItem("admin_user");
       sessionStorage.removeItem("admin_token");

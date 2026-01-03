@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import API from "../api/api";
-import { LockClosedIcon } from "@heroicons/react/24/outline";
+import { LockClosedIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
 const Login = () => {
   const location = useLocation();
@@ -14,6 +14,9 @@ const Login = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   // Build redirect target from query (?redirect=...), handling legacy unencoded values.
   const redirectPath = useMemo(() => {
@@ -50,11 +53,33 @@ const Login = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setLoading(true);
     setError("");
+    setEmailError("");
+    setPasswordError("");
+
+    const email = form.email.trim();
+    const password = form.password;
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!email) {
+      setEmailError("Email is required.");
+      setLoading(false);
+      return;
+    }
+    if (!emailValid) {
+      setEmailError("Invalid email.");
+      setLoading(false);
+      return;
+    }
+    if (!password) {
+      setPasswordError("Password is required.");
+      setLoading(false);
+      return;
+    }
 
     try {
-      const res = await API.post("/login", form);
+      const res = await API.post("/login", { email, password });
 
       if (res.data.token) {
         localStorage.setItem("client_token", res.data.token);
@@ -68,8 +93,18 @@ const Login = () => {
       } else {
         setError("Invalid response from server.");
       }
-    } catch {
-      setError("Invalid email or password.");
+    } catch (err) {
+      const status = err?.response?.status;
+      const message = err?.response?.data?.message;
+      if (!err?.response || status >= 500) {
+        setError("Server down, please try again later.");
+      } else if (status === 404 || message === "Invalid email") {
+        setEmailError("Invalid email.");
+      } else if (status === 401 || message === "Invalid password") {
+        setPasswordError("Invalid password.");
+      } else {
+        setError("Login failed. Please try again.");
+      }
     }
 
     setLoading(false);
@@ -110,7 +145,7 @@ const Login = () => {
         )}
 
         {/* FORM */}
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-4" noValidate>
           {/* EMAIL */}
           <div>
             <label className="text-xs font-semibold opacity-80">
@@ -132,6 +167,9 @@ const Login = () => {
               placeholder="example@gmail.com"
               required
             />
+            {emailError && (
+              <p className="text-xs text-red-500 mt-1">{emailError}</p>
+            )}
           </div>
 
           {/* PASSWORD */}
@@ -139,22 +177,39 @@ const Login = () => {
             <label className="text-xs font-semibold opacity-80">
               Password
             </label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(e) =>
-                setForm({ ...form, password: e.target.value })
-              }
-              className="
-                w-full mt-1 px-3 py-2 rounded-lg text-sm
-                bg-background-light dark:bg-background-dark
-                border border-border-light dark:border-border-dark
-                text-text-light dark:text-text-dark
-                focus:outline-none focus:ring-2 focus:ring-primary-light/60 dark:focus:ring-primary-dark
-              "
-              placeholder="Enter your password"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={form.password}
+                onChange={(e) =>
+                  setForm({ ...form, password: e.target.value })
+                }
+                className="
+                  w-full mt-1 px-3 py-2 rounded-lg text-sm
+                  bg-background-light dark:bg-background-dark
+                  border border-border-light dark:border-border-dark
+                  text-text-light dark:text-text-dark
+                  focus:outline-none focus:ring-2 focus:ring-primary-light/60 dark:focus:ring-primary-dark
+                "
+                placeholder="Enter your password"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-light dark:text-primary-dark"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeSlashIcon className="w-5 h-5" />
+                ) : (
+                  <EyeIcon className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+            {passwordError && (
+              <p className="text-xs text-red-500 mt-1">{passwordError}</p>
+            )}
           </div>
 
           {/* BUTTON */}

@@ -96,7 +96,12 @@ const GuestPolicies = () => {
         setPolicies(data);
       } catch (err) {
         console.error(err);
-        setError("Unable to load policies at the moment.");
+        const status = err?.response?.status;
+        if (!err?.response || status >= 500) {
+          setError("Server down, please try again later.");
+        } else {
+          setError("Unable to load policies at the moment.");
+        }
       }
 
       setLoading(false);

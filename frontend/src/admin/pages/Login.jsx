@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 import { adminLogin } from "../utils/adminApi";
 import { useAdminAuth } from "../context/AdminAuthContext";
@@ -11,18 +12,52 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const submit = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setError("");
+    setEmailError("");
+    setPasswordError("");
     setLoading(true);
 
     try {
-      const res = await adminLogin({ email, password });
-      login(res.data?.admin || { email }, res.data?.token);
+      const trimmedEmail = email.trim();
+      const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
+      if (!trimmedEmail) {
+        setEmailError("Email is required.");
+        setLoading(false);
+        return;
+      }
+      if (!emailValid) {
+        setEmailError("Invalid email.");
+        setLoading(false);
+        return;
+      }
+      if (!password) {
+        setPasswordError("Password is required.");
+        setLoading(false);
+        return;
+      }
+
+      const res = await adminLogin({ email: trimmedEmail, password });
+      login(res.data?.admin || { email: trimmedEmail }, res.data?.token);
       navigate("/admin/dashboard");
     } catch (err) {
-      setError("Invalid credentials, please try again.");
+      const status = err?.response?.status;
+      const message = err?.response?.data?.message;
+      if (!err?.response || status >= 500) {
+        setError("Server down, please try again later.");
+      } else if (status === 404 || message === "Admin account not found") {
+        setEmailError("Invalid email.");
+      } else if (status === 401 || message === "Invalid password") {
+        setPasswordError("Invalid password.");
+      } else {
+        setError("Invalid credentials, please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -38,7 +73,7 @@ const Login = () => {
           </p>
         </div>
 
-        <form onSubmit={submit} className="space-y-4">
+        <form onSubmit={submit} className="space-y-4" noValidate>
           <div className="space-y-1">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
               Email
@@ -50,19 +85,39 @@ const Login = () => {
               className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-light/50"
               required
             />
+            {emailError && (
+              <p className="text-xs text-red-600 dark:text-red-300">{emailError}</p>
+            )}
           </div>
 
           <div className="space-y-1">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
               Password
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-light/50"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-light/50"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-light"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeSlashIcon className="w-5 h-5" />
+                ) : (
+                  <EyeIcon className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+            {passwordError && (
+              <p className="text-xs text-red-600 dark:text-red-300">{passwordError}</p>
+            )}
           </div>
 
           {error && (
