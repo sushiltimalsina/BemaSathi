@@ -16,6 +16,10 @@
         </p>
         <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin-bottom:16px;">
           <tr>
+            <td style="padding:8px 0; font-size:14px;"><strong>Payment type</strong></td>
+            <td style="padding:8px 0; font-size:14px;">{{ ucfirst($paymentType ?? 'new') }}</td>
+          </tr>
+          <tr>
             <td style="padding:8px 0; font-size:14px;"><strong>Policy</strong></td>
             <td style="padding:8px 0; font-size:14px;">{{ $policyName }}</td>
           </tr>

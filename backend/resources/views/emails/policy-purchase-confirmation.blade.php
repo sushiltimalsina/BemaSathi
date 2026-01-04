@@ -16,6 +16,10 @@
         </p>
         <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin-bottom:16px;">
           <tr>
+            <td style="padding:8px 0; font-size:14px;"><strong>Payment type</strong></td>
+            <td style="padding:8px 0; font-size:14px;">{{ ucfirst($paymentType ?? 'new') }}</td>
+          </tr>
+          <tr>
             <td style="padding:8px 0; font-size:14px;"><strong>Policy number</strong></td>
             <td style="padding:8px 0; font-size:14px;">{{ $policyNumber }}</td>
           </tr>
@@ -39,6 +43,12 @@
             <td style="padding:8px 0; font-size:14px;"><strong>Effective date</strong></td>
             <td style="padding:8px 0; font-size:14px;">{{ \Illuminate\Support\Carbon::parse($effectiveDate)->toFormattedDateString() }}</td>
           </tr>
+          @if(!empty($nextRenewalDate))
+          <tr>
+            <td style="padding:8px 0; font-size:14px;"><strong>Next renewal</strong></td>
+            <td style="padding:8px 0; font-size:14px;">{{ \Illuminate\Support\Carbon::parse($nextRenewalDate)->toFormattedDateString() }}</td>
+          </tr>
+          @endif
         </table>
         <p style="margin:0; font-size:14px; line-height:1.6;">
           Keep this email and the attached document for your records.

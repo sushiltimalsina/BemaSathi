@@ -8,6 +8,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Carbon;
 
 class PolicyPurchaseConfirmationMail extends Mailable
 {
@@ -27,10 +28,15 @@ class PolicyPurchaseConfirmationMail extends Mailable
         $recipientEmail = $this->payment->buyRequest?->email ?? $user?->email;
 
         $policyNumber = 'BS-' . str_pad((string) $this->payment->id, 6, '0', STR_PAD_LEFT);
-        $effectiveDate = $this->payment->verified_at ?? $this->payment->paid_at ?? now();
+        $timezone = config('app.timezone', 'Asia/Kathmandu');
+        $effectiveDate = Carbon::parse($this->payment->verified_at ?? $this->payment->paid_at ?? now())
+            ->timezone($timezone);
         $billingCycle = $this->payment->buyRequest?->billing_cycle ?? $this->payment->billing_cycle ?? 'yearly';
         $premium = $this->payment->buyRequest?->cycle_amount ?? $this->payment->amount ?? 0;
-        $nextRenewalDate = $this->payment->buyRequest?->next_renewal_date;
+        $nextRenewalDate = $this->payment->buyRequest?->next_renewal_date
+            ? Carbon::parse($this->payment->buyRequest->next_renewal_date)->timezone($timezone)
+            : null;
+        $paymentType = $this->resolvePaymentType();
 
         $pdf = null;
         try {
@@ -57,6 +63,7 @@ class PolicyPurchaseConfirmationMail extends Mailable
                 'userAddress' => $kyc?->address ?? $user?->address,
                 'userDob' => $kyc?->dob ?? $user?->dob,
                 'userDocumentNumber' => $kyc?->document_number,
+                'paymentType' => $paymentType,
             ]);
         } catch (\Throwable $e) {
             Log::warning('Policy document PDF generation failed', [
@@ -76,6 +83,8 @@ class PolicyPurchaseConfirmationMail extends Mailable
                 'premium' => $premium,
                 'billingCycle' => $billingCycle,
                 'effectiveDate' => $effectiveDate,
+                'paymentType' => $paymentType,
+                'nextRenewalDate' => $nextRenewalDate,
             ]);
 
         if ($pdf) {
@@ -85,5 +94,20 @@ class PolicyPurchaseConfirmationMail extends Mailable
         }
 
         return $mail;
+    }
+
+    private function resolvePaymentType(): string
+    {
+        $buyRequestId = $this->payment->buy_request_id;
+        if (!$buyRequestId) {
+            return 'new';
+        }
+
+        $otherVerified = Payment::where('buy_request_id', $buyRequestId)
+            ->where('is_verified', true)
+            ->where('id', '!=', $this->payment->id)
+            ->exists();
+
+        return $otherVerified ? 'renewal' : 'new';
     }
 }

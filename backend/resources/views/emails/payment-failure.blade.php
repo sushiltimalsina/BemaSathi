@@ -14,6 +14,12 @@
         <p style="margin:0 0 12px; font-size:14px; line-height:1.6;">
           Your payment for {{ $policyName }} failed. Please try again.
         </p>
+        <p style="margin:0 0 12px; font-size:14px; line-height:1.6;">
+          Payment type: {{ ucfirst($paymentType ?? 'new') }}
+          @if(!empty($failedAt))
+            ({{ \Illuminate\Support\Carbon::parse($failedAt)->toDayDateTimeString() }})
+          @endif
+        </p>
         @if(!empty($reason))
         <div style="background:#fff5f5; border:1px solid #fecaca; padding:12px; border-radius:6px; font-size:14px; margin-bottom:16px;">
           <strong>Reason:</strong> {{ $reason }}

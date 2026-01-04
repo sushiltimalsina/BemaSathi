@@ -8,6 +8,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Carbon;
 
 class PaymentSuccessMail extends Mailable
 {
@@ -27,10 +28,15 @@ class PaymentSuccessMail extends Mailable
         $billingCycle = $this->payment->buyRequest?->billing_cycle ?? $this->payment->billing_cycle ?? 'yearly';
         $transactionId = $this->payment->provider_reference
             ?? ($this->payment->meta['transaction_uuid'] ?? (string) $this->payment->id);
-        $paidAt = $this->payment->verified_at ?? $this->payment->paid_at ?? now();
+        $timezone = config('app.timezone', 'Asia/Kathmandu');
+        $paidAt = Carbon::parse($this->payment->verified_at ?? $this->payment->paid_at ?? now())
+            ->timezone($timezone);
         $receiptNumber = 'RCPT-' . str_pad((string) $this->payment->id, 6, '0', STR_PAD_LEFT);
         $policyNumber = $this->resolvePolicyNumber();
-        $nextRenewalDate = $this->payment->buyRequest?->next_renewal_date;
+        $nextRenewalDate = $this->payment->buyRequest?->next_renewal_date
+            ? Carbon::parse($this->payment->buyRequest->next_renewal_date)->timezone($timezone)
+            : null;
+        $paymentType = $this->resolvePaymentType();
 
         $pdf = null;
         try {
@@ -47,6 +53,7 @@ class PaymentSuccessMail extends Mailable
                 'userName' => $user?->name ?? 'Customer',
                 'userEmail' => $recipientEmail,
                 'nextRenewalDate' => $nextRenewalDate,
+                'paymentType' => $paymentType,
             ]);
         } catch (\Throwable $e) {
             Log::warning('Payment receipt PDF generation failed', [
@@ -67,6 +74,7 @@ class PaymentSuccessMail extends Mailable
                 'transactionId' => $transactionId,
                 'paidAt' => $paidAt,
                 'nextRenewalDate' => $nextRenewalDate,
+                'paymentType' => $paymentType,
             ]);
 
         if ($pdf) {
@@ -76,6 +84,21 @@ class PaymentSuccessMail extends Mailable
         }
 
         return $mail;
+    }
+
+    private function resolvePaymentType(): string
+    {
+        $buyRequestId = $this->payment->buy_request_id;
+        if (!$buyRequestId) {
+            return 'new';
+        }
+
+        $otherVerified = Payment::where('buy_request_id', $buyRequestId)
+            ->where('is_verified', true)
+            ->where('id', '!=', $this->payment->id)
+            ->exists();
+
+        return $otherVerified ? 'renewal' : 'new';
     }
 
     private function resolvePolicyNumber(): string

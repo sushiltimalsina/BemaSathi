@@ -191,7 +191,8 @@ class PaymentController extends Controller
                 'is_verified' => true,
                 'verified_at' => now(),
             ]);
-            $this->notifyPayment($payment, 'completed');
+            $this->updateRenewalAfterVerification($payment);
+            $this->notifyPayment($payment->fresh(), 'completed');
             $this->updateRenewalAfterVerification($payment);
         } catch (QueryException $e) {
             // If status enum mismatches existing schema, keep flow moving and continue to redirect
@@ -390,7 +391,8 @@ class PaymentController extends Controller
                 'verified_at' => now(),
                 'meta' => array_merge($payment->meta ?? [], ['pidx' => $pidx, 'khalti_status' => $status]),
             ]);
-            $this->notifyPayment($payment, 'completed');
+            $this->updateRenewalAfterVerification($payment);
+            $this->notifyPayment($payment->fresh(), 'completed');
             $this->updateRenewalAfterVerification($payment);
         } catch (QueryException $e) {
             // ignore

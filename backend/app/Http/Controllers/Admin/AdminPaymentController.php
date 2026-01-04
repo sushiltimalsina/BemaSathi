@@ -104,6 +104,7 @@ class AdminPaymentController extends Controller
         $payment->verified_at = now();
         $payment->save();
         $this->updateRenewalAfterVerification($payment);
+        $this->updateRenewalAfterVerification($payment);
 
         $notifyUser = $payment->user ?? $payment->buyRequest?->user;
         if ($notifyUser) {
