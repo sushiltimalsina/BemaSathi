@@ -101,6 +101,11 @@ body {
   font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   background-color: var(--background-light);
   color: var(--text-light);
+  overflow-x: hidden;
+}
+
+html {
+  overflow-x: hidden;
 }
 
 /* DO NOT FORCE BROWSER DARK INPUTS */

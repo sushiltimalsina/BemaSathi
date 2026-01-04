@@ -45,6 +45,11 @@ body {
   font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   background: var(--body-bg);
   color: var(--text);
+  overflow-x: hidden;
+}
+
+html {
+  overflow-x: hidden;
 }
 
 .admin-layout {
