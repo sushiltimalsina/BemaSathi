@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import API from "../api/api";
 import { UserPlusIcon } from "@heroicons/react/24/outline";
+import { broadcastAuthUpdate } from "../utils/authBroadcast";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -28,6 +29,7 @@ const Register = () => {
   const [phoneError, setPhoneError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmError, setConfirmError] = useState("");
+  const [familyMembersError, setFamilyMembersError] = useState("");
 
   const validateEmail = (value) => {
     if (!value) return "";
@@ -66,6 +68,7 @@ const Register = () => {
     setLoading(true);
     setError("");
     setSuccess("");
+    setFamilyMembersError("");
 
     try {
       const phoneMsg = validatePhone(form.phone);
@@ -94,25 +97,26 @@ const Register = () => {
         family_members:
           form.coverage_type === "family"
             ? Number(form.family_members || 2)
-            : 1,
+            : undefined,
       };
 
       const res = await API.post("/register", payload);
 
       if (res.data.token) {
-        localStorage.setItem("client_token", res.data.token);
         sessionStorage.setItem("client_token", res.data.token);
         if (res.data.user) {
           const userPayload = JSON.stringify(res.data.user);
-          localStorage.setItem("client_user", userPayload);
           sessionStorage.setItem("client_user", userPayload);
+          broadcastAuthUpdate("client", res.data.token, userPayload);
         } else if (form.name || form.email) {
           const fallbackUser = JSON.stringify({
             name: form.name,
             email: form.email,
           });
-          localStorage.setItem("client_user", fallbackUser);
           sessionStorage.setItem("client_user", fallbackUser);
+          broadcastAuthUpdate("client", res.data.token, fallbackUser);
+        } else {
+          broadcastAuthUpdate("client", res.data.token, null);
         }
         setSuccess("Registration successful.");
         navigate("/client/dashboard");
@@ -124,9 +128,16 @@ const Register = () => {
       if (!err?.response || status >= 500) {
         setError("Server down, please try again later.");
       } else {
+        const fieldErrors = err.response?.data?.errors || {};
+        const familyMsg = Array.isArray(fieldErrors.family_members)
+          ? fieldErrors.family_members[0]
+          : "";
+        if (familyMsg) {
+          setFamilyMembersError(familyMsg);
+        }
         const msg =
           err.response?.data?.message ||
-          Object.values(err.response?.data?.errors || {}).flat().join(" ") ||
+          Object.values(fieldErrors).flat().join(" ") ||
           "Registration failed.";
         setError(msg);
       }
@@ -264,14 +275,15 @@ const Register = () => {
             </label>
             <select
               value={form.coverage_type}
-              onChange={(e) =>
+              onChange={(e) => {
+                setFamilyMembersError("");
                 setForm({
                   ...form,
                   coverage_type: e.target.value,
                   family_members:
                     e.target.value === "family" ? form.family_members || "2" : "1",
-                })
-              }
+                });
+              }}
               className="
                 w-full mt-1 px-3 py-2 rounded-lg text-sm
                 bg-background-light dark:bg-background-dark
@@ -283,6 +295,9 @@ const Register = () => {
               <option value="individual">Individual</option>
               <option value="family">Family</option>
             </select>
+            {familyMembersError && form.coverage_type !== "family" && (
+              <p className="text-[11px] text-red-500 mt-1">{familyMembersError}</p>
+            )}
           </div>
 
           {/* FAMILY MEMBERS */}
@@ -296,9 +311,10 @@ const Register = () => {
                 min="2"
                 max="20"
                 value={form.family_members}
-                onChange={(e) =>
-                  setForm({ ...form, family_members: e.target.value })
-                }
+                onChange={(e) => {
+                  setFamilyMembersError("");
+                  setForm({ ...form, family_members: e.target.value });
+                }}
                 className="
                   w-full mt-1 px-3 py-2 rounded-lg text-sm
                   bg-background-light dark:bg-background-dark
@@ -307,6 +323,9 @@ const Register = () => {
                 "
                 required
               />
+              {familyMembersError && (
+                <p className="text-[11px] text-red-500 mt-1">{familyMembersError}</p>
+              )}
               <p className="text-[11px] opacity-70 mt-1">
                 Note: if any family member is a smoker or has pre-existing conditions,
                 please select them below.

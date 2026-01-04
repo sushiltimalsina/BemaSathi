@@ -27,7 +27,7 @@ class AuthController extends Controller
             'dob' => 'required|date|before:today|after:1900-01-01|before:-15 years',
             'budget_range' => 'required|string',
             'coverage_type' => 'required|in:individual,family',
-            'family_members' => 'required_if:coverage_type,family|integer|min:2|max:20',
+            'family_members' => 'exclude_unless:coverage_type,family|required|integer|min:2|max:20',
             'is_smoker' => 'required|boolean',
             'pre_existing_conditions' => 'nullable|array',
             'pre_existing_conditions.*' => 'in:diabetes,heart,hypertension,asthma',
@@ -56,7 +56,9 @@ class AuthController extends Controller
 
         if ($user->email) {
             try {
-                Mail::to($user->email)->send(new WelcomeMail($user));
+                dispatch(function () use ($user) {
+                    Mail::to($user->email)->send(new WelcomeMail($user));
+                })->afterResponse();
             } catch (\Throwable $e) {
                 Log::warning('Failed sending welcome email', [
                     'user_id' => $user->id,
