@@ -14,19 +14,14 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
   useEffect(() => {
     const loadUser = () => {
       const sessionUser = sessionStorage.getItem("client_user");
-      const localUser = localStorage.getItem("client_user");
-      const raw = sessionUser || localUser;
-      if (!sessionUser && localUser) {
-        sessionStorage.setItem("client_user", localUser);
-      }
-      setUser(raw ? JSON.parse(raw) : null);
+      setUser(sessionUser ? JSON.parse(sessionUser) : null);
     };
 
     loadUser();
     const handler = () => loadUser();
-    window.addEventListener("storage", handler);
+    window.addEventListener("auth-sync", handler);
 
-    return () => window.removeEventListener("storage", handler);
+    return () => window.removeEventListener("auth-sync", handler);
   }, []);
 
   const avatar = user?.name ? user.name.charAt(0).toUpperCase() : "U";

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import API from "../../../api/api";
 import { useNavigate } from "react-router-dom";
+import useAuthSyncReady from "../../../hooks/useAuthSyncReady";
 import {
   ShieldCheckIcon,
   CurrencyRupeeIcon,
@@ -11,10 +12,11 @@ import {
 
 const SavedPolicies = () => {
   const navigate = useNavigate();
+  const ready = useAuthSyncReady();
 
   // Require login
   const token = sessionStorage.getItem("client_token");
-  const isClient = !!token;
+  const isClient = ready && !!token;
 
   const [savedItems, setSavedItems] = useState([]);
   const [policies, setPolicies] = useState([]);
@@ -26,6 +28,7 @@ const SavedPolicies = () => {
 
   // Fetch logged-in user (age-based calculations)
   useEffect(() => {
+    if (!ready) return;
     if (!isClient) return navigate("/login");
     const loadUser = async () => {
       try {
@@ -38,7 +41,7 @@ const SavedPolicies = () => {
       }
     };
     loadUser();
-  }, []);
+  }, [isClient, ready, navigate, token]);
 
   // Fetch saved policies
   useEffect(() => {
@@ -87,7 +90,7 @@ const SavedPolicies = () => {
 
   // SELECT FOR COMPARE
   const toggle = (id) => {
-    if (!isClient) return navigate("/login");
+    if (!ready || !isClient) return navigate("/login");
     if (selected.includes(id)) {
       return setSelected(selected.filter((x) => x !== id));
     }

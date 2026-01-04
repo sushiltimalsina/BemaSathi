@@ -58,7 +58,7 @@ const GuestPolicies = () => {
   // Detect client login
   const token = sessionStorage.getItem("client_token");
   const isClient = !!token;
-  const user = JSON.parse(localStorage.getItem("client_user") || "{}");
+  const user = JSON.parse(sessionStorage.getItem("client_user") || "{}");
   const userAge = user.dob ? calculateAge(user.dob) : null;
   const multiplier = userAge ? ageMultiplier(userAge) : 1;
 

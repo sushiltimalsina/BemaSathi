@@ -8,6 +8,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import API from "../utils/adminApi";
 import { useAdminToast } from "../ui/AdminToast";
+import { broadcastLogout } from "../../utils/authBroadcast";
 
 const Topbar = ({ onToggleSidebar }) => {
   const navigate = useNavigate();
@@ -64,8 +65,8 @@ const Topbar = ({ onToggleSidebar }) => {
       const raw = sessionStorage.getItem("admin_user");
       setAdmin(raw ? JSON.parse(raw) : null);
     };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    window.addEventListener("auth-sync", onStorage);
+    return () => window.removeEventListener("auth-sync", onStorage);
   }, []);
 
   useEffect(() => {
@@ -83,6 +84,7 @@ const Topbar = ({ onToggleSidebar }) => {
     sessionStorage.removeItem("admin_user");
     localStorage.removeItem("admin_token");
     localStorage.removeItem("admin_user");
+    broadcastLogout("admin");
     window.location.href = "/admin/login";
   };
 

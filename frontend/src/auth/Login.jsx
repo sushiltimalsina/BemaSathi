@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import API from "../api/api";
 import { LockClosedIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import { broadcastAuthUpdate } from "../utils/authBroadcast";
 
 const Login = () => {
   const location = useLocation();
@@ -82,12 +83,13 @@ const Login = () => {
       const res = await API.post("/login", { email, password });
 
       if (res.data.token) {
-        localStorage.setItem("client_token", res.data.token);
         sessionStorage.setItem("client_token", res.data.token);
         if (res.data.user) {
           const userPayload = JSON.stringify(res.data.user);
-          localStorage.setItem("client_user", userPayload);
           sessionStorage.setItem("client_user", userPayload);
+          broadcastAuthUpdate("client", res.data.token, userPayload);
+        } else {
+          broadcastAuthUpdate("client", res.data.token, null);
         }
         navigate(redirectPath, { replace: true });
       } else {

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import API from "../../../api/api";
 import { useNavigate, useLocation } from "react-router-dom";
+import useAuthSyncReady from "../../../hooks/useAuthSyncReady";
 import {
   ShieldCheckIcon,
   StarIcon,
@@ -17,9 +18,10 @@ const AllPolicies = () => {
 
   const location = useLocation();
   const navigate = useNavigate();
+  const ready = useAuthSyncReady();
 
   const token = sessionStorage.getItem("client_token");
-  const isClient = !!token;
+  const isClient = ready && !!token;
 
   const getTypeFromQuery = () => {
     const params = new URLSearchParams(location.search);
@@ -63,8 +65,13 @@ const AllPolicies = () => {
   // LOAD POLICIES
   useEffect(() => {
     fetchPolicies();
-    fetchSaved();
   }, []);
+
+  useEffect(() => {
+    if (isClient) {
+      fetchSaved();
+    }
+  }, [isClient]);
 
   useEffect(() => {
     const handleProfileUpdated = () => {

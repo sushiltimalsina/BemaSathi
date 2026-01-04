@@ -19,7 +19,7 @@ const getInitialMode = () => {
   if (saved === "light" || saved === "dark" || saved === "system") {
     return saved;
   }
-  return "light"; // default
+  return "system"; // default
 };
 
 export const ThemeProvider = ({ children }) => {

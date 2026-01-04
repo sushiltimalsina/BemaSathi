@@ -6,6 +6,7 @@ import {
   StarIcon,
   ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
+import useAuthSyncReady from "../../../hooks/useAuthSyncReady";
 
 const BuyRequest = () => {
   const navigate = useNavigate();
@@ -16,8 +17,9 @@ const BuyRequest = () => {
   );
   const policyId = query.get("policy");
 
+  const ready = useAuthSyncReady();
   const token = sessionStorage.getItem("client_token");
-  const isClient = !!token;
+  const isClient = ready && !!token;
 
   const [policy, setPolicy] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -126,12 +128,15 @@ const BuyRequest = () => {
 
   // FORCE LOGIN
   useEffect(() => {
+    if (!ready) {
+      return;
+    }
     if (!isClient) {
       const redirect = encodeURIComponent(location.pathname + location.search);
       navigate(`/login?redirect=${redirect}`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isClient, ready]);
 
   // Fetch policy
   useEffect(() => {
@@ -164,6 +169,7 @@ const BuyRequest = () => {
   // Fetch user + KYC
   useEffect(() => {
     const loadUser = async () => {
+      if (!isClient) return;
       try {
         const me = await API.get("/me");
         const user = me.data;
@@ -203,7 +209,7 @@ const BuyRequest = () => {
 
     loadUser();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isClient]);
 
   // Preview premium when billing cycle changes
   useEffect(() => {

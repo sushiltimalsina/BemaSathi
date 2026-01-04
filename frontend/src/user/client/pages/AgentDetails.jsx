@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import API from "../../../api/api";
+import useAuthSyncReady from "../../../hooks/useAuthSyncReady";
 import {
   ArrowLeftIcon,
   PhoneIcon,
@@ -23,17 +24,21 @@ const AgentDetails = () => {
 
   const [loggedInquiry, setLoggedInquiry] = useState(false);
 
+  const ready = useAuthSyncReady();
   const token = sessionStorage.getItem("client_token");
-  const isClient = !!token;
+  const isClient = ready && !!token;
 
   // -----------------------------------
   // 1) BLOCK GUEST ACCESS
   // -----------------------------------
   useEffect(() => {
+    if (!ready) {
+      return;
+    }
     if (!isClient) {
       navigate("/login?redirect=agent");
     }
-  }, [isClient, navigate]);
+  }, [isClient, ready, navigate]);
 
   // -----------------------------------
   // 2) FETCH LOGGED IN USER
@@ -142,7 +147,7 @@ const AgentDetails = () => {
   // -----------------------------------
   // LOADING / ERROR / NO AGENT STATES
   // -----------------------------------
-  if (!isClient) return null;
+  if (!ready || !isClient) return null;
 
   if (loading) {
     return (

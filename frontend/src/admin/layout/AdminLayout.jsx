@@ -5,6 +5,7 @@ import Topbar from "./Topbar";
 import { AdminToastProvider } from "../ui/AdminToast";
 import { AdminConfirmProvider } from "../ui/AdminConfirm";
 import useIdleLogout from "../../hooks/useIdleLogout";
+import { broadcastLogout } from "../../utils/authBroadcast";
 
 const AdminLayout = () => {
   const hasSession = !!sessionStorage.getItem("admin_token");
@@ -17,6 +18,7 @@ const AdminLayout = () => {
       localStorage.removeItem("admin_user");
       sessionStorage.removeItem("admin_token");
       sessionStorage.removeItem("admin_user");
+      broadcastLogout("admin");
       window.location.href = "/admin/login";
     },
     activityKey: "admin_last_activity",

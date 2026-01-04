@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import API from "../../../api/api";
 import { useCompare } from "../../../context/CompareContext";
+import useAuthSyncReady from "../../../hooks/useAuthSyncReady";
 
 const formatRs = (n) => {
   const num = Number(n ?? 0);
@@ -26,17 +27,24 @@ const CompareClient = () => {
   const p1 = query.get("p1");
   const p2 = query.get("p2");
 
+  const ready = useAuthSyncReady();
   const token = sessionStorage.getItem("client_token");
 
   useEffect(() => {
+    if (!ready) {
+      return;
+    }
     if (!token) {
       navigate("/login");
     }
-  }, [token, navigate]);
+  }, [token, ready, navigate]);
 
   useEffect(() => {
     if (!p1 || !p2) {
       navigate("/client/policies");
+      return;
+    }
+    if (!ready) {
       return;
     }
     fetchUser();
@@ -44,7 +52,7 @@ const CompareClient = () => {
     fetchOwned();
     clearCompare();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [p1, p2]);
+  }, [p1, p2, ready]);
 
   useEffect(() => {
     const handleProfileUpdated = (event) => {

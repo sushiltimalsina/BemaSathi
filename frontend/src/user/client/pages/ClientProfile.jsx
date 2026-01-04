@@ -2,9 +2,11 @@ import React, { useEffect, useState } from "react";
 import API from "../../../api/api";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
+import useAuthSyncReady from "../../../hooks/useAuthSyncReady";
 
 const ClientProfile = () => {
   const navigate = useNavigate();
+  const ready = useAuthSyncReady();
   const token = sessionStorage.getItem("client_token");
 
   const [user, setUser] = useState(null);
@@ -13,6 +15,9 @@ const ClientProfile = () => {
 
   // FETCH PROFILE
   useEffect(() => {
+    if (!ready) {
+      return;
+    }
     if (!token) {
       navigate("/login");
       return;
@@ -25,7 +30,7 @@ const ClientProfile = () => {
         });
 
         setUser(res.data);
-        localStorage.setItem("client_user", JSON.stringify(res.data));
+        sessionStorage.setItem("client_user", JSON.stringify(res.data));
 
         try {
           const kycRes = await API.get("/kyc/me");
@@ -44,7 +49,7 @@ const ClientProfile = () => {
     };
 
     fetchUser();
-  }, [token, navigate]);
+  }, [token, ready, navigate]);
 
   if (loading) {
     return (

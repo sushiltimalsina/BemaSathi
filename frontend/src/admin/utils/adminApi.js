@@ -1,4 +1,5 @@
 import axios from "axios";
+import { broadcastLogout } from "../../utils/authBroadcast";
 
 // Allow overriding API base via env; default to same-origin /api (works with Vite proxy)
 const API = axios.create({
@@ -28,6 +29,7 @@ API.interceptors.response.use(
       localStorage.removeItem("admin_user");
       sessionStorage.removeItem("admin_token");
       sessionStorage.removeItem("admin_user");
+      broadcastLogout("admin");
       window.location.href = "/admin/login";
     }
     return Promise.reject(error);

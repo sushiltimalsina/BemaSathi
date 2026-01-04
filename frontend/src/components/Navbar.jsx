@@ -4,6 +4,7 @@ import { useTheme } from "../context/ThemeContext";
 import GuestNavbar from "./GuestNavbar";
 import ClientNavbar from "./ClientNavbar";
 import useIdleLogout from "../hooks/useIdleLogout";
+import { broadcastLogout } from "../utils/authBroadcast";
 
 const Navbar = () => {
   const location = useLocation();
@@ -17,29 +18,24 @@ const Navbar = () => {
 
   useEffect(() => {
     setIsLoggedIn(!!sessionStorage.getItem("client_token"));
-    if (!sessionStorage.getItem("client_token") && localStorage.getItem("client_token")) {
-      localStorage.removeItem("client_token");
-      localStorage.removeItem("client_user");
-    }
   }, [location.pathname]);
 
   useEffect(() => {
-    const handler = (event) => {
-      if (event.key === "client_token") {
-        setIsLoggedIn(!!sessionStorage.getItem("client_token"));
-      }
+    const handler = () => {
+      setIsLoggedIn(!!sessionStorage.getItem("client_token"));
     };
-    window.addEventListener("storage", handler);
-    return () => window.removeEventListener("storage", handler);
+    window.addEventListener("auth-sync", handler);
+    return () => window.removeEventListener("auth-sync", handler);
   }, []);
 
   if (location.pathname.startsWith("/admin")) return null;
 
   const handleLogout = () => {
     localStorage.removeItem("client_token");
-    sessionStorage.removeItem("client_token");
     localStorage.removeItem("client_user");
+    sessionStorage.removeItem("client_token");
     sessionStorage.removeItem("client_user");
+    broadcastLogout("client");
     setIsLoggedIn(false);
     navigate("/");
   };

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { broadcastAuthUpdate, broadcastLogout } from "../../utils/authBroadcast";
 
 const AdminAuthContext = createContext(null);
 
@@ -9,18 +10,16 @@ export const AdminAuthProvider = ({ children }) => {
   });
 
   const login = (adminData, token) => {
-    localStorage.setItem("admin_token", token);
-    localStorage.setItem("admin_user", JSON.stringify(adminData));
     sessionStorage.setItem("admin_token", token);
     sessionStorage.setItem("admin_user", JSON.stringify(adminData));
+    broadcastAuthUpdate("admin", token, JSON.stringify(adminData));
     setAdmin(adminData);
   };
 
   const logout = () => {
-    localStorage.removeItem("admin_token");
-    localStorage.removeItem("admin_user");
     sessionStorage.removeItem("admin_token");
     sessionStorage.removeItem("admin_user");
+    broadcastLogout("admin");
     setAdmin(null);
   };
 
@@ -29,6 +28,15 @@ export const AdminAuthProvider = ({ children }) => {
     if (!token) {
       setAdmin(null);
     }
+  }, []);
+
+  useEffect(() => {
+    const syncAdmin = () => {
+      const raw = sessionStorage.getItem("admin_user");
+      setAdmin(raw ? JSON.parse(raw) : null);
+    };
+    window.addEventListener("auth-sync", syncAdmin);
+    return () => window.removeEventListener("auth-sync", syncAdmin);
   }, []);
 
   return (

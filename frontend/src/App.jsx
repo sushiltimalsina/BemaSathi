@@ -7,6 +7,7 @@ import { AdminAuthProvider } from "./admin/context/AdminAuthContext";
 import { ToastProvider } from "./admin/context/ToastContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { CompareProvider } from "./context/CompareContext";
+import AuthTabSync from "./context/AuthTabSync";
 
 // Global components
 import Navbar from "./components/Navbar";
@@ -66,6 +67,7 @@ const AppFrame = () => {
         <AdminAuthProvider>
           <BrowserRouter>
             <ScrollToTop />
+            <AuthTabSync />
             <AppShell />
           </BrowserRouter>
         </AdminAuthProvider>
