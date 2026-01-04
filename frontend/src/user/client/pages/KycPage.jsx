@@ -23,9 +23,10 @@ const KycPage = () => {
   const redirectPolicyId = query.get("policy");
 
   const [user, setUser] = useState(null);
-  const [kycList, setKycList] = useState([]);
+  const [kycList, setKycList] = useState(null);
+  const [kycLoaded, setKycLoaded] = useState(false);
   const latestKyc = kycList?.[0] || null;
-  const kycStatus = latestKyc?.status || "not_submitted";
+  const kycStatus = kycLoaded ? (latestKyc?.status || "not_submitted") : "loading";
   const isPending = kycStatus === "pending";
   const isApproved = kycStatus === "approved";
   const allowEdit = Boolean(latestKyc?.allow_edit);
@@ -133,37 +134,68 @@ const KycPage = () => {
   // Load user + KYC
   useEffect(() => {
     const load = async () => {
-      const u = await API.get("/me");
-      setUser(u.data);
+      try {
+        const u = await API.get("/me");
+        setUser(u.data);
 
-      setProfile({
-        full_name: u.data?.name || "",
-        dob: u.data?.dob || "",
-        phone: u.data?.phone || "",
-        address: u.data?.address || "",
-        email: u.data?.email || "",
-      });
+        const rawEmail = (u.data?.email || "").trim();
+        const rawAddress = (u.data?.address || "").trim();
+        const addressValue =
+          rawEmail && rawAddress.toLowerCase() === rawEmail.toLowerCase()
+            ? ""
+            : rawAddress;
 
-      const isFamily = u.data?.coverage_type === "family";
-      const count = isFamily ? Number(u.data?.family_members || 2) : 0;
-      const userFamilyDetails = Array.isArray(u.data?.family_member_details)
-        ? u.data.family_member_details
-        : [];
-      setFamilyCount(count);
+        setProfile({
+          full_name: u.data?.name || "",
+          dob: u.data?.dob || "",
+          phone: u.data?.phone || "",
+          address: addressValue,
+          email: rawEmail,
+        });
 
-      const k = await API.get("/kyc/me");
-      const list = k.data.data || [];
-      setKycList(list);
+        const isFamily = u.data?.coverage_type === "family";
+        const count = isFamily ? Number(u.data?.family_members || 2) : 0;
+        const userFamilyDetails = Array.isArray(u.data?.family_member_details)
+          ? u.data.family_member_details
+          : [];
+        setFamilyCount(count);
 
-      if (list.length) {
-        const info = list[0];
-        if (info.document_type) setDocumentType(info.document_type);
-        if (info.document_number) setDocumentNumber(info.document_number);
-        if (info.family_members && Array.isArray(info.family_members)) {
-          syncFamilyMembers(info.family_members.length, info.family_members, {
-            full_name: u.data?.name || "",
-            dob: u.data?.dob || "",
-          });
+        const k = await API.get("/kyc/me");
+        const list = k.data.data || [];
+        setKycList(list);
+
+        if (list.length) {
+          const info = list[0];
+          if (info.document_type) setDocumentType(info.document_type);
+          if (info.document_number) setDocumentNumber(info.document_number);
+          if (info.family_members && Array.isArray(info.family_members)) {
+            syncFamilyMembers(info.family_members.length, info.family_members, {
+              full_name: u.data?.name || "",
+              dob: u.data?.dob || "",
+            });
+          } else if (userFamilyDetails.length) {
+            syncFamilyMembers(count, userFamilyDetails, {
+              full_name: u.data?.name || "",
+              dob: u.data?.dob || "",
+            });
+          } else {
+            syncFamilyMembers(count, [], {
+              full_name: u.data?.name || "",
+              dob: u.data?.dob || "",
+            });
+          }
+          if (info.status === "rejected") {
+            setFrontFile(null);
+            setBackFile(null);
+            setFrontPreview(null);
+            setBackPreview(null);
+            setDocumentNumber("");
+          } else {
+            const frontUrl = buildUrl(info.front_path || info.front_image_url);
+            const backUrl = buildUrl(info.back_path || info.back_image_url);
+            if (frontUrl) setFrontPreview(frontUrl);
+            if (backUrl) setBackPreview(backUrl);
+          }
         } else if (userFamilyDetails.length) {
           syncFamilyMembers(count, userFamilyDetails, {
             full_name: u.data?.name || "",
@@ -175,28 +207,11 @@ const KycPage = () => {
             dob: u.data?.dob || "",
           });
         }
-        if (info.status === "rejected") {
-          setFrontFile(null);
-          setBackFile(null);
-          setFrontPreview(null);
-          setBackPreview(null);
-          setDocumentNumber("");
-        } else {
-          const frontUrl = buildUrl(info.front_path || info.front_image_url);
-          const backUrl = buildUrl(info.back_path || info.back_image_url);
-          if (frontUrl) setFrontPreview(frontUrl);
-          if (backUrl) setBackPreview(backUrl);
-        }
-      } else if (userFamilyDetails.length) {
-        syncFamilyMembers(count, userFamilyDetails, {
-          full_name: u.data?.name || "",
-          dob: u.data?.dob || "",
-        });
-      } else {
-        syncFamilyMembers(count, [], {
-          full_name: u.data?.name || "",
-          dob: u.data?.dob || "",
-        });
+      } catch (err) {
+        setError("Unable to load KYC details.");
+        setKycList([]);
+      } finally {
+        setKycLoaded(true);
       }
     };
     load();
@@ -498,14 +513,14 @@ const KycPage = () => {
 
   return (
     <div className="max-w-3xl mx-auto p-6 pb-24">
-      {((redirectPolicyId && !isApproved) || kycStatus === "not_submitted") && (
-        <div className="mb-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4 text-sm text-amber-900 dark:text-amber-100">
+      {kycLoaded && ((redirectPolicyId && !isApproved) || kycStatus === "not_submitted") && (
+        <div className="mb-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4 text-sm text-amber-900 dark:text-amber-800">
           Please complete your KYC to proceed with buying the policy.
         </div>
       )}
 
       {/* VERIFIED BANNER */}
-      {(isPending || isApproved) && (
+      {kycLoaded && (isPending || isApproved) && (
         <div
           className={`mb-4 p-4 rounded-xl border flex items-center gap-3 ${
             canEditApproved || isPending
@@ -618,7 +633,9 @@ const KycPage = () => {
             <span
               className={`px-3 py-1 text-xs rounded-full font-medium border
                 ${
-                  !latestKyc || latestKyc.status === "not_submitted"
+                  !kycLoaded
+                    ? "bg-hover-light dark:bg-hover-dark text-text-light dark:text-text-dark border-border-light dark:border-border-dark"
+                    : !latestKyc || latestKyc.status === "not_submitted"
                     ? "bg-hover-light dark:bg-hover-dark text-text-light dark:text-text-dark border-border-light dark:border-border-dark"
                     : latestKyc.status === "pending"
                     ? "bg-yellow-100 dark:bg-yellow-600 text-yellow-800 dark:text-yellow-100 border-yellow-300 dark:border-yellow-700"
@@ -629,7 +646,9 @@ const KycPage = () => {
                     : "bg-red-100 dark:bg-red-700 text-red-700 dark:text-red-200 border-red-300 dark:border-red-800"
                 }`}
             >
-              {latestKyc?.status === "approved" && allowEdit
+              {!kycLoaded
+                ? "Loading..."
+                : latestKyc?.status === "approved" && allowEdit
                 ? "Approved (Edit Enabled)"
                 : latestKyc?.status || "Not Submitted"}
             </span>
@@ -641,7 +660,7 @@ const KycPage = () => {
           )}
         </div>
                 {/* IMPORTANT NOTICE WHEN NOT SUBMITTED */}
-        {(kycStatus === "not_submitted" || kycStatus === "rejected") && (
+        {kycLoaded && (kycStatus === "not_submitted" || kycStatus === "rejected") && (
           <div className="rounded-md border-l-4 border-red-200 bg-white p-3 shadow-sm 
                           dark:border-red-200 dark:bg-red-900/30">
             <div className="flex items-start gap-2">
