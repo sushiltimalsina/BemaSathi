@@ -74,6 +74,64 @@ class PolicyController extends Controller
         return response()->json($policy);
     }
 
+    /**
+     * Calculate a premium quote using explicit inputs or the user's profile.
+     */
+    public function calculatePremium(Request $request)
+    {
+        $data = $request->validate([
+            'policy_id' => 'required|exists:policies,id',
+            'age' => 'nullable|integer|min:1|max:120',
+            'dob' => 'nullable|date|before:today',
+            'is_smoker' => 'nullable|boolean',
+            'health_score' => 'nullable|integer|min:1|max:100',
+            'coverage_type' => 'nullable|in:individual,family',
+            'budget_range' => 'nullable|string',
+            'family_members' => 'nullable|integer|min:1|max:20',
+        ]);
+
+        $policy = Policy::findOrFail($data['policy_id']);
+        $user = auth('sanctum')->user();
+
+        $profile = $this->resolveProfile($user);
+        if (!empty($data['dob'])) {
+            $profile['age'] = Carbon::parse($data['dob'])->age;
+        }
+        if (!empty($data['age'])) {
+            $profile['age'] = (int) $data['age'];
+        }
+        if (array_key_exists('is_smoker', $data)) {
+            $profile['is_smoker'] = (bool) $data['is_smoker'];
+        }
+        if (array_key_exists('health_score', $data)) {
+            $profile['health_score'] = $data['health_score'];
+        }
+        if (!empty($data['coverage_type'])) {
+            $profile['coverage_type'] = $data['coverage_type'];
+        }
+        if (!empty($data['budget_range'])) {
+            $profile['budget_range'] = $data['budget_range'];
+        }
+        if (!empty($data['family_members'])) {
+            $profile['family_members'] = (int) $data['family_members'];
+        }
+
+        $quote = $this->calculator->quote(
+            $policy,
+            $profile['age'],
+            $profile['is_smoker'],
+            $profile['health_score'],
+            $profile['coverage_type'],
+            $profile['budget_range'],
+            $profile['family_members']
+        );
+
+        return response()->json([
+            'success' => true,
+            'quote' => $quote,
+        ]);
+    }
+
 
     private function resolveProfile($user)
     {

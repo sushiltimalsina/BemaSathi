@@ -12,7 +12,8 @@
       <td style="background:#ffffff; padding:28px 30px;">
         <p style="margin:0 0 12px; font-size:16px;">Hi <strong>{{ $name ?? 'there' }}</strong>,</p>
         <p style="margin:0 0 16px; font-size:14px; line-height:1.6;">
-          Your policy renewal is coming up soon. Please renew to keep your coverage active.
+          Your policy renewal is coming up soon. Please renew before
+          <strong>{{ $renewalDateText }}</strong> to keep your coverage active.
         </p>
         <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin-bottom:16px;">
           <tr>
@@ -25,7 +26,7 @@
           </tr>
           <tr>
             <td style="padding:8px 0; font-size:14px;"><strong>Renewal date</strong></td>
-            <td style="padding:8px 0; font-size:14px;">{{ \Illuminate\Support\Carbon::parse($renewalDate)->toFormattedDateString() }}</td>
+            <td style="padding:8px 0; font-size:14px;">{{ $renewalDateText }}</td>
           </tr>
           <tr>
             <td style="padding:8px 0; font-size:14px;"><strong>Renewal amount</strong></td>
