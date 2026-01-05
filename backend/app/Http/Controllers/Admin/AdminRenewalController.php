@@ -63,12 +63,13 @@ class AdminRenewalController extends Controller
         }
 
         $policyName = optional($buyRequest->policy)->policy_name ?? 'your policy';
-        $dateText = Carbon::parse($buyRequest->next_renewal_date)->toFormattedDateString();
+        $timezone = config('app.timezone', 'Asia/Kathmandu');
+        $dateText = Carbon::parse($buyRequest->next_renewal_date)->timezone($timezone)->toFormattedDateString();
 
         $this->notifier->notify(
             $buyRequest->user,
             'Renewal reminder',
-            "Your renewal for {$policyName} is due on {$dateText}. Please renew to keep your coverage active.",
+            "Your policy {$policyName} renews on {$dateText}. Please renew to keep your coverage active.",
             [
                 'buy_request_id' => $buyRequest->id,
                 'policy_id' => $buyRequest->policy_id,
