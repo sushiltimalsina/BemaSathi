@@ -43,17 +43,17 @@ const NewTicket = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 space-y-6">
+    <div className="max-w-3xl mx-auto px-4 space-y-6 text-text-light dark:text-text-dark">
       <h1 className="text-xl font-bold">Create Support Ticket</h1>
 
-      <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-300 dark:border-slate-700 space-y-6">
+      <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-border-light dark:border-border-dark space-y-6">
         {/* Subject */}
         <div>
           <label className="text-sm font-medium">Subject</label>
           <input
             value={form.subject}
             onChange={(e) => update("subject", e.target.value)}
-            className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
+            className="w-full px-4 py-2 rounded-lg border bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark"
           />
         </div>
 
@@ -63,7 +63,7 @@ const NewTicket = () => {
           <select
             value={form.category}
             onChange={(e) => update("category", e.target.value)}
-            className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
+            className="w-full px-4 py-2 rounded-lg border bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark"
           >
             <option value="general">General</option>
             <option value="kyc">KYC Issue</option>
@@ -81,7 +81,7 @@ const NewTicket = () => {
           <select
             value={form.priority}
             onChange={(e) => update("priority", e.target.value)}
-            className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
+            className="w-full px-4 py-2 rounded-lg border bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark"
           >
             <option value="low">Low</option>
             <option value="normal">Normal</option>
@@ -95,7 +95,7 @@ const NewTicket = () => {
           <textarea
             value={form.message}
             onChange={(e) => update("message", e.target.value)}
-            className="w-full px-4 py-3 rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
+            className="w-full px-4 py-3 rounded-lg border bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark"
             rows={5}
           ></textarea>
         </div>
@@ -112,9 +112,9 @@ const NewTicket = () => {
 
       {popup.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-xl">
+          <div className="w-full max-w-sm rounded-xl border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark p-5 shadow-xl text-text-light dark:text-text-dark">
             <div className="text-sm font-semibold mb-2">Notice</div>
-            <div className="text-sm opacity-80">{popup.message}</div>
+            <div className="text-sm text-muted-light dark:text-muted-dark">{popup.message}</div>
             <div className="mt-4 flex justify-end">
               <button
                 type="button"

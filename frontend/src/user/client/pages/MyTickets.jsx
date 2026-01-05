@@ -23,10 +23,16 @@ const MyTickets = () => {
     load();
   }, []);
 
-  if (loading) return <p>Loading tickets...</p>;
+  if (loading) {
+    return (
+      <p className="text-text-light dark:text-text-dark opacity-70">
+        Loading tickets...
+      </p>
+    );
+  }
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto px-4">
+    <div className="space-y-6 max-w-4xl mx-auto px-4 text-text-light dark:text-text-dark">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">My Support Tickets</h1>
@@ -44,32 +50,34 @@ const MyTickets = () => {
         {tickets.map((t) => (
           <div
             key={t.id}
-            className="p-4 rounded-xl border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 shadow-sm"
+            className="p-4 rounded-xl border bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark shadow-sm"
           >
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-medium">{t.subject}</h2>
 
               <button
                 onClick={() => navigate(`/client/support/${t.id}`)}
-                className="flex items-center gap-2 px-3 py-1 rounded-lg text-sm border hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="flex items-center gap-2 px-3 py-1 rounded-lg text-sm border border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark"
               >
                 <EyeIcon className="w-4 h-4" />
                 View
               </button>
             </div>
 
-            <div className="mt-2 text-sm opacity-80">
+            <div className="mt-2 text-sm text-muted-light dark:text-muted-dark">
               <strong>Status:</strong> {t.status.replace("_", " ")}
             </div>
 
-            <div className="text-xs opacity-60 mt-1">
+            <div className="text-xs text-muted-light dark:text-muted-dark mt-1">
               {new Date(t.created_at).toLocaleString()}
             </div>
           </div>
         ))}
 
         {!tickets.length && (
-          <p className="text-center opacity-60">No tickets found.</p>
+          <p className="text-center text-muted-light dark:text-muted-dark">
+            No tickets found.
+          </p>
         )}
       </div>
     </div>

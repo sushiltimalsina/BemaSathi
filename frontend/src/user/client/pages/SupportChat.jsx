@@ -11,17 +11,31 @@ const SupportChat = () => {
   const [sending, setSending] = useState(false);
   const chatRef = useRef(null);
 
+  const isTabActive = () =>
+    typeof document !== "undefined" &&
+    document.visibilityState === "visible" &&
+    document.hasFocus();
+
+  const markSeenIfActive = async (data) => {
+    const hasUnread = data?.messages?.some(
+      (msg) => msg.is_admin && msg.is_user_seen === false
+    );
+
+    if (!hasUnread || !isTabActive()) return;
+
+    try {
+      await API.post(`/support/${id}/mark-seen`);
+      window.dispatchEvent(new Event("support:client-refresh"));
+    } catch (e) {
+      // ignore
+    }
+  };
+
   const load = async () => {
     try {
       const res = await API.get(`/support/${id}`);
       setTicket(res.data);
-      const hasUnread = res.data?.messages?.some(
-        (msg) => msg.is_admin && msg.is_user_seen === false
-      );
-      if (hasUnread) {
-        await API.post(`/support/${id}/mark-seen`);
-        window.dispatchEvent(new Event("support:client-refresh"));
-      }
+      await markSeenIfActive(res.data);
     } catch (e) {
       alert("Unable to load ticket.");
     }
@@ -33,6 +47,21 @@ const SupportChat = () => {
     const interval = setInterval(load, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (!ticket) return;
+      markSeenIfActive(ticket);
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", handleVisibility);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", handleVisibility);
+    };
+  }, [ticket, id]);
 
   useEffect(() => {
     if (!chatRef.current) return;
@@ -62,14 +91,20 @@ const SupportChat = () => {
     }
   };
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) {
+    return (
+      <p className="text-text-light dark:text-text-dark opacity-70">
+        Loading...
+      </p>
+    );
+  }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 space-y-6">
+    <div className="max-w-3xl mx-auto px-4 space-y-6 text-text-light dark:text-text-dark">
 
       <div>
         <h1 className="text-xl font-bold">{ticket.subject}</h1>
-        <p className="text-sm opacity-70">
+        <p className="text-sm text-muted-light dark:text-muted-dark">
           Status: {ticket.status.replace("_", " ")}
         </p>
       </div>
@@ -77,7 +112,7 @@ const SupportChat = () => {
       {/* Chat Area */}
       <div
         ref={chatRef}
-        className="bg-white dark:bg-slate-900 rounded-xl border border-slate-300 dark:border-slate-700 p-5 space-y-4 max-h-[65vh] overflow-y-auto"
+        className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-5 space-y-4 max-h-[65vh] overflow-y-auto"
       >
 
         {ticket.messages.map((m, i) => (
@@ -85,7 +120,7 @@ const SupportChat = () => {
             key={i}
             className={`
               max-w-[80%] w-fit p-3 rounded-lg
-              ${m.is_admin ? "bg-slate-200 dark:bg-slate-800 mr-auto" : "bg-primary-light text-white ml-auto"}
+              ${m.is_admin ? "bg-hover-light dark:bg-hover-dark mr-auto" : "bg-primary-light text-white ml-auto"}
             `}
           >
             <p className="text-sm">{m.message}</p>
@@ -99,7 +134,9 @@ const SupportChat = () => {
                   }`}
                 >
                   <CheckIcon className="w-3 h-3" />
-                  <CheckIcon className="-ml-1 w-3 h-3" />
+                  {m.is_admin_seen && (
+                    <CheckIcon className="-ml-1 w-3 h-3" />
+                  )}
                 </span>
               )}
             </div>
@@ -121,7 +158,7 @@ const SupportChat = () => {
           }}
           placeholder="Type your message..."
           disabled={ticket.status === "closed" || sending}
-          className="flex-1 px-4 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 disabled:opacity-60 disabled:cursor-not-allowed"
+          className="flex-1 px-4 py-2 rounded-lg border bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark disabled:opacity-60 disabled:cursor-not-allowed"
         />
 
         <button
