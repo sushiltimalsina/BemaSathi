@@ -11,13 +11,20 @@ class AgentInquiryMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public AgentInquiry $agentInquiry)
+    public function __construct(
+        public AgentInquiry $agentInquiry,
+        public bool $isRenotify = false
+    )
     {
     }
 
     public function build()
     {
-        return $this->subject('New Client Policy Inquiry')
+        $subject = $this->isRenotify
+            ? 'Renotified: Client Policy Inquiry'
+            : 'New Client Policy Inquiry';
+
+        return $this->subject($subject)
             ->view('emails.agent-inquiry')
             ->with([
                 'agentName' => $this->agentInquiry->agent_name,
