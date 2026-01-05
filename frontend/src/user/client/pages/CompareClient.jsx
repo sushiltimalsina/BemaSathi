@@ -47,9 +47,27 @@ const CompareClient = () => {
     if (!ready) {
       return;
     }
-    fetchUser();
-    fetchPolicies();
-    fetchOwned();
+
+    const cachedUserRaw = sessionStorage.getItem("client_user");
+    if (cachedUserRaw) {
+      try {
+        const cachedUser = JSON.parse(cachedUserRaw);
+        if (cachedUser) {
+          setUser(cachedUser);
+        }
+      } catch {
+        // ignore invalid cache
+      }
+    }
+
+    setLoading(true);
+    Promise.all([fetchPolicies(), fetchOwned(), fetchUser()])
+      .catch(() => {
+        // errors are handled in their respective calls
+      })
+      .finally(() => {
+        setLoading(false);
+      });
     clearCompare();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p1, p2, ready]);
@@ -72,6 +90,9 @@ const CompareClient = () => {
 
   const fetchUser = async () => {
     try {
+      if (!sessionStorage.getItem("client_token")) {
+        return;
+      }
       const res = await API.get("/me", {
         headers: {
           Authorization: `Bearer ${sessionStorage.getItem("client_token")}`,
@@ -85,8 +106,10 @@ const CompareClient = () => {
 
   const fetchPolicies = async () => {
     try {
-      const r1 = await API.get(`/policies/${p1}`);
-      const r2 = await API.get(`/policies/${p2}`);
+      const [r1, r2] = await Promise.all([
+        API.get(`/policies/${p1}`),
+        API.get(`/policies/${p2}`),
+      ]);
 
       setPolicy1({
         ...r1.data,
@@ -102,8 +125,6 @@ const CompareClient = () => {
     } catch (err) {
       console.error("Compare load failed", err);
     }
-
-    setLoading(false);
   };
 
   const fetchOwned = async () => {

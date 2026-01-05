@@ -25,6 +25,9 @@ class BuyRequest extends Model
         'cycle_amount',
         'next_renewal_date',
         'renewal_status',
+        'renewal_reminder_sent_at',
+        'renewal_grace_reminders_sent',
+        'renewal_grace_last_sent_at',
     ];
 
     protected $dates = ['deleted_at'];
@@ -32,6 +35,8 @@ class BuyRequest extends Model
     protected $casts = [
         'cycle_amount' => 'float',
         'next_renewal_date' => 'date',
+        'renewal_reminder_sent_at' => 'datetime',
+        'renewal_grace_last_sent_at' => 'datetime',
     ];
 
     public function user()
