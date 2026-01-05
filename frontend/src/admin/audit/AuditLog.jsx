@@ -104,7 +104,7 @@ const AuditLog = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Audit Log</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-muted-light dark:text-muted-dark">
             Track admin actions & important system events
           </p>
         </div>
@@ -125,7 +125,7 @@ const AuditLog = () => {
       <div>
         <h2 className="text-lg font-semibold mb-3">Recent Important Events</h2>
 
-        <div className="border-l border-slate-300 dark:border-slate-700 pl-6 space-y-6">
+        <div className="border-l border-border-light dark:border-border-dark pl-6 space-y-6">
           {important.map((item) => (
             <div key={item.id} className="relative">
               {/* Dot */}
@@ -134,7 +134,7 @@ const AuditLog = () => {
                 bg-primary-light dark:bg-primary-dark
               "></span>
 
-              <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+              <div className="bg-card-light dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark p-4 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="font-semibold">{formatEvent(item.event)}</div>
 
@@ -160,10 +160,10 @@ const AuditLog = () => {
       </div>
 
       {/* FILTER BAR */}
-      <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-300 dark:border-slate-700 flex flex-col sm:flex-row gap-4">
+      <div className="bg-card-light dark:bg-card-dark p-4 rounded-xl border border-border-light dark:border-border-dark flex flex-col sm:flex-row gap-4">
         
         {/* Search */}
-        <div className="flex items-center px-3 py-2 border rounded-lg flex-1 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+        <div className="flex items-center px-3 py-2 border rounded-lg flex-1 bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark">
           <MagnifyingGlassIcon className="w-5 h-5 opacity-70 mr-2" />
           <input
             type="text"
@@ -181,8 +181,8 @@ const AuditLog = () => {
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             className="
-              px-3 py-2 rounded-lg border bg-white dark:bg-slate-900
-              border-slate-300 dark:border-slate-700
+              px-3 py-2 rounded-lg border bg-card-light dark:bg-card-dark
+              border-border-light dark:border-border-dark
             "
           >
             <option value="all">All Categories</option>
@@ -200,9 +200,9 @@ const AuditLog = () => {
       </div>
 
       {/* TABLE LOG VIEW */}
-      <div className="overflow-x-auto border border-slate-300 dark:border-slate-700 rounded-xl">
+      <div className="overflow-x-auto border border-border-light dark:border-border-dark rounded-xl">
         <table className="w-full text-sm">
-          <thead className="bg-slate-100 dark:bg-slate-800">
+          <thead className="bg-hover-light dark:bg-hover-dark text-muted-light dark:text-muted-dark">
             <tr>
               <th className="px-4 py-3 text-left">Event</th>
               <th className="px-4 py-3 text-left">Description</th>
@@ -215,7 +215,7 @@ const AuditLog = () => {
             {paged.map((log) => (
               <tr
                 key={log.id}
-                className="border-t border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/40"
+                className="border-t border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark"
               >
                 <td className="px-4 py-3 font-semibold">
                   {formatEvent(log.event)}
@@ -248,7 +248,7 @@ const AuditLog = () => {
         </table>
       </div>
 
-      <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
+      <div className="flex items-center justify-between text-sm text-muted-light dark:text-muted-dark">
         <div>
           Page {page} of {totalPages}
         </div>
@@ -257,7 +257,7 @@ const AuditLog = () => {
             type="button"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
-            className="px-3 py-1 rounded-lg border border-slate-300 dark:border-slate-700 disabled:opacity-50"
+            className="px-3 py-1 rounded-lg border border-border-light dark:border-border-dark disabled:opacity-50"
           >
             Prev
           </button>
@@ -265,7 +265,7 @@ const AuditLog = () => {
             type="button"
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages}
-            className="px-3 py-1 rounded-lg border border-slate-300 dark:border-slate-700 disabled:opacity-50"
+            className="px-3 py-1 rounded-lg border border-border-light dark:border-border-dark disabled:opacity-50"
           >
             Next
           </button>

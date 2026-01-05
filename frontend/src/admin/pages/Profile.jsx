@@ -26,7 +26,11 @@ const AdminProfile = () => {
   }, []);
 
   if (loading) {
-    return <div className="text-slate-500 dark:text-slate-300">Loading profile...</div>;
+    return (
+      <div className="text-muted-light dark:text-muted-dark">
+        Loading profile...
+      </div>
+    );
   }
 
   if (error) {
@@ -34,7 +38,11 @@ const AdminProfile = () => {
   }
 
   if (!admin) {
-    return <div className="text-slate-500 dark:text-slate-300">No profile data.</div>;
+    return (
+      <div className="text-muted-light dark:text-muted-dark">
+        No profile data.
+      </div>
+    );
   }
 
   const avatar = admin.name ? admin.name.charAt(0).toUpperCase() : "A";
@@ -47,27 +55,27 @@ const AdminProfile = () => {
         </div>
         <div>
           <h1 className="text-2xl font-bold">Admin Profile</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-muted-light dark:text-muted-dark">
             Manage your admin account details
           </p>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow p-6 space-y-3">
+      <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl shadow p-6 space-y-3">
         <div className="flex justify-between">
-          <span className="text-slate-500 dark:text-slate-400">Name</span>
+          <span className="text-muted-light dark:text-muted-dark">Name</span>
           <span className="font-semibold">{admin.name || "-"}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-slate-500 dark:text-slate-400">Email</span>
+          <span className="text-muted-light dark:text-muted-dark">Email</span>
           <span className="font-semibold">{admin.email || "-"}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-slate-500 dark:text-slate-400">Role</span>
+          <span className="text-muted-light dark:text-muted-dark">Role</span>
           <span className="font-semibold capitalize">{admin.role || "admin"}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-slate-500 dark:text-slate-400">Joined</span>
+          <span className="text-muted-light dark:text-muted-dark">Joined</span>
           <span className="font-semibold">
             {admin.created_at ? new Date(admin.created_at).toLocaleDateString() : "-"}
           </span>
@@ -77,7 +85,7 @@ const AdminProfile = () => {
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold"
+            className="px-4 py-2 rounded-lg border border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark text-sm font-semibold"
           >
             Back
           </button>

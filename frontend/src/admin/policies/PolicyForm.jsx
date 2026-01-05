@@ -176,7 +176,7 @@ const PolicyForm = () => {
       {/* FORM */}
       <div
         className="
-          bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800
+          bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark
           p-6 rounded-xl shadow-sm space-y-6
         "
       >
@@ -309,11 +309,11 @@ const PolicyForm = () => {
             type="checkbox"
             checked={form.supports_smokers}
             onChange={(e) => updateField("supports_smokers", e.target.checked)}
-            className="w-5 h-5 rounded border border-slate-400 dark:border-slate-500 bg-white dark:bg-slate-800 accent-primary-light"
+            className="w-5 h-5 rounded border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark accent-primary-light"
           />
           <label
             htmlFor="supports_smokers"
-            className="text-sm font-medium text-slate-700 dark:text-slate-200"
+            className="text-sm font-mediumtext-black dark:text-white"
           >
             Supports Smokers
           </label>
@@ -326,7 +326,7 @@ const PolicyForm = () => {
             type="checkbox"
             checked={form.is_active}
             onChange={(e) => updateField("is_active", e.target.checked)}
-            className="w-5 h-5 rounded border border-slate-400 dark:border-slate-500 bg-white dark:bg-slate-800 accent-primary-light"
+            className="w-5 h-5 rounded border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark accent-primary-light"
           />
           <label
             htmlFor="active"
@@ -347,8 +347,8 @@ const Input = ({ label, ...props }) => (
       {...props}
       className="
         w-full px-4 py-2 rounded-lg border
-        bg-white dark:bg-slate-900
-        border-slate-200 dark:border-slate-800
+        bg-card-light dark:bg-card-dark
+        border-border-light dark:border-border-dark
         focus:outline-none
       "
     />
@@ -362,8 +362,8 @@ const Select = ({ label, options, ...props }) => (
       {...props}
       className="
         w-full px-4 py-2 rounded-lg border
-        bg-white dark:bg-slate-900
-        border-slate-200 dark:border-slate-800
+        bg-card-light dark:bg-card-dark
+        border-border-light dark:border-border-dark
         focus:outline-none
       "
     >
@@ -384,8 +384,8 @@ const TextArea = ({ label, ...props }) => (
       rows="4"
       className="
         w-full px-4 py-2 rounded-lg border
-        bg-white dark:bg-slate-900
-        border-slate-200 dark:border-slate-800
+        bg-card-light dark:bg-card-dark
+        border-border-light dark:border-border-dark
         focus:outline-none
       "
     ></textarea>

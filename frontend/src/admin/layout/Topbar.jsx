@@ -9,6 +9,7 @@ import { Link, useNavigate } from "react-router-dom";
 import API from "../utils/adminApi";
 import { useAdminToast } from "../ui/AdminToast";
 import { broadcastLogout } from "../../utils/authBroadcast";
+import ThemeDropdown from "../../components/ThemeDropdown";
 
 const Topbar = ({ onToggleSidebar }) => {
   const navigate = useNavigate();
@@ -91,12 +92,12 @@ const Topbar = ({ onToggleSidebar }) => {
   const avatar = admin?.name ? admin.name.charAt(0).toUpperCase() : "A";
 
   return (
-    <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 sm:px-6">
+    <header className="h-16 bg-card-light dark:bg-card-dark border-b border-border-light dark:border-border-dark flex items-center justify-between px-4 sm:px-6">
       <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={onToggleSidebar}
-          className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 md:hidden"
+          className="p-2 rounded-lg hover:bg-hover-light dark:hover:bg-hover-dark md:hidden"
           aria-label="Toggle sidebar"
         >
           <Bars3Icon className="w-5 h-5" />
@@ -110,7 +111,7 @@ const Topbar = ({ onToggleSidebar }) => {
         {/* Support */}
         <button
           onClick={() => navigate("/admin/support")}
-          className="relative p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+          className="relative p-2 rounded-lg hover:bg-hover-light dark:hover:bg-hover-dark"
         >
           <ChatBubbleLeftRightIcon className="w-5 h-5" />
           {unreadCount > 0 && (
@@ -143,14 +144,18 @@ const Topbar = ({ onToggleSidebar }) => {
           </button>
 
           {profileOpen && (
-            <div className="absolute right-0 mt-2 w-48 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg py-2">
+            <div className="absolute right-0 mt-2 w-48 rounded-xl border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark shadow-lg py-2">
+              <div className="px-4 py-2">
+                <ThemeDropdown />
+              </div>
+              <div className="h-px bg-slate-200 dark:bg-slate-800 my-1" />
               <button
                 type="button"
                 onClick={() => {
                   setProfileOpen(false);
                   navigate("/admin/profile");
                 }}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800 inline-flex items-center gap-2"
+                className="w-full text-left px-4 py-2 text-sm hover:bg-hover-light dark:hover:bg-hover-dark inline-flex items-center gap-2"
               >
                 <UserCircleIcon className="w-4 h-4" />
                 Profile
@@ -158,7 +163,7 @@ const Topbar = ({ onToggleSidebar }) => {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800 inline-flex items-center gap-2 text-red-600 dark:text-red-300"
+                className="w-full text-left px-4 py-2 text-sm hover:bg-hover-light dark:hover:bg-hover-dark inline-flex items-center gap-2 text-red-600 dark:text-red-300"
               >
                 <ArrowRightOnRectangleIcon className="w-4 h-4" />
                 Logout

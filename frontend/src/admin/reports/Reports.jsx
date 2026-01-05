@@ -90,13 +90,13 @@ const Reports = () => {
       {/* HEADER */}
       <div>
         <h1 className="text-2xl font-bold">Reports</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <p className="text-sm text-muted-light dark:text-muted-dark">
           Export and download system reports
         </p>
       </div>
 
       {/* FILTER PANEL */}
-      <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+      <div className="bg-card-light dark:bg-card-dark p-6 rounded-xl border border-border-light dark:border-border-dark shadow-sm space-y-6">
         
         {/* ROW 1 */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -108,7 +108,7 @@ const Reports = () => {
             <select
               value={type}
               onChange={(e) => setType(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
+              className="w-full px-3 py-2 rounded-lg border bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark"
             >
               <option value="users">Users Report</option>
               <option value="policies">Policies Report</option>
@@ -124,7 +124,7 @@ const Reports = () => {
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
+              className="w-full px-3 py-2 rounded-lg border bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark"
             >
               {statusOptions.map((opt) => (
                 <option key={opt} value={opt}>
@@ -148,7 +148,7 @@ const Reports = () => {
                   setRange(value);
                   resolveDateRange(value);
                 }}
-                className="px-3 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 col-span-2"
+                className="px-3 py-2 rounded-lg border bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark col-span-2"
               >
                 <option value="all">All time</option>
                 <option value="7d">Last 7 days</option>
@@ -162,7 +162,7 @@ const Reports = () => {
                 value={from}
                 onChange={(e) => setFrom(e.target.value)}
                 disabled={range !== "custom"}
-                className="px-3 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
+                className="px-3 py-2 rounded-lg border bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark"
               />
 
               <input
@@ -170,7 +170,7 @@ const Reports = () => {
                 value={to}
                 onChange={(e) => setTo(e.target.value)}
                 disabled={range !== "custom"}
-                className="px-3 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
+                className="px-3 py-2 rounded-lg border bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark"
               />
             </div>
           </div>
@@ -199,7 +199,7 @@ const Reports = () => {
       </div>
 
       {/* INFO NOTE */}
-      <p className="text-xs text-slate-500 dark:text-slate-400">
+      <p className="text-xs text-muted-light dark:text-muted-dark">
         CSV reports can be opened in Excel, Google Sheets, or any data tool.
       </p>
     </div>

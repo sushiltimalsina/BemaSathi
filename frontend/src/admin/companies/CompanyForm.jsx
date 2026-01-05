@@ -78,7 +78,7 @@ const CompanyForm = () => {
         </button>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-6">
+      <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl p-6 space-y-6">
         <Input label="Company Name" value={form.name} onChange={(e) => update("name", e.target.value)} />
         <Input label="Email" value={form.email} onChange={(e) => update("email", e.target.value)} />
         <Input label="Phone" value={form.phone} onChange={(e) => update("phone", e.target.value)} />
@@ -104,8 +104,8 @@ const Input = ({ label, ...props }) => (
       {...props}
       className="
         w-full px-4 py-2 rounded-lg border
-        bg-white dark:bg-slate-900
-        border-slate-200 dark:border-slate-800
+        bg-card-light dark:bg-card-dark
+        border-border-light dark:border-border-dark
         focus:outline-none
       "
     />

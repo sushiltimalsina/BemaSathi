@@ -29,15 +29,15 @@ const AdminLayout = () => {
   return (
     <AdminToastProvider>
       <AdminConfirmProvider>
-        <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 relative md:flex">
+        <div className="h-screen overflow-hidden bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark relative md:flex transition-colors">
           {/* Sidebar */}
           <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
           {/* Main */}
-          <div className="flex min-h-screen flex-col md:flex-1">
+          <div className="flex h-screen flex-col md:flex-1">
             <Topbar onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
 
-            <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
+            <main className="flex-1 min-h-0 p-4 sm:p-6 overflow-y-auto">
               <Outlet />
             </main>
           </div>

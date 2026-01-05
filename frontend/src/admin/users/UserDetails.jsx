@@ -217,7 +217,7 @@ const UserDetails = ({ user, onClose, onKycEditAllowed, onKycStatusUpdated }) =>
     <>
       {/* SIDE PANEL */}
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex justify-end">
-        <div className="w-full max-w-md h-full bg-white dark:bg-slate-900 shadow-xl p-6 overflow-y-auto border-l border-slate-300 dark:border-slate-700">
+        <div className="w-full max-w-md h-full bg-card-light dark:bg-card-dark shadow-xl p-6 overflow-y-auto border-l border-border-light dark:border-border-dark">
 
           {/* HEADER */}
           <div className="flex justify-between items-center mb-6">
@@ -235,7 +235,7 @@ const UserDetails = ({ user, onClose, onKycEditAllowed, onKycStatusUpdated }) =>
             <p><span className="font-semibold">Joined:</span> {new Date(user.created_at).toLocaleDateString()}</p>
           </div>
 
-          <hr className="border-slate-300 dark:border-slate-700 mb-6" />
+          <hr className="border-border-light dark:border-border-dark mb-6" />
 
           {/* KYC SECTION */}
           <h3 className="font-semibold mb-3">KYC Information</h3>
@@ -272,11 +272,11 @@ const UserDetails = ({ user, onClose, onKycEditAllowed, onKycStatusUpdated }) =>
               <div className="flex items-center gap-2">
                 <span className="font-semibold">KYC Status:</span>
                 {kyc.status === "approved" ? (
-                  <CheckCircleIcon className="w-5 h-5 text-green-600" />
+                  <CheckCircleIcon className="w-5 h-5 text-green-600 dark:text-green-400" />
                 ) : kyc.status === "pending" ? (
-                  <ExclamationTriangleIcon className="w-5 h-5 text-yellow-600" />
+                  <ExclamationTriangleIcon className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
                 ) : (
-                  <XCircleIcon className="w-5 h-5 text-red-600" />
+                  <XCircleIcon className="w-5 h-5 text-red-600 dark:text-red-400" />
                 )}
                 <span className="text-sm capitalize">
                   {kyc.status}
@@ -380,7 +380,7 @@ const UserDetails = ({ user, onClose, onKycEditAllowed, onKycStatusUpdated }) =>
 
       {remarksModal.open && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
-          <div className="max-w-md w-full mx-4 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-300 dark:border-slate-700 p-5 relative">
+          <div className="max-w-md w-full mx-4 bg-card-light dark:bg-card-dark rounded-2xl shadow-xl border border-border-light dark:border-border-dark p-5 relative">
             <h3 className="text-lg font-semibold mb-2">Rejection Remarks</h3>
             <p className="text-xs opacity-70 mb-3">
               Provide a clear reason so the user can fix and resubmit.
@@ -391,7 +391,7 @@ const UserDetails = ({ user, onClose, onKycEditAllowed, onKycStatusUpdated }) =>
                 setRemarksModal((prev) => ({ ...prev, value: e.target.value }))
               }
               rows={4}
-              className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-sm"
+              className="w-full px-3 py-2 rounded-lg border bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark text-sm"
               placeholder="Enter rejection remarks..."
             />
             <div className="mt-4 flex justify-end gap-2">
@@ -401,7 +401,7 @@ const UserDetails = ({ user, onClose, onKycEditAllowed, onKycStatusUpdated }) =>
                   setRemarksModal({ open: false, value: "" });
                   setPendingAction(null);
                 }}
-                className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-sm hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="px-4 py-2 rounded-lg border border-border-light dark:border-border-dark text-sm hover:bg-hover-light dark:hover:bg-hover-dark"
               >
                 Cancel
               </button>
@@ -426,7 +426,7 @@ const DocumentThumb = ({ label, src, onClick }) => (
     <img
       src={src}
       alt={label}
-      className="w-full h-32 object-cover rounded-lg border border-slate-300 dark:border-slate-700"
+      className="w-full h-32 object-cover rounded-lg border border-border-light dark:border-border-dark"
       onClick={onClick}
     />
 
@@ -445,7 +445,7 @@ const DocumentThumb = ({ label, src, onClick }) => (
 const FullImageModal = ({ src, onClose }) => (
   <div className="fixed inset-0 bg-black/70 z-50 flex justify-center items-center">
     <button
-      className="absolute top-4 right-4 bg-white dark:bg-slate-900 p-2 rounded-full shadow"
+      className="absolute top-4 right-4 bg-card-light dark:bg-card-dark p-2 rounded-full shadow"
       onClick={onClose}
     >
       <XMarkIcon className="w-6 h-6" />

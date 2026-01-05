@@ -45,19 +45,19 @@ const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
         />
       )}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transform transition-transform duration-200 md:static md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-card-light dark:bg-card-dark border-r border-border-light dark:border-border-dark flex flex-col transform transition-transform duration-200 md:static md:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Brand */}
-        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200 dark:border-slate-800">
+        <div className="h-16 flex items-center justify-between px-6 border-b border-border-light dark:border-border-dark">
           <span className="text-xl font-bold text-primary-light dark:text-primary-dark">
             <Link to="/admin/dashboard">BeemaSathi</Link>
           </span>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 md:hidden"
+            className="p-1 rounded-lg hover:bg-hover-light dark:hover:bg-hover-dark md:hidden"
             aria-label="Close sidebar"
           >
             <XMarkIcon className="w-5 h-5" />
@@ -65,7 +65,7 @@ const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-4 py-4 space-y-1 overflow-hidden text-text-light dark:text-text-dark">
           {navItems.map((item) => (
             <NavLink
               key={item.name}
@@ -78,7 +78,7 @@ const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
                 ${
                   isActive
                     ? "bg-primary-light/10 text-primary-light dark:text-primary-dark"
-                    : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    : "text-muted-light dark:text-muted-dark hover:bg-hover-light dark:hover:bg-hover-dark"
                 }
               `
               }

@@ -19,6 +19,9 @@ const AppShell = () => {
 
   const isAdmin = location.pathname.startsWith("/admin");
   const isClient = location.pathname.startsWith("/client");
+  const showGuestCompare =
+    location.pathname === "/policies" &&
+    !!sessionStorage.getItem("client_token");
 
   const hideGlobalFooter = isClient || isAdmin;
 
@@ -31,8 +34,8 @@ const AppShell = () => {
       {/* Global Navbar */}
       <Navbar />
 
-      {/* Client compare bar (only show in /client routes) */}
-      {isClient && <CompareBar />}
+      {/* Client compare bar (show in /client or guest policies when logged in) */}
+      {(isClient || showGuestCompare) && <CompareBar />}
 
       {/* Routes */}
       <AppRoutes />

@@ -83,7 +83,7 @@ const Dashboard = () => {
       {/* PAGE TITLE */}
       <div>
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <p className="text-sm text-muted-light dark:text-muted-dark">
           Overview of system activity
         </p>
       </div>
@@ -99,7 +99,7 @@ const Dashboard = () => {
 
       {/* PLACEHOLDER SECTIONS */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6">
+        <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold">Recent Payments</h2>
             <button
@@ -128,13 +128,13 @@ const Dashboard = () => {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-muted-light dark:text-muted-dark">
               No recent payments yet.
             </p>
           )}
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6">
+        <div className="bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold">Upcoming Renewals</h2>
             <button
@@ -165,7 +165,7 @@ const Dashboard = () => {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-muted-light dark:text-muted-dark">
               No upcoming renewals.
             </p>
           )}

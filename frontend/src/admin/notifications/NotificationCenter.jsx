@@ -40,7 +40,7 @@ const NotificationCenter = () => {
         n.user?.name?.toLowerCase().includes(q) ||
         n.user?.email?.toLowerCase().includes(q);
 
-      const type = n.type || "system";
+      const type = n.type === "payment" ? "system" : n.type || "system";
       const matchCat =
         category === "all" ||
         (category === "system" && type === "system") ||
@@ -78,7 +78,7 @@ const NotificationCenter = () => {
       {/* FILTER BAR */}
       <div className="flex flex-col sm:flex-row gap-4">
         {/* Search */}
-        <div className="flex items-center px-3 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 flex-1">
+        <div className="flex items-center px-3 py-2 rounded-lg border bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark flex-1">
           <MagnifyingGlassIcon className="w-5 h-5 opacity-70 mr-2" />
           <input
             type="text"
@@ -95,7 +95,7 @@ const NotificationCenter = () => {
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="px-3 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+            className="px-3 py-2 rounded-lg border bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark"
           >
             <option value="all">All Notifications</option>
             <option value="system">System Generated</option>
@@ -105,9 +105,9 @@ const NotificationCenter = () => {
       </div>
 
       {/* NOTIFICATIONS TABLE */}
-      <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+      <div className="overflow-x-auto rounded-xl border border-border-light dark:border-border-dark">
         <table className="w-full text-sm">
-          <thead className="bg-slate-100 dark:bg-slate-800">
+          <thead className="bg-hover-light dark:bg-hover-dark text-muted-light dark:text-muted-dark">
             <tr>
               <th className="px-4 py-3 text-left">User</th>
               <th className="px-4 py-3 text-left">Title</th>
@@ -121,7 +121,7 @@ const NotificationCenter = () => {
             {filtered.map((n) => (
               <tr
                 key={n.id}
-                className="border-t border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/30"
+                className="border-t border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark"
               >
                 <td className="px-4 py-3">
                   {n.user ? (
@@ -139,7 +139,8 @@ const NotificationCenter = () => {
                 <td className="px-4 py-3">{n.message}</td>
 
                 <td className="px-4 py-3 capitalize">
-                  {(n.type || "system") === "system" ? (
+                  {(n.type || "system") === "system" ||
+                  (n.type || "system") === "payment" ? (
                     <span className="text-xs text-blue-600 dark:text-blue-400 font-semibold">
                       SYSTEM
                     </span>

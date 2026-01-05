@@ -121,7 +121,7 @@ const UserList = () => {
           placeholder="Search name, email or phone"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 px-4 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 focus:outline-none"
+          className="flex-1 px-4 py-2 rounded-lg border bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark focus:outline-none"
         />
 
         <div className="flex items-center gap-2">
@@ -129,7 +129,7 @@ const UserList = () => {
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="px-3 py-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+            className="px-3 py-2 rounded-lg border bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark"
           >
             <option value="all">All</option>
             <option value="approved">Approved</option>
@@ -141,9 +141,9 @@ const UserList = () => {
       </div>
 
       {/* TABLE */}
-      <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+      <div className="overflow-x-auto rounded-xl border border-border-light dark:border-border-dark">
         <table className="w-full text-sm">
-          <thead className="bg-slate-100 dark:bg-slate-800">
+          <thead className="bg-hover-light dark:bg-hover-dark text-muted-light dark:text-muted-dark">
             <tr>
               <th className="px-4 py-3 text-left">User</th>
               <th className="px-4 py-3 text-left">Phone</th>
@@ -157,7 +157,7 @@ const UserList = () => {
             {filtered.map((u) => (
               <tr
                 key={u.id}
-                className="border-t border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/40"
+                className="border-t border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark"
               >
                 <td className="px-4 py-3 font-medium">
                   <div>{u.name}</div>
@@ -175,8 +175,8 @@ const UserList = () => {
                     onClick={() => setSelectedUser(u)}
                     className="
                       text-xs font-semibold px-3 py-1 rounded-lg
-                      border border-slate-200 dark:border-slate-700
-                      hover:bg-slate-100 dark:hover:bg-slate-800 transition
+                      border border-border-light dark:border-border-dark
+                      hover:bg-hover-light dark:hover:bg-hover-dark transition
                     "
                   >
                     View

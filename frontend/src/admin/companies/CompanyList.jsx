@@ -9,10 +9,12 @@ import {
 } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 import { useAdminToast } from "../ui/AdminToast";
+import { useAdminConfirm } from "../ui/AdminConfirm";
 
 const CompanyList = () => {
   const navigate = useNavigate();
   const { addToast } = useAdminToast();
+  const confirm = useAdminConfirm();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -61,6 +63,23 @@ const CompanyList = () => {
     }
   };
 
+  const deleteCompany = async (company) => {
+    const ok = await confirm(`Delete company "${company.name}"?`, {
+      title: "Delete Company",
+      confirmText: "Delete",
+    });
+    if (!ok) {
+      return;
+    }
+    try {
+      await API.delete(`/admin/companies/${company.id}`);
+      load();
+      addToast({ type: "success", title: "Company deleted", message: "Company removed successfully." });
+    } catch (e) {
+      addToast({ type: "error", title: "Delete failed", message: "Failed to delete company." });
+    }
+  };
+
   if (loading)
     return <p className="opacity-70">Loading companies...</p>;
 
@@ -99,8 +118,8 @@ const CompanyList = () => {
           onChange={(e) => setSearch(e.target.value)}
           className="
             flex-1 px-4 py-2 rounded-lg border
-            bg-white dark:bg-slate-900
-            border-slate-200 dark:border-slate-800
+            bg-card-light dark:bg-card-dark
+            border-border-light dark:border-border-dark
             focus:outline-none
           "
         />
@@ -112,8 +131,8 @@ const CompanyList = () => {
             onChange={(e) => setStatus(e.target.value)}
             className="
               px-3 py-2 rounded-lg border
-              bg-white dark:bg-slate-900
-              border-slate-200 dark:border-slate-800
+              bg-card-light dark:bg-card-dark
+              border-border-light dark:border-border-dark
             "
           >
             <option value="all">All</option>
@@ -124,9 +143,9 @@ const CompanyList = () => {
       </div>
 
       {/* TABLE */}
-      <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+      <div className="overflow-x-auto rounded-xl border border-border-light dark:border-border-dark">
         <table className="w-full text-sm">
-          <thead className="bg-slate-100 dark:bg-slate-800">
+          <thead className="bg-hover-light dark:bg-hover-dark text-muted-light dark:text-muted-dark">
             <tr>
               <th className="px-4 py-3 text-left">Company</th>
               <th className="px-4 py-3 text-left">Contact</th>
@@ -139,7 +158,7 @@ const CompanyList = () => {
             {filtered.map((c) => (
               <tr
                 key={c.id}
-                className="border-t border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/40"
+                className="border-t border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark"
               >
                 <td className="px-4 py-3 font-medium flex items-center gap-2">
                   <BuildingOfficeIcon className="w-4 h-4 opacity-70" />
@@ -168,8 +187,8 @@ const CompanyList = () => {
                     onClick={() => navigate(`/admin/companies/${c.id}/edit`)}
                     className="
                       text-xs font-semibold px-3 py-1 rounded-lg
-                      border border-slate-300 dark:border-slate-700
-                      hover:bg-slate-100 dark:hover:bg-slate-800 transition
+                      border border-border-light dark:border-border-dark
+                      hover:bg-hover-light dark:hover:bg-hover-dark transition
                     "
                   >
                     Edit
@@ -185,7 +204,20 @@ const CompanyList = () => {
                   >
                     {c.is_active ? "Disable" : "Enable"}
                   </button>
-                </td>
+
+                  <button
+                    onClick={() => deleteCompany(c)}
+                    className="
+                      text-xs font-semibold px-3 py-1 rounded-lg border
+                      border-border-light dark:border-border-dark
+                      text-red-600 dark:text-red-300
+                      hover:bg-hover-light dark:hover:bg-hover-dark
+                      transition-colors
+                    "
+                  >
+                    Delete
+                  </button>
+               </td>
               </tr>
             ))}
           </tbody>

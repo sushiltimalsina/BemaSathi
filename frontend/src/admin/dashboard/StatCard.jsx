@@ -4,13 +4,13 @@ const StatCard = ({ title, value, subtitle, icon: Icon, trend, onClick }) => {
   return (
     <div
       onClick={onClick}
-      className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm transition ${
+      className={`bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl p-5 shadow-sm transition ${
         onClick ? "cursor-pointer hover:shadow-md" : ""
       }`}
     >
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-muted-light dark:text-muted-dark">
             {title}
           </p>
           <h3 className="text-2xl font-bold mt-1">
@@ -26,7 +26,7 @@ const StatCard = ({ title, value, subtitle, icon: Icon, trend, onClick }) => {
       </div>
 
       {subtitle && (
-        <p className="text-xs mt-3 text-slate-500 dark:text-slate-400">
+        <p className="text-xs mt-3 text-muted-light dark:text-muted-dark">
           {subtitle}
         </p>
       )}
