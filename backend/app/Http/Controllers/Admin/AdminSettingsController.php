@@ -6,13 +6,14 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Mail;
 
 class AdminSettingsController extends Controller
 {
     private string $file = 'admin_settings.json';
     private string $envFile = '.env';
 
-    public function show()
+    public function show(Request $request)
     {
         if (Storage::disk('local')->exists($this->file)) {
             $content = json_decode(Storage::disk('local')->get($this->file), true);
@@ -20,22 +21,42 @@ class AdminSettingsController extends Controller
             $content = [];
         }
 
+        $envValues = $request->query('source') === 'env'
+            ? $this->readEnvFile()
+            : [];
+
         $defaults = [
             'renewal_grace_days' => 7,
             'default_billing_cycle' => 'yearly',
-            'esewa_merchant_id' => env('ESEWA_MERCHANT_CODE', ''),
-            'esewa_secret_key' => env('ESEWA_SECRET_KEY', ''),
-            'khalti_public_key' => env('KHALTI_PUBLIC_KEY', ''),
-            'khalti_secret_key' => env('KHALTI_SECRET_KEY', ''),
-            'smtp_host' => env('MAIL_HOST', ''),
-            'smtp_port' => env('MAIL_PORT', 587),
-            'smtp_username' => env('MAIL_USERNAME', ''),
-            'smtp_password' => env('MAIL_PASSWORD', ''),
-            'mail_from_name' => env('MAIL_FROM_NAME', config('app.name')),
-            'mail_from_address' => env('MAIL_FROM_ADDRESS', ''),
-            'system_name' => config('app.name', 'BeemaSathi'),
-            'website_url' => env('APP_FRONTEND_URL', config('app.url')),
+            'esewa_merchant_id' => $envValues['ESEWA_MERCHANT_CODE']
+                ?? env('ESEWA_MERCHANT_CODE', ''),
+            'esewa_secret_key' => $envValues['ESEWA_SECRET_KEY']
+                ?? env('ESEWA_SECRET_KEY', ''),
+            'khalti_public_key' => $envValues['KHALTI_PUBLIC_KEY']
+                ?? env('KHALTI_PUBLIC_KEY', ''),
+            'khalti_secret_key' => $envValues['KHALTI_SECRET_KEY']
+                ?? env('KHALTI_SECRET_KEY', ''),
+            'smtp_host' => $envValues['MAIL_HOST']
+                ?? env('MAIL_HOST', ''),
+            'smtp_port' => $envValues['MAIL_PORT']
+                ?? env('MAIL_PORT', 587),
+            'smtp_username' => $envValues['MAIL_USERNAME']
+                ?? env('MAIL_USERNAME', ''),
+            'smtp_password' => $envValues['MAIL_PASSWORD']
+                ?? env('MAIL_PASSWORD', ''),
+            'mail_from_name' => $envValues['MAIL_FROM_NAME']
+                ?? env('MAIL_FROM_NAME', config('app.name')),
+            'mail_from_address' => $envValues['MAIL_FROM_ADDRESS']
+                ?? env('MAIL_FROM_ADDRESS', ''),
+            'system_name' => $envValues['APP_NAME']
+                ?? config('app.name', 'BeemaSathi'),
+            'website_url' => $envValues['APP_FRONTEND_URL']
+                ?? env('APP_FRONTEND_URL', config('app.url')),
         ];
+
+        if ($request->query('source') === 'env') {
+            return response()->json($defaults);
+        }
 
         return response()->json(array_merge($defaults, $content));
     }
@@ -111,6 +132,12 @@ class AdminSettingsController extends Controller
             'mail.from.address' => $data['mail_from_address'] ?? config('mail.from.address'),
         ]);
 
+        $fromAddress = $data['mail_from_address'] ?? config('mail.from.address');
+        $fromName = $data['mail_from_name'] ?? config('mail.from.name');
+        if ($fromAddress) {
+            Mail::alwaysFrom($fromAddress, $fromName);
+        }
+
         return response()->json([
             'message' => 'Settings saved successfully',
             'data' => $data,
@@ -148,5 +175,47 @@ class AdminSettingsController extends Controller
         $string = (string) $value;
         $escaped = str_replace('"', '\"', $string);
         return "\"{$escaped}\"";
+    }
+
+    private function readEnvFile(): array
+    {
+        $path = base_path($this->envFile);
+        if (!File::exists($path)) {
+            return [];
+        }
+
+        $lines = preg_split("/\r\n|\n|\r/", (string) File::get($path));
+        $values = [];
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '' || str_starts_with($line, '#')) {
+                continue;
+            }
+
+            $parts = explode('=', $line, 2);
+            if (count($parts) !== 2) {
+                continue;
+            }
+
+            [$key, $value] = $parts;
+            $key = trim($key);
+            $value = trim($value);
+
+            if ($key === '') {
+                continue;
+            }
+
+            if (
+                (str_starts_with($value, '"') && str_ends_with($value, '"')) ||
+                (str_starts_with($value, "'") && str_ends_with($value, "'"))
+            ) {
+                $value = substr($value, 1, -1);
+            }
+
+            $values[$key] = $value;
+        }
+
+        return $values;
     }
 }
