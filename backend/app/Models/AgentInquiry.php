@@ -20,11 +20,13 @@ class AgentInquiry extends Model
         'agent_email',
         'agent_phone',
         'notified_at',
+        'renotified_at',
     ];
 
     protected $casts = [
         'premium_amount' => 'decimal:2',
         'notified_at' => 'datetime',
+        'renotified_at' => 'datetime',
     ];
 
     public function user()

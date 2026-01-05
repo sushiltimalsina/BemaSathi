@@ -56,6 +56,7 @@ const AgentInquiryList = () => {
   const notifyAgent = async (item) => {
     const days = daysSince(item.notified_at);
     const canRenotify = item.notified_at && days !== null && days >= 3;
+    if (item.renotified_at) return;
     if (item.notified_at && !canRenotify) return;
 
     const ok = await confirm(
@@ -75,7 +76,11 @@ const AgentInquiryList = () => {
       setItems((prev) =>
         prev.map((row) =>
           row.id === item.id
-            ? { ...row, notified_at: updated?.notified_at || new Date().toISOString() }
+            ? {
+                ...row,
+                notified_at: updated?.notified_at || row.notified_at,
+                renotified_at: updated?.renotified_at || row.renotified_at,
+              }
             : row
         )
       );
@@ -109,16 +114,16 @@ const AgentInquiryList = () => {
           onChange={(e) => setSearch(e.target.value)}
           className="
             flex-1 px-4 py-2 rounded-lg border
-            bg-white dark:bg-slate-900
-            border-slate-200 dark:border-slate-800
+            bg-card-light dark:bg-card-dark
+            border-border-light dark:border-border-dark
             focus:outline-none
           "
         />
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+      <div className="overflow-x-auto rounded-xl border border-border-light dark:border-border-dark">
         <table className="w-full text-sm">
-          <thead className="bg-slate-100 dark:bg-slate-800">
+          <thead className="bg-hover-light dark:bg-hover-dark text-muted-light dark:text-muted-dark">
             <tr>
               <th className="px-4 py-3 text-left">User</th>
               <th className="px-4 py-3 text-left">Policy</th>
@@ -134,7 +139,7 @@ const AgentInquiryList = () => {
             {filtered.map((i) => (
               <tr
                 key={i.id}
-                className="border-t border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/40"
+                className="border-t border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark"
               >
                 <td className="px-4 py-3">
                   <div>{i.user_name || "-"}</div>
@@ -153,19 +158,26 @@ const AgentInquiryList = () => {
                   <button
                     type="button"
                     onClick={() => notifyAgent(i)}
-                    disabled={!!i.notified_at && !(daysSince(i.notified_at) >= 3)}
+                    disabled={!!i.renotified_at || (!!i.notified_at && !(daysSince(i.notified_at) >= 3))}
                     className={`text-xs font-semibold px-3 py-1 rounded-lg transition inline-flex items-center gap-1 ${
-                      i.notified_at && !(daysSince(i.notified_at) >= 3)
-                        ? "bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-300 cursor-not-allowed"
+                      i.renotified_at || (i.notified_at && !(daysSince(i.notified_at) >= 3))
+                        ? "bg-hover-light text-muted-light dark:bg-hover-dark dark:text-muted-dark border border-border-light dark:border-border-dark cursor-not-allowed"
                         : "bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
                     }`}
                   >
                     <EnvelopeIcon className="w-4 h-4" />
-                    {i.notified_at ? (daysSince(i.notified_at) >= 3 ? "Renotify" : "Notified") : "Notify"}
+                    {i.renotified_at
+                      ? "Renotified"
+                      : i.notified_at
+                      ? daysSince(i.notified_at) >= 3
+                        ? "Renotify"
+                        : "Notified"
+                      : "Notify"}
                   </button>
-                  {i.notified_at && (
+                  {(i.renotified_at || i.notified_at) && (
                     <div className="mt-1 text-xs opacity-70">
-                      Last notified: {new Date(i.notified_at).toLocaleString()}
+                      {i.renotified_at ? "Renotified" : "Last notified"}:{" "}
+                      {new Date(i.renotified_at || i.notified_at).toLocaleString()}
                     </div>
                   )}
                 </td>

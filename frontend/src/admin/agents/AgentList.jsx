@@ -9,10 +9,12 @@ import {
 } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 import { useAdminToast } from "../ui/AdminToast";
+import { useAdminConfirm } from "../ui/AdminConfirm";
 
 const AgentList = () => {
   const navigate = useNavigate();
   const { addToast } = useAdminToast();
+  const confirm = useAdminConfirm();
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -60,6 +62,23 @@ const AgentList = () => {
     }
   };
 
+  const deleteAgent = async (agent) => {
+    const ok = await confirm(`Delete agent "${agent.name}"?`, {
+      title: "Delete Agent",
+      confirmText: "Delete",
+    });
+    if (!ok) {
+      return;
+    }
+    try {
+      await API.delete(`/admin/agents/${agent.id}`);
+      load();
+      addToast({ type: "success", title: "Agent deleted", message: "Agent removed successfully." });
+    } catch (e) {
+      addToast({ type: "error", title: "Delete failed", message: "Failed to delete agent." });
+    }
+  };
+
   if (loading) return <p className="opacity-70">Loading agents...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
 
@@ -95,7 +114,7 @@ const AgentList = () => {
           onChange={(e) => setSearch(e.target.value)}
           className="
             flex-1 px-4 py-2 rounded-lg border
-            bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700
+            bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark
           "
         />
 
@@ -106,7 +125,7 @@ const AgentList = () => {
             onChange={(e) => setStatus(e.target.value)}
             className="
               px-3 py-2 rounded-lg border
-              bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700
+              bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark
             "
           >
             <option value="all">All</option>
@@ -117,9 +136,9 @@ const AgentList = () => {
       </div>
 
       {/* TABLE */}
-      <div className="overflow-x-auto rounded-xl border border-slate-300 dark:border-slate-700">
+      <div className="overflow-x-auto rounded-xl border border-border-light dark:border-border-dark">
         <table className="w-full text-sm">
-          <thead className="bg-slate-100 dark:bg-slate-800">
+          <thead className="bg-hover-light dark:bg-hover-dark text-muted-light dark:text-muted-dark">
             <tr>
               <th className="px-4 py-3 text-left">Agent</th>
               <th className="px-4 py-3 text-left">Contact</th>
@@ -132,7 +151,7 @@ const AgentList = () => {
             {filtered.map((a) => (
               <tr
                 key={a.id}
-                className="border-t border-slate-300 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/40"
+                className="border-t border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark"
               >
                 {/* AGENT NAME */}
                 <td className="px-4 py-3 font-medium flex items-center gap-2">
@@ -165,8 +184,8 @@ const AgentList = () => {
                     onClick={() => navigate(`/admin/agents/${a.id}/edit`)}
                     className="
                       text-xs font-semibold px-3 py-1 rounded-lg border
-                      border-slate-300 dark:border-slate-700
-                      hover:bg-slate-100 dark:hover:bg-slate-800 transition
+                      border-border-light dark:border-border-dark
+                      hover:bg-hover-light dark:hover:bg-hover-dark transition
                     "
                   >
                     Edit
@@ -193,6 +212,19 @@ const AgentList = () => {
                       </>
                     )}
                   </button>
+
+                <button
+                  onClick={() => deleteAgent(a)}
+                  className="
+                    text-xs font-semibold px-3 py-1 rounded-lg border
+                    border-border-light dark:border-border-dark
+                    text-red-600 dark:text-red-300
+                    hover:bg-hover-light dark:hover:bg-hover-dark
+                    transition-colors
+                  "
+                >
+                  Delete
+                </button>
                 </td>
               </tr>
             ))}
