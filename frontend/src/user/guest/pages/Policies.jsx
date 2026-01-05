@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import API from "../../../api/api";
+import { useCompare } from "../../../context/CompareContext";
 import {
   FunnelIcon,
   ArrowsRightLeftIcon,
@@ -45,15 +46,19 @@ const GuestPolicies = () => {
   const [displayed, setDisplayed] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [recommendedOrder, setRecommendedOrder] = useState([]);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 12;
 
   const [selectedType, setSelectedType] = useState("all");
   const [sortBy, setSortBy] = useState("recommended");
-  const [selectedForCompare, setSelectedForCompare] = useState([]);
+  const [ownedMap, setOwnedMap] = useState({});
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const filterOptions = ["all", "health", "term-life", "whole-life"];
 
   const location = useLocation();
   const navigate = useNavigate();
+  const { compare, addToCompare, removeFromCompare } = useCompare();
 
   // Detect client login
   const token = sessionStorage.getItem("client_token");
@@ -61,6 +66,7 @@ const GuestPolicies = () => {
   const user = JSON.parse(sessionStorage.getItem("client_user") || "{}");
   const userAge = user.dob ? calculateAge(user.dob) : null;
   const multiplier = userAge ? ageMultiplier(userAge) : 1;
+  const fmt = (n) => Number(n || 0).toLocaleString("en-IN");
 
   // Read query params (?type, ?compareStart)
   useEffect(() => {
@@ -75,11 +81,19 @@ const GuestPolicies = () => {
     }
 
     if (isClient && compareStart) {
-      setSelectedForCompare([compareStart]);
-    } else if (!compareStart) {
-      setSelectedForCompare([]);
+      const existing = compare.some(
+        (policy) => String(policy.id) === String(compareStart)
+      );
+      if (!existing) {
+        const match = policies.find(
+          (policy) => String(policy.id) === String(compareStart)
+        );
+        if (match) {
+          addToCompare(match);
+        }
+      }
     }
-  }, [location.search, isClient]);
+  }, [location.search, isClient, compare, policies, addToCompare]);
 
   // Fetch all policies once
   useEffect(() => {
@@ -94,6 +108,7 @@ const GuestPolicies = () => {
           normalized_type: normalizeType(p.insurance_type),
         }));
         setPolicies(data);
+        setRecommendedOrder(buildRecommendedOrder(data));
       } catch (err) {
         console.error(err);
         const status = err?.response?.status;
@@ -110,6 +125,30 @@ const GuestPolicies = () => {
     fetchPolicies();
   }, []);
 
+  useEffect(() => {
+    const fetchOwned = async () => {
+      if (!isClient) {
+        setOwnedMap({});
+        return;
+      }
+      try {
+        const res = await API.get("/my-requests");
+        const map = {};
+        (res.data || []).forEach((req) => {
+          if (req.policy_id) {
+            map[String(req.policy_id)] = req.id;
+          }
+        });
+        setOwnedMap(map);
+      } catch (err) {
+        console.error("Owned policies fetch failed:", err);
+        setOwnedMap({});
+      }
+    };
+
+    fetchOwned();
+  }, [isClient]);
+
   // Apply filters + sorting whenever policies / sortBy / selectedType change
   useEffect(() => {
     let temp = [...policies];
@@ -120,23 +159,28 @@ const GuestPolicies = () => {
     }
 
     // Sorting
-    if (sortBy === "premium_low") {
+    if (sortBy === "recommended") {
+      const indexById = new Map(
+        recommendedOrder.map((id, idx) => [String(id), idx])
+      );
+      temp.sort(
+        (a, b) =>
+          (indexById.get(String(a.id)) ?? Number.MAX_SAFE_INTEGER) -
+          (indexById.get(String(b.id)) ?? Number.MAX_SAFE_INTEGER)
+      );
+    } else if (sortBy === "premium_low") {
       temp.sort((a, b) => a.premium_amt - b.premium_amt);
     } else if (sortBy === "coverage_high") {
       temp.sort((a, b) => b.coverage_limit - a.coverage_limit);
-    } else {
-      // "Recommended" — rough composite score
-      temp.sort((a, b) => {
-        const covDiff = (b.coverage_limit || 0) - (a.coverage_limit || 0);
-        const premDiff = (a.premium_amt || 0) - (b.premium_amt || 0); // lower better
-        const ratingDiff = (b.company_rating || 0) - (a.company_rating || 0);
-
-        return covDiff * 2 + premDiff * 1 + ratingDiff * 3;
-      });
     }
 
     setDisplayed(temp);
+    setPage(1);
   }, [policies, sortBy, selectedType]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+  }, [page]);
 
   // Guest Compare Restriction
   const toggleCompareSelection = (policyId) => {
@@ -145,13 +189,17 @@ const GuestPolicies = () => {
       return;
     }
 
-    if (selectedForCompare.includes(policyId)) {
-      setSelectedForCompare(selectedForCompare.filter((id) => id !== policyId));
+    const idStr = String(policyId);
+    if (compare.some((policy) => String(policy.id) === idStr)) {
+      removeFromCompare(policyId);
       return;
     }
 
-    if (selectedForCompare.length === 2) return;
-    setSelectedForCompare([...selectedForCompare, policyId]);
+    if (compare.length >= 2) return;
+    const match = policies.find((policy) => String(policy.id) === idStr);
+    if (match) {
+      addToCompare(match);
+    }
   };
 
   const goToCompare = () => {
@@ -160,9 +208,9 @@ const GuestPolicies = () => {
       return;
     }
 
-    if (selectedForCompare.length !== 2) return;
+    if (compare.length !== 2) return;
 
-    const [p1, p2] = selectedForCompare;
+    const [p1, p2] = compare.map((p) => p.id);
     navigate(`/client/compare?p1=${p1}&p2=${p2}`);
   };
 
@@ -293,14 +341,18 @@ const GuestPolicies = () => {
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {displayed
-                .filter(
-                  (policy) =>
-                    !selectedForCompare.some(
-                      (id) => String(id) === String(policy.id)
-                    )
-                )
-                .map((policy) => {
-                  const selected = selectedForCompare.includes(policy.id);
+                  .filter(
+                    (policy) =>
+                      !compare.some(
+                        (selected) => String(selected.id) === String(policy.id)
+                      )
+                  )
+                  .slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+                  .map((policy) => {
+                  const selected = compare.some(
+                    (selectedPolicy) =>
+                      String(selectedPolicy.id) === String(policy.id)
+                  );
 
                   // Premium display
                   const guestMin = policy.premium_amt;
@@ -350,7 +402,7 @@ const GuestPolicies = () => {
                             {isClient ? (
                               <span className="font-semibold text-green-600 dark:text-green-400 text-right">
                                 <span className="inline-flex items-center gap-1">
-                                  <span className="font-semibold">रु. {clientPremium}</span>
+                                  <span className="font-semibold">रु. {fmt(clientPremium)}</span>
                                 </span>
                                 <span className="block text-[10px] opacity-60">
                                   age-adjusted
@@ -359,7 +411,7 @@ const GuestPolicies = () => {
                             ) : (
                               <span className="font-semibold text-right">
                                 <span className="inline-flex items-center gap-1">
-                                  रु. {guestMin} – {guestMax}
+                                  रु. {fmt(guestMin)} – {fmt(guestMax)}
                                 </span>
                                 <span className="block text-[10px] opacity-60">
                                   login to see exact premium
@@ -372,7 +424,7 @@ const GuestPolicies = () => {
                           <div className="flex justify-between">
                             <span className="opacity-70">Coverage</span>
                             <span className="font-semibold">
-                              रु. {policy.coverage_limit}
+                              रु. {fmt(policy.coverage_limit)}
                             </span>
                           </div>
 
@@ -397,52 +449,108 @@ const GuestPolicies = () => {
                       </div>
 
                       {/* ACTION BUTTONS */}
-                      <div className="mt-5 flex flex-col gap-2">
+                      <div className="mt-5 flex flex-col gap-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            onClick={() => {
+                            const ownedRequest = ownedMap[String(policy.id)];
+                              if (!isClient) {
+                                navigate(`/login?redirect=/client/buy?policy=${policy.id}`);
+                                return;
+                              }
+                              if (ownedRequest) {
+                                navigate(`/client/payment?request=${ownedRequest}`);
+                                return;
+                              }
+                              navigate(`/client/buy?policy=${policy.id}`);
+                            }}
+                            className="w-full text-sm font-semibold rounded-lg py-2 bg-primary-light text-white hover:bg-primary-dark"
+                          >
+                          {ownedMap[String(policy.id)] ? "Renew Now" : "Buy Now"}
+                          </button>
+
+                          {!isClient ? (
+                            <button
+                              onClick={() => navigate("/login")}
+                              className="
+                                w-full flex items-center justify-center gap-2 text-sm font-semibold
+                                rounded-lg py-2
+                                bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark
+                                border border-border-light dark:border-border-dark
+                                hover:bg-hover-light dark:hover:bg-hover-dark
+                              "
+                            >
+                              Compare
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => toggleCompareSelection(policy.id)}
+                              className={`
+                                w-full flex items-center justify-center gap-2 text-sm font-semibold rounded-lg py-2
+                                ${
+                                  selected
+                                    ? "bg-primary-light text-white border border-primary-light shadow-sm dark:bg-primary-dark dark:border-primary-dark"
+                                    : "bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark border border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark"
+                                }
+                              `}
+                            >
+                              <ArrowsRightLeftIcon className="w-4 h-4" />
+                              {selected ? "Selected" : "Compare"}
+                            </button>
+                          )}
+                        </div>
+
                         <button
                           onClick={() => navigate(`/policy/${policy.id}`)}
                           className="w-full text-sm font-medium text-primary-light dark:text-primary-dark hover:underline text-left"
                         >
                           View Details
                         </button>
-
-                        {/* COMPARE BUTTON */}
-                        {!isClient ? (
-                          <button
-                            onClick={() => navigate("/login")}
-                            className="
-                              w-full flex items-center justify-center gap-2 text-sm font-semibold 
-                              rounded-lg py-2 
-                              bg-hover-light dark:bg-hover-dark
-                            "
-                          >
-                            Login to compare
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => toggleCompareSelection(policy.id)}
-                            className={`
-                              w-full flex items-center justify-center gap-2 text-sm font-semibold rounded-lg py-2
-                              ${
-                                selected
-                                  ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-300"
-                                  : "bg-primary-light text-white hover:bg-primary-dark"
-                              }
-                            `}
-                          >
-                            <ArrowsRightLeftIcon className="w-4 h-4" />
-                            {selected
-                              ? "Remove from compare"
-                              : "Select to compare"}
-                          </button>
-                        )}
                       </div>
                     </div>
                   );
                 })}
             </div>
 
+
+            {/* PAGINATION */}
+            {displayed.length > PAGE_SIZE && (
+              <div className="mt-8 flex items-center justify-center gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${
+                    page === 1
+                      ? "opacity-50 cursor-not-allowed border-border-light dark:border-border-dark"
+                      : "border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark"
+                  }`}
+                >
+                  Prev
+                </button>
+
+                <span className="text-xs opacity-70">
+                  Page {page} of {Math.ceil(displayed.length / PAGE_SIZE)}
+                </span>
+
+                <button
+                  onClick={() =>
+                    setPage((p) =>
+                      Math.min(Math.ceil(displayed.length / PAGE_SIZE), p + 1)
+                    )
+                  }
+                  disabled={page === Math.ceil(displayed.length / PAGE_SIZE)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${
+                    page === Math.ceil(displayed.length / PAGE_SIZE)
+                      ? "opacity-50 cursor-not-allowed border-border-light dark:border-border-dark"
+                      : "border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark"
+                  }`}
+                >
+                  Next
+                </button>
+              </div>
+            )}
             {/* COMPARE FOOTER — CLIENT ONLY */}
-            {isClient && selectedForCompare.length > 0 && (
+            {isClient && compare.length > 0 && (
               <div
                 className="
                   mt-8 flex flex-col sm:flex-row items-center justify-between gap-3 
@@ -452,18 +560,18 @@ const GuestPolicies = () => {
                 "
               >
                 <div className="text-xs sm:text-sm opacity-80">
-                  {selectedForCompare.length} polic
-                  {selectedForCompare.length > 1 ? "ies" : "y"} selected.
-                  {selectedForCompare.length < 2 && " Select one more."}
+                  {compare.length} polic
+                  {compare.length > 1 ? "ies" : "y"} selected.
+                  {compare.length < 2 && " Select one more."}
                 </div>
 
                 <button
-                  disabled={selectedForCompare.length !== 2}
+                  disabled={compare.length !== 2}
                   onClick={goToCompare}
                   className={`
                     inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold
                     ${
-                      selectedForCompare.length === 2
+                      compare.length === 2
                         ? "bg-primary-light text-white hover:bg-primary-dark"
                         : "bg-hover-light dark:bg-hover-dark opacity-60 cursor-not-allowed"
                     }
@@ -529,6 +637,48 @@ const GuestPolicies = () => {
       )}
     </div>
   );
+};
+
+const hashToSeed = (value) => {
+  let hash = 0;
+  const str = String(value || "guest");
+  for (let i = 0; i < str.length; i += 1) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash) || 1;
+};
+
+const mulberry32 = (seed) => {
+  let t = seed;
+  return () => {
+    t += 0x6d2b79f5;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+};
+
+const buildRecommendedOrder = (list) => {
+  const rawUser = sessionStorage.getItem("client_user");
+  let userId = "guest";
+  if (rawUser) {
+    try {
+      const parsed = JSON.parse(rawUser);
+      userId = parsed?.id ?? parsed?._id ?? parsed?.user_id ?? "guest";
+    } catch {
+      userId = "guest";
+    }
+  }
+
+  const seed = hashToSeed(userId);
+  const rand = mulberry32(seed);
+  const shuffled = [...list];
+  for (let i = shuffled.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rand() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled.map((p) => p.id);
 };
 
 export default GuestPolicies;

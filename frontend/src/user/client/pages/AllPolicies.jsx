@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import API from "../../../api/api";
 import { useNavigate, useLocation } from "react-router-dom";
 import useAuthSyncReady from "../../../hooks/useAuthSyncReady";
+import { useCompare } from "../../../context/CompareContext";
 import {
   ShieldCheckIcon,
   StarIcon,
@@ -15,6 +16,10 @@ const AllPolicies = () => {
   const [filtered, setFiltered] = useState([]);
 
   const [saved, setSaved] = useState([]);
+  const [ownedMap, setOwnedMap] = useState({});
+  const [kycStatus, setKycStatus] = useState("loading");
+  const [kycAllowEdit, setKycAllowEdit] = useState(false);
+  const { compare, addToCompare, removeFromCompare } = useCompare();
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -26,9 +31,7 @@ const AllPolicies = () => {
   const getTypeFromQuery = () => {
     const params = new URLSearchParams(location.search);
     const type = params.get("type");
-    return ["health", "term-life", "whole-life"].includes(type)
-      ? type
-      : "all";
+    return ["health", "term-life", "whole-life"].includes(type) ? type : "all";
   };
 
   const getCompareStartFromQuery = () => {
@@ -37,17 +40,14 @@ const AllPolicies = () => {
   };
 
   const [typeFilter, setTypeFilter] = useState(getTypeFromQuery);
-  const [sortOption, setSortOption] = useState("none");
+  const [sortOption, setSortOption] = useState("recommended");
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 12;
 
-  const [selected, setSelected] = useState(() => {
-    const start = getCompareStartFromQuery();
-    return start ? [start] : [];
-  });
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [recommendedOrder, setRecommendedOrder] = useState([]);
+  const [showCompareHint, setShowCompareHint] = useState(false);
 
   const effectivePremium = (p) => {
     const val =
@@ -65,12 +65,16 @@ const AllPolicies = () => {
   // LOAD POLICIES
   useEffect(() => {
     fetchPolicies();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (isClient) {
       fetchSaved();
+      fetchOwned();
+      fetchKycStatus();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClient]);
 
   useEffect(() => {
@@ -79,30 +83,51 @@ const AllPolicies = () => {
     };
 
     window.addEventListener("profile:updated", handleProfileUpdated);
-    return () => window.removeEventListener("profile:updated", handleProfileUpdated);
+    return () =>
+      window.removeEventListener("profile:updated", handleProfileUpdated);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // URL changes update filters
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const t = params.get("type");
-    const cs = params.get("compareStart");
+    const hint = params.get("compareHint");
 
     setTypeFilter(["health", "term-life", "whole-life"].includes(t) ? t : "all");
-    cs ? setSelected([cs]) : setSelected([]);
+    setShowCompareHint(hint === "1");
   }, [location.search]);
 
   // Re-filter when filters change
   useEffect(() => {
     applyFilters();
     setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [policies, typeFilter, sortOption]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+  }, [page]);
+
+  useEffect(() => {
+    if (!isClient) return;
+    const startId = getCompareStartFromQuery();
+    if (!startId) return;
+    if (compare.some((p) => String(p.id) === String(startId))) return;
+    const policy = policies.find((p) => String(p.id) === String(startId));
+    if (policy) {
+      addToCompare(policy);
+    }
+  }, [compare, policies, location.search, isClient, addToCompare]);
 
   const fetchPolicies = async () => {
     try {
+      setLoading(true);
       setError("");
       const res = await API.get("/policies");
-      setPolicies(res.data || []);
+      const list = res.data || [];
+      setPolicies(list);
+      setRecommendedOrder(buildRecommendedOrder(list));
     } catch (err) {
       console.error("Error loading policies:", err);
       const status = err?.response?.status;
@@ -111,8 +136,9 @@ const AllPolicies = () => {
       } else {
         setError("Unable to load policies at the moment.");
       }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const fetchSaved = async () => {
@@ -129,6 +155,44 @@ const AllPolicies = () => {
     }
   };
 
+  const fetchOwned = async () => {
+    try {
+      const res = await API.get("/my-requests");
+      const map = {};
+      (res.data || []).forEach((req) => {
+        if (req.policy_id) {
+          map[String(req.policy_id)] = req.id;
+        }
+      });
+      setOwnedMap(map);
+    } catch (err) {
+      console.error("Owned requests fetch failed", err);
+      setOwnedMap({});
+    }
+  };
+
+  const fetchKycStatus = async () => {
+    try {
+      const res = await API.get("/kyc/me");
+      const list = res.data?.data || [];
+      const latest = Array.isArray(list) ? list[0] : list;
+      setKycStatus(latest?.status || "not_submitted");
+      setKycAllowEdit(Boolean(latest?.allow_edit));
+    } catch (err) {
+      console.error("KYC status fetch failed", err);
+      setKycStatus("not_submitted");
+      setKycAllowEdit(false);
+    }
+  };
+
+  const ensureKycApproved = () => {
+    if (kycStatus === "approved" && !kycAllowEdit) {
+      return true;
+    }
+    navigate("/client/kyc");
+    return false;
+  };
+
   const applyFilters = () => {
     let temp = [...policies];
 
@@ -136,10 +200,19 @@ const AllPolicies = () => {
       temp = temp.filter((p) => p.insurance_type === typeFilter);
     }
 
-    if (sortOption === "premium-low") {
+    if (sortOption === "recommended") {
+      const indexById = new Map(
+        recommendedOrder.map((id, idx) => [String(id), idx])
+      );
+      temp.sort(
+        (a, b) =>
+          (indexById.get(String(a.id)) ?? Number.MAX_SAFE_INTEGER) -
+          (indexById.get(String(b.id)) ?? Number.MAX_SAFE_INTEGER)
+      );
+    } else if (sortOption === "premium_low") {
       temp.sort((a, b) => effectivePremium(a) - effectivePremium(b));
-    } else if (sortOption === "coverage-high") {
-      temp.sort((a, b) => b.coverage_limit - a.coverage_limit);
+    } else if (sortOption === "coverage_high") {
+      temp.sort((a, b) => (b.coverage_limit || 0) - (a.coverage_limit || 0));
     }
 
     setFiltered(temp);
@@ -164,28 +237,21 @@ const AllPolicies = () => {
     }
   };
 
-  const toggleSelect = (id) => {
-    // BLOCK GUESTS
+  const toggleSelect = (policy) => {
     if (!isClient) {
       navigate("/login");
       return;
     }
 
-    let newSelected;
-
-    if (selected.includes(id)) {
-      newSelected = selected.filter((x) => x !== id);
-    } else {
-      if (selected.length >= 2) return; // max 2 policies
-      newSelected = [...selected, id];
+    const idStr = String(policy.id);
+    if (compare.some((p) => String(p.id) === idStr)) {
+      removeFromCompare(policy.id);
+      return;
     }
 
-    setSelected(newSelected);
-  };
-
-  const compareSelected = () => {
-    if (selected.length !== 2) return;
-    navigate(`/client/compare?p1=${selected[0]}&p2=${selected[1]}`);
+    if (compare.length >= 2) return;
+    addToCompare(policy);
+    setShowCompareHint(false);
   };
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -199,14 +265,8 @@ const AllPolicies = () => {
     );
   }
   if (error) {
-    return (
-      <p className="text-center mt-20 text-red-500">
-        {error}
-      </p>
-    );
+    return <p className="text-center mt-20 text-red-500">{error}</p>;
   }
-
-  const lastSelectedId = selected.length > 0 ? selected[selected.length - 1] : null;
 
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark px-6 py-10 max-w-6xl mx-auto text-text-light dark:text-text-dark transition-colors relative">
@@ -214,8 +274,15 @@ const AllPolicies = () => {
         All Policies
       </h1>
 
+      {showCompareHint && (
+        <div className="mb-6 rounded-xl border border-amber-200/70 dark:border-amber-800/50 bg-amber-50/80 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-800 dark:text-amber-800">
+          Please select two policies of the same type and then click
+          "Compare Now".
+        </div>
+      )}
+
       {/* FILTERS */}
-      <div className="bg-card-light dark:bg-card-dark rounded-2xl p-4 border border-border-light dark:border-border-dark shadow-sm flex flex-col md:flex-row gap-4 md:items-center justify-between mb-8 transition-colors">
+      <div className="bg-card-light dark:bg-card-dark rounded-2xl p-4 border border-border-light dark:border-border-dark shadow-sm flex flex-col md:flex-row gap-4 md:items-center justify-between mb-6 transition-colors">
         {/* TYPE FILTER */}
         <div className="flex gap-2 text-xs">
           {["all", "health", "term-life", "whole-life"].map((type) => (
@@ -245,9 +312,9 @@ const AllPolicies = () => {
           onChange={(e) => setSortOption(e.target.value)}
           className="text-xs border border-border-light dark:border-border-dark rounded-lg px-3 py-2 bg-card-light dark:bg-card-dark hover:bg-hover-light dark:hover:bg-hover-dark transition-colors"
         >
-          <option value="none">Sort By</option>
-          <option value="premium-low">Premium (Low → High)</option>
-          <option value="coverage-high">Coverage (High → Low)</option>
+          <option value="recommended">Recommended</option>
+          <option value="premium_low">Lowest Premium</option>
+          <option value="coverage_high">Highest Coverage</option>
         </select>
       </div>
 
@@ -268,7 +335,7 @@ const AllPolicies = () => {
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <ShieldCheckIcon className="w-6 h-6 text-blue-600" />
-                    <h2 className="font-semibold">{p.policy_name}</h2>
+                    <h2 className="font-semibold text-white dark:text-black">{p.policy_name}</h2>
                   </div>
 
                   <p className="text-xs text-text-light dark:text-text-dark opacity-80 -mt-1">
@@ -288,7 +355,7 @@ const AllPolicies = () => {
 
               {/* TYPE TAG */}
               <span className="inline-block px-3 py-1 text-[10px] font-semibold rounded-full bg-primary-light/10 dark:bg-primary-dark/20 text-primary-light dark:text-primary-dark border border-primary-light/30 dark:border-primary-dark/30 mb-3">
-                {p.insurance_type.toUpperCase()}
+                {String(p.insurance_type || "").toUpperCase()}
               </span>
 
               {/* DESCRIPTION */}
@@ -302,8 +369,8 @@ const AllPolicies = () => {
                   <span className="text-text-light dark:text-text-dark opacity-80">
                     Personalized Premium:
                   </span>
-                  <span className="font-semibold">
-                    रु. {fmt(effectivePremium(p))}
+                  <span className="font-semibold text-green-600 dark:text-green-400">
+                   रु.{fmt(effectivePremium(p))}
                   </span>
                 </div>
 
@@ -311,9 +378,7 @@ const AllPolicies = () => {
                   <span className="text-text-light dark:text-text-dark opacity-80">
                     Coverage:
                   </span>
-                  <span className="font-semibold">
-                    रु.{fmt(p.coverage_limit)}
-                  </span>
+                  <span className="font-semibold text-white dark:text-black">रु.{fmt(p.coverage_limit)}</span>
                 </div>
 
                 {p.company_rating && (
@@ -330,46 +395,46 @@ const AllPolicies = () => {
               </div>
 
               {/* FOOTER BUTTONS */}
-              <div className="mt-5 flex justify-between items-center text-xs">
+              <div className="mt-5 flex flex-col gap-3 text-xs">
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => {
+                      if (!ensureKycApproved()) return;
+
+                      const ownedRequest = ownedMap[String(p.id)];
+                      if (ownedRequest) {
+                        navigate(`/client/payment?request=${ownedRequest}`);
+                        return;
+                      }
+                      navigate(`/client/buy?policy=${p.id}`);
+                    }}
+                    className="px-4 py-2 rounded-lg font-semibold bg-primary-light text-white hover:bg-primary-dark"
+                  >
+                    {ownedMap[String(p.id)] ? "Renew Now" : "Buy Now"}
+                  </button>
+
+                  <button
+                    onClick={() => toggleSelect(p)}
+                    className={`w-full flex items-center justify-center gap-2 text-sm font-semibold rounded-lg py-2 transition ${
+                      compare.some((policy) => String(policy.id) === String(p.id))
+                        ? "bg-primary-light text-white border border-primary-light shadow-sm dark:bg-primary-dark dark:border-primary-dark"
+                        : "bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark border border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark"
+                    }`}
+                  >
+                    <ArrowsRightLeftIcon className="w-4 h-4" />
+                    {compare.some((policy) => String(policy.id) === String(p.id))
+                      ? "Selected"
+                      : "Compare"}
+                  </button>
+                </div>
+
                 <button
                   onClick={() => navigate(`/policy/${p.id}`)}
-                  className="text-primary-light dark:text-primary-dark font-semibold hover:underline"
+                  className="text-primary-light dark:text-primary-dark font-semibold hover:underline text-left"
                 >
                   View Details
                 </button>
-
-                <button
-                  onClick={() => toggleSelect(p.id)}
-                  className={`px-4 py-2 rounded-lg border text-xs font-semibold transition ${
-                    selected.includes(p.id)
-                      ? "bg-primary-light text-white border-primary-light"
-                      : "bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark"
-                  }`}
-                >
-                  {selected.includes(p.id) ? "Selected" : "Compare"}
-                </button>
               </div>
-
-              {/* INLINE FLOATING COMPARE BUTTON INSIDE LAST SELECTED CARD */}
-              {lastSelectedId === p.id && selected.length > 0 && (
-                <div className="absolute -bottom-4 right-4">
-                  <button
-                    onClick={compareSelected}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold shadow-lg transition 
-                      ${
-                        selected.length === 2
-                          ? "bg-blue-600 hover:bg-blue-700 text-white"
-                          : "bg-gray-300 text-gray-700 cursor-not-allowed"
-                      }`}
-                    disabled={selected.length !== 2}
-                  >
-                    <ArrowsRightLeftIcon className="w-4 h-4" />
-                    {selected.length === 2
-                      ? "Compare Selected Policies"
-                      : `Select ${2 - selected.length} more`}
-                  </button>
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -414,4 +479,52 @@ const AllPolicies = () => {
   );
 };
 
+const hashToSeed = (value) => {
+  let hash = 0;
+  const str = String(value || "guest");
+  for (let i = 0; i < str.length; i += 1) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash) || 1;
+};
+
+const mulberry32 = (seed) => {
+  let t = seed;
+  return () => {
+    t += 0x6d2b79f5;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+};
+
+const buildRecommendedOrder = (list) => {
+  const rawUser = sessionStorage.getItem("client_user");
+  let userId = "guest";
+  if (rawUser) {
+    try {
+      const parsed = JSON.parse(rawUser);
+      userId = parsed?.id ?? parsed?._id ?? parsed?.user_id ?? "guest";
+    } catch {
+      userId = "guest";
+    }
+  }
+
+  const seed = hashToSeed(userId);
+  const rand = mulberry32(seed);
+  const shuffled = [...list];
+  for (let i = shuffled.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rand() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled.map((p) => p.id);
+};
+
 export default AllPolicies;
+
+
+
+
+
+
