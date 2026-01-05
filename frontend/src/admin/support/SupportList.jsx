@@ -91,7 +91,7 @@ const SupportList = () => {
       <h1 className="text-2xl font-bold">Support Tickets</h1>
 
       {/* FILTER BAR */}
-      <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-300 dark:border-slate-700 flex flex-col sm:flex-row gap-4">
+      <div className="bg-card-light dark:bg-card-dark p-4 rounded-xl border border-border-light dark:border-border-dark flex flex-col sm:flex-row gap-4">
 
         {/* Search */}
         <input
@@ -101,7 +101,7 @@ const SupportList = () => {
           onChange={(e) => setSearch(e.target.value)}
           className="
             flex-1 px-4 py-2 rounded-lg border
-            bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700
+            bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark
           "
         />
 
@@ -110,8 +110,8 @@ const SupportList = () => {
           value={status}
           onChange={(e) => setStatus(e.target.value)}
           className="
-            px-3 py-2 rounded-lg border bg-white dark:bg-slate-900
-            border-slate-300 dark:border-slate-700
+            px-3 py-2 rounded-lg border bg-card-light dark:bg-card-dark
+            border-border-light dark:border-border-dark
           "
         >
           <option value="all">All Status</option>
@@ -126,8 +126,8 @@ const SupportList = () => {
           value={priority}
           onChange={(e) => setPriority(e.target.value)}
           className="
-            px-3 py-2 rounded-lg border bg-white dark:bg-slate-900
-            border-slate-300 dark:border-slate-700
+            px-3 py-2 rounded-lg border bg-card-light dark:bg-card-dark
+            border-border-light dark:border-border-dark
           "
         >
           <option value="all">All Priority</option>
@@ -141,8 +141,8 @@ const SupportList = () => {
           value={category}
           onChange={(e) => setCategory(e.target.value)}
           className="
-            px-3 py-2 rounded-lg border bg-white dark:bg-slate-900
-            border-slate-300 dark:border-slate-700
+            px-3 py-2 rounded-lg border bg-card-light dark:bg-card-dark
+            border-border-light dark:border-border-dark
           "
         >
           <option value="all">All Category</option>
@@ -162,9 +162,9 @@ const SupportList = () => {
       {kycUpdateTickets.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-lg font-semibold">KYC Update Requests</h2>
-          <div className="overflow-x-auto border border-slate-300 dark:border-slate-700 rounded-xl">
+          <div className="overflow-x-auto border border-border-light dark:border-border-dark rounded-xl">
             <table className="w-full text-sm">
-              <thead className="bg-slate-100 dark:bg-slate-800">
+              <thead className="bg-hover-light dark:bg-hover-dark text-muted-light dark:text-muted-dark">
                 <tr>
                   <th className="px-4 py-3 text-left">User</th>
                   <th className="px-4 py-3 text-left">Subject</th>
@@ -179,7 +179,7 @@ const SupportList = () => {
                 {kycUpdateTickets.map((t) => (
                   <tr
                     key={t.id}
-                    className={`border-t border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/40 ${
+                    className={`border-t border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark ${
                       t.is_admin_seen === false
                         ? "bg-yellow-50/60 dark:bg-yellow-900/20"
                         : ""
@@ -222,8 +222,8 @@ const SupportList = () => {
                         }}
                         className="
                           flex items-center gap-2 px-3 py-1 rounded-lg text-xs border
-                          border-slate-300 dark:border-slate-700
-                          hover:bg-slate-100 dark:hover:bg-slate-800
+                          border-border-light dark:border-border-dark
+                          hover:bg-hover-light dark:hover:bg-hover-dark
                         "
                       >
                         <EyeIcon className="w-4 h-4" /> View
@@ -238,8 +238,8 @@ const SupportList = () => {
                         }}
                         className="
                           flex items-center gap-2 px-3 py-1 rounded-lg text-xs border
-                          border-slate-300 dark:border-slate-700
-                          hover:bg-slate-100 dark:hover:bg-slate-800
+                          border-border-light dark:border-border-dark
+                          hover:bg-hover-light dark:hover:bg-hover-dark
                         "
                         disabled={!t.user?.id}
                       >
@@ -259,9 +259,9 @@ const SupportList = () => {
       {guestTickets.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-lg font-semibold">Guest Support</h2>
-          <div className="overflow-x-auto border border-slate-300 dark:border-slate-700 rounded-xl">
+          <div className="overflow-x-auto border border-border-light dark:border-border-dark rounded-xl">
             <table className="w-full text-sm">
-              <thead className="bg-slate-100 dark:bg-slate-800">
+              <thead className="bg-hover-light dark:bg-hover-dark text-muted-light dark:text-muted-dark">
                 <tr>
                   <th className="px-4 py-3 text-left">Guest</th>
                   <th className="px-4 py-3 text-left">Subject</th>
@@ -275,7 +275,7 @@ const SupportList = () => {
                 {guestTickets.map((t) => (
                   <tr
                     key={t.id}
-                    className={`border-t border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/40 ${
+                    className={`border-t border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark ${
                       t.is_admin_seen === false
                         ? "bg-yellow-50/60 dark:bg-yellow-900/20"
                         : ""
@@ -318,8 +318,8 @@ const SupportList = () => {
                         }}
                         className="
                           flex items-center gap-2 px-3 py-1 rounded-lg text-xs border
-                          border-slate-300 dark:border-slate-700
-                          hover:bg-slate-100 dark:hover:bg-slate-800
+                          border-border-light dark:border-border-dark
+                          hover:bg-hover-light dark:hover:bg-hover-dark
                         "
                       >
                         <EyeIcon className="w-4 h-4" /> View
@@ -334,9 +334,9 @@ const SupportList = () => {
       )}
 
       {/* TABLE */}
-      <div className="overflow-x-auto border border-slate-300 dark:border-slate-700 rounded-xl">
+      <div className="overflow-x-auto border border-border-light dark:border-border-dark rounded-xl">
         <table className="w-full text-sm">
-          <thead className="bg-slate-100 dark:bg-slate-800">
+          <thead className="bg-hover-light dark:bg-hover-dark text-muted-light dark:text-muted-dark">
             <tr>
               <th className="px-4 py-3 text-left">User</th>
               <th className="px-4 py-3 text-left">Subject</th>
@@ -351,7 +351,7 @@ const SupportList = () => {
             {otherTickets.map((t) => (
               <tr
                 key={t.id}
-                className={`border-t border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/40 ${
+                className={`border-t border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark ${
                   t.is_admin_seen === false
                     ? "bg-yellow-50/60 dark:bg-yellow-900/20"
                     : ""
@@ -398,8 +398,8 @@ const SupportList = () => {
                     }}
                     className="
                       flex items-center gap-2 px-3 py-1 rounded-lg text-xs border
-                      border-slate-300 dark:border-slate-700
-                      hover:bg-slate-100 dark:hover:bg-slate-800
+                      border-border-light dark:border-border-dark
+                      hover:bg-hover-light dark:hover:bg-hover-dark
                     "
                   >
                     <EyeIcon className="w-4 h-4" /> View

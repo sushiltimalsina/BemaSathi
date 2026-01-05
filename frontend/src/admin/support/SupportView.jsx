@@ -6,6 +6,7 @@ import {
   ChatBubbleOvalLeftIcon,
   ClockIcon,
   CheckIcon,
+  ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
 import { useAdminToast } from "../ui/AdminToast";
 import { useAdminConfirm } from "../ui/AdminConfirm";
@@ -21,10 +22,31 @@ const SupportView = () => {
   const confirm = useAdminConfirm();
   const chatRef = useRef(null);
 
+  const isTabActive = () =>
+    typeof document !== "undefined" &&
+    document.visibilityState === "visible" &&
+    document.hasFocus();
+
+  const markSeenIfActive = async (data) => {
+    const hasUnread = data?.messages?.some(
+      (msg) => !msg.is_admin && msg.is_admin_seen === false
+    );
+
+    if (!hasUnread || !isTabActive()) return;
+
+    try {
+      await API.post(`/admin/support/${id}/mark-seen`);
+      window.dispatchEvent(new Event("support:refresh"));
+    } catch (e) {
+      // ignore
+    }
+  };
+
   const load = async () => {
     try {
       const res = await API.get(`/admin/support/${id}`);
       setTicket(res.data);
+      await markSeenIfActive(res.data);
     } catch (err) {
       console.error(err);
     }
@@ -43,16 +65,19 @@ const SupportView = () => {
   }, [ticket?.messages?.length]);
 
   useEffect(() => {
-    const markSeen = async () => {
-      try {
-        await API.post(`/admin/support/${id}/mark-seen`);
-        window.dispatchEvent(new Event("support:refresh"));
-      } catch (e) {
-        // ignore
-      }
+    const handleVisibility = () => {
+      if (!ticket) return;
+      markSeenIfActive(ticket);
     };
-    markSeen();
-  }, [id]);
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", handleVisibility);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", handleVisibility);
+    };
+  }, [ticket, id]);
 
   const sendReply = async () => {
     if (!message.trim() || ticket?.status === "closed") return;
@@ -98,20 +123,35 @@ const SupportView = () => {
       {/* HEADER */}
       <div>
         <h1 className="text-2xl font-bold">{ticket.subject}</h1>
-        <p className="text-sm opacity-70">
+        <p className="text-sm text-muted-light dark:text-muted-dark">
           From: {displayName} ({displayEmail})
         </p>
         {!ticket.user?.id && (
-          <p className="text-xs opacity-60">Guest phone: {displayPhone}</p>
+          <p className="text-xs text-muted-light dark:text-muted-dark">
+            Guest phone: {displayPhone}
+          </p>
         )}
       </div>
 
       {/* STATUS BUTTON */}
       <div className="flex gap-3">
         <button
+          type="button"
+          onClick={() => window.history.back()}
+          className="
+            inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold
+            border border-border-light dark:border-border-dark
+            text-text-light dark:text-text-dark
+            hover:bg-hover-light dark:hover:bg-hover-dark transition
+          "
+        >
+          <ArrowLeftIcon className="w-4 h-4" />
+          Back
+        </button>
+        <button
           onClick={() => updateStatus("closed")}
           disabled={ticket.status === "closed"}
-          className="px-3 py-1 rounded-lg bg-gray-600 text-white disabled:opacity-60 disabled:cursor-not-allowed"
+          className="px-3 py-1 rounded-lg bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           Close Ticket
         </button>
@@ -120,7 +160,7 @@ const SupportView = () => {
       {/* CHAT */}
       <div
         ref={chatRef}
-        className="bg-white dark:bg-slate-900 rounded-xl border border-slate-300 dark:border-slate-700 p-5 space-y-5 max-h-[60vh] overflow-y-auto"
+        className="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-5 space-y-5 max-h-[60vh] overflow-y-auto"
       >
 
         {ticket.messages.map((m, i) => (
@@ -128,7 +168,7 @@ const SupportView = () => {
             key={i}
             className={`
               max-w-[80%] p-3 rounded-lg
-              ${m.is_admin ? "ml-auto bg-primary-light text-white" : "bg-slate-200 dark:bg-slate-800"}
+              ${m.is_admin ? "ml-auto bg-primary-light text-white" : "bg-hover-light dark:bg-hover-dark"}
             `}
           >
             <p className="text-sm">{m.message}</p>
@@ -142,7 +182,9 @@ const SupportView = () => {
                   }`}
                 >
                   <CheckIcon className="w-3 h-3" />
-                  <CheckIcon className="-ml-1 w-3 h-3" />
+                  {m.is_user_seen && (
+                    <CheckIcon className="-ml-1 w-3 h-3" />
+                  )}
                 </span>
               )}
             </div>
@@ -166,7 +208,7 @@ const SupportView = () => {
           disabled={ticket.status === "closed" || sending}
           className="
             flex-1 px-4 py-2 rounded-lg border
-            bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700
+            bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark
             disabled:opacity-60 disabled:cursor-not-allowed
           "
         />
