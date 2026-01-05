@@ -2,57 +2,37 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\BuyRequest;
 use App\Models\Policy;
-use App\Services\LeadDistributor;
-use App\Services\NotificationService;
 use App\Services\PremiumCalculator;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
-class BuyRequestController extends Controller
+class PremiumQuoteController extends Controller
 {
-    public function __construct(
-        private LeadDistributor $leadDistributor,
-        private NotificationService $notifier,
-        private PremiumCalculator $calculator
-    ) {}
+    public function __construct(private PremiumCalculator $calculator)
+    {
+    }
 
     /**
-     * Create Buy Request with billing cycle + premium calculation
+     * Return a premium quote for a policy based on provided inputs
+     * (or fall back to the authenticated user's profile if available).
      */
-    public function store(Request $request)
+    public function quote(Request $request)
     {
-        $user = auth()->user();
-
         $data = $request->validate([
-            'policy_id'      => 'required|exists:policies,id',
-            'name'           => 'required|string|max:255',
-            'phone'          => 'required|string|max:20',
-            'email'          => 'nullable|email',
-            'billing_cycle'  => 'required|in:monthly,quarterly,half_yearly,yearly'
+            'policy_id' => 'required|exists:policies,id',
+            'age' => 'nullable|integer|min:1|max:120',
+            'dob' => 'nullable|date|before:today',
+            'is_smoker' => 'nullable|boolean',
+            'health_score' => 'nullable|integer|min:1|max:100',
+            'coverage_type' => 'nullable|in:individual,family',
+            'budget_range' => 'nullable|string',
+            'family_members' => 'nullable|integer|min:1|max:20',
         ]);
 
-        // KYC must be approved
-        $latestKyc = $user->kycDocuments()->latest()->first();
-        if (!$latestKyc || $latestKyc->status !== 'approved') {
-            return response()->json([
-                'success' => false,
-                'message' => 'KYC approval required before submitting a request.'
-            ], 403);
-        }
-        if ($latestKyc->allow_edit) {
-            return response()->json([
-                'success' => false,
-                'message' => 'KYC edit access granted. Please resubmit KYC before submitting a request.'
-            ], 403);
-        }
+        $policy = Policy::findOrFail($data['policy_id']);
+        $profile = $this->resolveProfile($request->user(), $data);
 
-        // Load user profile values
-        $profile = $this->resolveProfile($user);
-        $policy  = Policy::findOrFail($data['policy_id']);
-
-        // Base premium determined by algorithm
         $quote = $this->calculator->quote(
             $policy,
             $profile['age'],
@@ -63,94 +43,34 @@ class BuyRequestController extends Controller
             $profile['family_members']
         );
 
-        $basePremium = $quote['calculated_total'];
-
-        // Calculate interval charges
-        $interval = $data['billing_cycle'];
-        [$cycleAmount, $nextRenewal] = $this->calculateBillingInterval($interval, $basePremium);
-
-        $data['user_id']            = $user->id;
-        $data['status']             = 'pending';
-        $data['calculated_premium'] = $basePremium;     // yearly base premium
-        $data['cycle_amount']       = $cycleAmount;      // what user pays now
-        $data['next_renewal_date']  = $nextRenewal;
-        $data['renewal_status']     = 'active';
-
-        $buyRequest = BuyRequest::create($data);
-
-        // Assign agent
-        $assignedAgent = $this->leadDistributor->assign($buyRequest);
-
-        $msg = $assignedAgent
-            ? 'Request submitted and assigned to an agent.'
-            : 'Request submitted successfully.';
-
-        // Notify user
-        $this->notifier->notify($user, 'Buy Request Submitted', $msg, [
-            'buy_request_id' => $buyRequest->id
-        ]);
-
         return response()->json([
             'success' => true,
-            'message' => $msg,
-            'buy_request_id' => $buyRequest->id,
-            'premium' => $buyRequest->cycle_amount, // amount user will actually pay
-            'billing_cycle' => $interval,
-            'next_renewal_date' => $buyRequest->next_renewal_date
+            'quote' => $quote,
         ]);
     }
 
-
-    /**
-     * Calculate billing interval amounts & renewal dates
-     */
-    private function calculateBillingInterval(string $cycle, float $basePremium): array
+    private function resolveProfile($user, array $data): array
     {
-        switch ($cycle) {
-
-            case 'monthly':
-                $amount = $basePremium / 12;
-                $renew  = now()->addMonth();
-                break;
-
-            case 'quarterly':
-                $amount = $basePremium / 4;
-                $renew  = now()->addMonths(3);
-                break;
-
-            case 'half_yearly':
-                $amount = $basePremium / 2;
-                $renew  = now()->addMonths(6);
-                break;
-
-            case 'yearly':
-            default:
-                $amount = $basePremium;
-                $renew  = now()->addYear();
-                break;
+        $age = $data['age'] ?? null;
+        if (!$age && !empty($data['dob'])) {
+            $age = Carbon::parse($data['dob'])->age;
         }
 
-        return [round($amount, 2), $renew->toDateString()];
-    }
-
-
-    /**
-     * Resolves user's insurance profile for premium calculation
-     */
-    private function resolveProfile($user)
-    {
-        $kyc = $user->kycDocuments()->where('status', 'approved')->latest()->first();
-
-        $dob = $user->dob ?? $kyc?->dob;
-        $age = ($dob ? Carbon::parse($dob)->age : 30);
+        if (!$age && $user) {
+            $kyc = $user->kycDocuments()->where('status', 'approved')->latest()->first();
+            $dob = $user->dob ?? $kyc?->dob;
+            if ($dob) {
+                $age = Carbon::parse($dob)->age;
+            }
+        }
 
         return [
-            'age'            => max(1, min(120, $age)),
-            'is_smoker'      => (bool)$user->is_smoker,
-            'health_score'   => $user->health_score ?? 70,
-            'coverage_type'  => $user->coverage_type ?? 'individual',
-            'budget_range'   => $user->budget_range,
-            'family_members' => $user->family_members ?? 1
+            'age' => $age,
+            'is_smoker' => $data['is_smoker'] ?? (bool) ($user?->is_smoker),
+            'health_score' => $data['health_score'] ?? ($user?->health_score),
+            'coverage_type' => $data['coverage_type'] ?? ($user?->coverage_type),
+            'budget_range' => $data['budget_range'] ?? ($user?->budget_range),
+            'family_members' => $data['family_members'] ?? ($user?->family_members),
         ];
     }
 }
