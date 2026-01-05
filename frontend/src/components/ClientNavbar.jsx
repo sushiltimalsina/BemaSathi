@@ -46,7 +46,7 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
   const primaryLinks = [
     { to: "/client/dashboard", label: "Dashboard" },
     { to: "/client/policies", label: "All Policies" },
-    { to: "/client/compare", label: "Compare" },
+    { to: "/client/policies?compareHint=1", label: "Compare" },
   ];
 
   const accountLinks = [
