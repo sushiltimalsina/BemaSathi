@@ -229,14 +229,14 @@ const PolicyDetails = () => {
 
               {isClient ? (
                 <p className="text-lg font-semibold text-success-light dark:text-success-dark flex items-center gap-1">
-                  रु. {fmt(clientPremium)}
+                  Rs. {fmt(clientPremium)}
                   <span className="block text-[10px] opacity-60 ml-1">
                     (personalized)
                   </span>
                 </p>
               ) : (
                 <p className="text-xl font-semibold">
-                  रु. {fmt(guestMin)} - {fmt(guestMax)}
+                  Rs. {fmt(guestMin)} - {fmt(guestMax)}
                   <span className="block text-[10px] opacity-60">
                     Login to see your exact premium
                   </span>
@@ -248,7 +248,7 @@ const PolicyDetails = () => {
             <div className="mb-4">
               <p className="text-xs opacity-70">Coverage Limit</p>
               <p className="text-xl font-semibold">
-                रु. {fmt(policy.coverage_limit)}
+                Rs. {fmt(policy.coverage_limit)}
               </p>
             </div>
 
@@ -267,6 +267,11 @@ const PolicyDetails = () => {
 
             <button
               onClick={toggleSave}
+              title={
+                saved
+                  ? "Click to remove this policy from Saved Policies."
+                  : "Click here to save this policy for your Saved Policies page."
+              }
               className="mt-4 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-border-light dark:border-border-dark text-xs font-semibold hover:bg-hover-light dark:hover:bg-hover-dark transition"
             >
               {saved ? (
@@ -392,3 +397,4 @@ const PolicyDetails = () => {
 };
 
 export default PolicyDetails;
+

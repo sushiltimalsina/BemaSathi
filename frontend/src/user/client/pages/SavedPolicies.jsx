@@ -150,7 +150,10 @@ const SavedPolicies = () => {
                 </p>
               </div>
 
-              <button onClick={() => remove(p.id)}>
+              <button
+                onClick={() => remove(p.id)}
+                title="Click to remove this policy from Saved Policies."
+              >
                 <BookmarkSlashIcon className="w-5 h-5 text-red-500" />
               </button>
             </div>
@@ -170,15 +173,14 @@ const SavedPolicies = () => {
               <div className="flex justify-between">
                 <span className="text-slate-500">Premium</span>
                 <span className="font-semibold text-green-600 dark:text-green-400 flex items-center gap-1">
-                  <span className="font-bold">रु.</span>
-                  {fmt(p.adjusted)}
+                  Rs. {fmt(p.adjusted)}
                 </span>
               </div>
 
               <div className="flex justify-between">
                 <span className="text-slate-500">Coverage</span>
                 <span className="font-semibold">
-                  रु. {fmt(p.coverage_limit)}
+                  Rs. {fmt(p.coverage_limit)}
                 </span>
               </div>
 
@@ -234,6 +236,8 @@ const SavedPolicies = () => {
 };
 
 export default SavedPolicies;
+
+
 
 
 

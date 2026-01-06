@@ -344,7 +344,14 @@ const AllPolicies = () => {
                 </div>
 
                 {/* SAVE BTN */}
-                <button onClick={() => toggleSave(p.id)}>
+                <button
+                  onClick={() => toggleSave(p.id)}
+                  title={
+                    saved.includes(p.id)
+                      ? "Click to remove this policy from Saved Policies."
+                      : "Click here to save this policy for your Saved Policies page."
+                  }
+                >
                   {saved.includes(p.id) ? (
                     <BookmarkSlashIcon className="w-5 h-5 text-red-500" />
                   ) : (
@@ -370,7 +377,7 @@ const AllPolicies = () => {
                     Personalized Premium:
                   </span>
                   <span className="font-semibold text-green-600 dark:text-green-400">
-                   रु.{fmt(effectivePremium(p))}
+                    Rs. {fmt(effectivePremium(p))}
                   </span>
                 </div>
 
@@ -378,7 +385,9 @@ const AllPolicies = () => {
                   <span className="text-text-light dark:text-text-dark opacity-80">
                     Coverage:
                   </span>
-                  <span className="font-semibold text-white dark:text-black">रु.{fmt(p.coverage_limit)}</span>
+                  <span className="font-semibold text-text-light dark:text-text-dark">
+                    Rs. {fmt(p.coverage_limit)}
+                  </span>
                 </div>
 
                 {p.company_rating && (

@@ -53,7 +53,7 @@ const CompareBar = () => {
       <div className="flex items-center gap-2">
         <button
           onClick={clearCompare}
-          className="px-3 py-2 text-xs font-semibold rounded-lg border border-border-light dark:border-border-dark bg-white/70 dark:bg-slate-800/60 text-slate-700 dark:text-slate-200 hover:bg-hover-light dark:hover:bg-hover-dark transition"
+          className="px-3 py-2 text-xs font-semibold rounded-lg border border-border-light dark:border-border-dark bg-black/35 dark:bg-slate-200/10 text-slate-700 dark:text-slate-200 hover:bg-hover-light dark:hover:bg-hover-dark transition"
         >
           Clear
         </button>
