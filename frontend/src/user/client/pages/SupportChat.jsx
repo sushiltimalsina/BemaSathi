@@ -1,9 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import API from "../../../api/api";
-import { useParams } from "react-router-dom";
-import { PaperAirplaneIcon, ClockIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  PaperAirplaneIcon,
+  ClockIcon,
+  CheckIcon,
+  ArrowLeftIcon,
+} from "@heroicons/react/24/outline";
 
 const SupportChat = () => {
+  const navigate = useNavigate();
   const { id } = useParams();
   const [ticket, setTicket] = useState(null);
   const [message, setMessage] = useState("");
@@ -102,11 +108,20 @@ const SupportChat = () => {
   return (
     <div className="max-w-3xl mx-auto px-4 space-y-6 text-text-light dark:text-text-dark">
 
-      <div>
-        <h1 className="text-xl font-bold">{ticket.subject}</h1>
-        <p className="text-sm text-muted-light dark:text-muted-dark">
-          Status: {ticket.status.replace("_", " ")}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <button
+            onClick={() => navigate("/client/support")}
+            className="mb-3 flex items-center gap-2 text-sm font-semibold text-text-light dark:text-text-dark hover:opacity-80"
+          >
+            <ArrowLeftIcon className="w-4 h-4" />
+            Back to tickets
+          </button>
+          <h1 className="text-xl font-bold">{ticket.subject}</h1>
+          <p className="text-sm text-muted-light dark:text-muted-dark">
+            Status: {ticket.status.replace("_", " ")}
+          </p>
+        </div>
       </div>
 
       {/* Chat Area */}

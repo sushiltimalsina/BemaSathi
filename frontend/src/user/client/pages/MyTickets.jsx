@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import API from "../../../api/api";
-import { EyeIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, EyeIcon } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 
 const MyTickets = () => {
@@ -34,15 +34,24 @@ const MyTickets = () => {
   return (
     <div className="space-y-6 max-w-4xl mx-auto px-4 text-text-light dark:text-text-dark">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">My Support Tickets</h1>
-
+      <div className="space-y-3">
         <button
-          onClick={() => navigate("/client/support/new")}
-          className="px-4 py-2 bg-primary-light text-white rounded-lg font-semibold hover:bg-primary-dark"
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-sm font-semibold text-text-light dark:text-text-dark hover:opacity-80"
         >
-          + New Ticket
+          <ArrowLeftIcon className="w-4 h-4" />
+          Back
         </button>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold">My Support Tickets</h1>
+
+          <button
+            onClick={() => navigate("/client/support/new")}
+            className="px-4 py-2 bg-primary-light text-white rounded-lg font-semibold hover:bg-primary-dark"
+          >
+            + New Ticket
+          </button>
+        </div>
       </div>
 
       {/* Ticket Cards */}
