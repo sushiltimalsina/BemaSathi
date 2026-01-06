@@ -34,6 +34,9 @@ class AdminRenewalController extends Controller
                 'cycle_amount',
                 'next_renewal_date',
                 'renewal_status',
+                'renewal_reminder_sent_at',
+                'renewal_grace_reminders_sent',
+                'renewal_grace_last_sent_at',
             ])
             ->orderByDesc('next_renewal_date')
             ->get();
@@ -51,36 +54,91 @@ class AdminRenewalController extends Controller
             ], 422);
         }
 
-        $daysLeft = Carbon::now()->diffInDays(
-            Carbon::parse($buyRequest->next_renewal_date),
-            false
-        );
-
-        if ($daysLeft > 5) {
-            return response()->json([
-                'message' => 'Renewal date is not within 5 days.',
-            ], 422);
-        }
-
         $policyName = optional($buyRequest->policy)->policy_name ?? 'your policy';
         $timezone = config('app.timezone', 'Asia/Kathmandu');
         $dateText = Carbon::parse($buyRequest->next_renewal_date)->timezone($timezone)->toFormattedDateString();
 
-        $this->notifier->notify(
-            $buyRequest->user,
-            'Renewal reminder',
-            "Your policy {$policyName} renews on {$dateText}. Please renew to keep your coverage active.",
-            [
-                'buy_request_id' => $buyRequest->id,
-                'policy_id' => $buyRequest->policy_id,
-            ],
-            'system',
-            false
-        );
-        $this->sendRenewalEmail($buyRequest);
+        if ($buyRequest->renewal_status === 'active') {
+            $daysLeft = Carbon::now($timezone)->diffInDays(
+                Carbon::parse($buyRequest->next_renewal_date, $timezone),
+                false
+            );
+            if ($daysLeft > 5) {
+                return response()->json([
+                    'message' => 'Renewal date is not within 5 days.',
+                ], 422);
+            }
+            if ($buyRequest->renewal_reminder_sent_at) {
+                return response()->json([
+                    'message' => 'Renewal reminder already sent.',
+                ], 409);
+            }
+
+            $this->notifier->notify(
+                $buyRequest->user,
+                'Renewal reminder',
+                "Your policy {$policyName} renews on {$dateText}. Please renew to keep your coverage active.",
+                [
+                    'buy_request_id' => $buyRequest->id,
+                    'policy_id' => $buyRequest->policy_id,
+                ],
+                'system',
+                false
+            );
+            $this->sendRenewalEmail($buyRequest);
+            $buyRequest->renewal_reminder_sent_at = Carbon::now($timezone);
+            $buyRequest->save();
+        } elseif ($buyRequest->renewal_status === 'due') {
+            $dueDate = Carbon::parse($buyRequest->next_renewal_date, $timezone)->startOfDay();
+            $today = Carbon::now($timezone)->startOfDay();
+            $daysPastDue = $dueDate->diffInDays($today, false);
+            $graceDays = (int) env('RENEWAL_GRACE_DAYS', 7);
+            if ($daysPastDue > $graceDays) {
+                return response()->json([
+                    'message' => 'Grace period has ended for this renewal.',
+                ], 422);
+            }
+            if (!in_array($daysPastDue, [4, 6], true)) {
+                return response()->json([
+                    'message' => 'Manual re-reminder is allowed on day 4 and 6 of the grace period.',
+                ], 422);
+            }
+            $sentCount = (int) ($buyRequest->renewal_grace_reminders_sent ?? 0);
+            if ($sentCount >= 3) {
+                return response()->json([
+                    'message' => 'Maximum grace reminders already sent.',
+                ], 409);
+            }
+
+            $this->notifier->notify(
+                $buyRequest->user,
+                'Renewal reminder',
+                "Your policy {$policyName} renews on {$dateText}. Please renew to keep your coverage active.",
+                [
+                    'buy_request_id' => $buyRequest->id,
+                    'policy_id' => $buyRequest->policy_id,
+                ],
+                'system',
+                false
+            );
+            $this->sendRenewalEmail($buyRequest);
+            $buyRequest->renewal_grace_reminders_sent = $sentCount + 1;
+            $buyRequest->renewal_grace_last_sent_at = Carbon::now($timezone);
+            $buyRequest->save();
+        } else {
+            return response()->json([
+                'message' => 'Renewal reminder is not allowed for this status.',
+            ], 422);
+        }
 
         return response()->json([
             'message' => 'Renewal notification sent.',
+            'renewal' => $buyRequest->only([
+                'id',
+                'renewal_reminder_sent_at',
+                'renewal_grace_reminders_sent',
+                'renewal_grace_last_sent_at',
+            ]),
         ]);
     }
 
