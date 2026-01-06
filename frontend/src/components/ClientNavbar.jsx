@@ -125,9 +125,8 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
         {/* Logo */}
         <Link
           to="/"
-          className="text-2xl font-bold text-primary-light dark:text-primary-dark flex items-center space-x-2"
-        >
-          <img src="/logo.png" alt="BeemaSathi Logo" className="h-8 w-8" />
+          className="text-2xl font-bold text-primary-light dark:text-primary-dark flex items-center space-x-0.5"
+        >      
           <span>BeemaSathi</span>
         </Link>
 

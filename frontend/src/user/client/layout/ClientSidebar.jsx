@@ -66,11 +66,12 @@ const ClientSidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) =
         {/* LOGO (FIXED HEIGHT → prevents nav jump) */}
         <div className="h-20 flex items-center px-4">
           <Link
-            to="/client/dashboard"
-            className="text-2xl font-bold text-primary-light dark:text-primary-dark"
-          >
-            {collapsed ? "BS" : ""}
-          </Link>
+                    to="/"
+                    className="text-2xl font-bold text-primary-light dark:text-primary-dark flex items-center space-x-2"
+                  >
+                    <img src="/logo.png" alt="BeemaSathi Logo" className="h-8 w-8" />
+                    
+                  </Link>
         </div>
 
         {/* NAVIGATION (POSITION NEVER CHANGES) */}
