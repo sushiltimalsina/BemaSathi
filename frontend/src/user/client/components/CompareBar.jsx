@@ -9,7 +9,12 @@ const CompareBar = () => {
   const location = useLocation();
 
   useEffect(() => {
-    const allowed = ["/client/policies", "/client/dashboard", "/policies"];
+    const allowed = [
+      "/client/policies",
+      "/client/dashboard",
+      "/client/saved",
+      "/policies",
+    ];
     if (!allowed.some((path) => location.pathname.startsWith(path))) {
       if (compare.length) {
         clearCompare();

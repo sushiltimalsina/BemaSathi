@@ -2,9 +2,10 @@ import React, { useEffect, useState } from "react";
 import API from "../../../api/api";
 import { useNavigate } from "react-router-dom";
 import useAuthSyncReady from "../../../hooks/useAuthSyncReady";
+import { useCompare } from "../../../context/CompareContext";
+import CompareBar from "../components/CompareBar";
 import {
   ShieldCheckIcon,
-  CurrencyRupeeIcon,
   StarIcon,
   BookmarkSlashIcon,
   ArrowsRightLeftIcon,
@@ -20,9 +21,12 @@ const SavedPolicies = () => {
 
   const [savedItems, setSavedItems] = useState([]);
   const [policies, setPolicies] = useState([]);
-  const [selected, setSelected] = useState([]);
+  const [ownedMap, setOwnedMap] = useState({});
+  const [kycStatus, setKycStatus] = useState("loading");
+  const [kycAllowEdit, setKycAllowEdit] = useState(false);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const { compare, addToCompare, removeFromCompare } = useCompare();
   const fmt = (n) =>
     Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
 
@@ -75,6 +79,48 @@ const SavedPolicies = () => {
     fetchSaved();
   }, [user, token]);
 
+  useEffect(() => {
+    if (!isClient) return;
+    const fetchOwned = async () => {
+      try {
+        const res = await API.get("/my-requests", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const map = {};
+        (res.data || []).forEach((req) => {
+          if (req.policy_id) {
+            map[String(req.policy_id)] = req.id;
+          }
+        });
+        setOwnedMap(map);
+      } catch (err) {
+        console.error("Owned requests fetch failed", err);
+        setOwnedMap({});
+      }
+    };
+    fetchOwned();
+  }, [isClient, token]);
+
+  useEffect(() => {
+    if (!isClient) return;
+    const fetchKycStatus = async () => {
+      try {
+        const res = await API.get("/kyc/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const list = res.data?.data || [];
+        const latest = Array.isArray(list) ? list[0] : list;
+        setKycStatus(latest?.status || "not_submitted");
+        setKycAllowEdit(Boolean(latest?.allow_edit));
+      } catch (err) {
+        console.error("KYC status fetch failed", err);
+        setKycStatus("not_submitted");
+        setKycAllowEdit(false);
+      }
+    };
+    fetchKycStatus();
+  }, [isClient, token]);
+
   // REMOVE SAVED
   const remove = async (id) => {
     try {
@@ -88,20 +134,24 @@ const SavedPolicies = () => {
     }
   };
 
-  // SELECT FOR COMPARE
-  const toggle = (id) => {
-    if (!ready || !isClient) return navigate("/login");
-    if (selected.includes(id)) {
-      return setSelected(selected.filter((x) => x !== id));
+  const ensureKycApproved = () => {
+    if (kycStatus === "approved" && !kycAllowEdit) {
+      return true;
     }
-    if (selected.length >= 2) return;
-    setSelected([...selected, id]);
+    navigate("/client/kyc");
+    return false;
   };
 
-  // GO COMPARE
-  const compareNow = () => {
-    if (selected.length !== 2) return;
-    navigate(`/client/compare?p1=${selected[0]}&p2=${selected[1]}`);
+  // SELECT FOR COMPARE
+  const toggle = (policy) => {
+    if (!ready || !isClient) return navigate("/login");
+
+    const idStr = String(policy.id);
+    if (compare.some((p) => String(p.id) === idStr)) {
+      removeFromCompare(policy.id);
+      return;
+    }
+    addToCompare(policy);
   };
 
   // LOADING
@@ -196,41 +246,54 @@ const SavedPolicies = () => {
             </div>
 
             {/* ACTIONS */}
-            <div className="mt-5 flex justify-between items-center text-xs">
-              <button
-                onClick={() => navigate(`/policy/${p.id}`)}
-                className="text-blue-600 dark:text-blue-400 hover:underline font-semibold"
-              >
-                View Details
-              </button>
+            <div className="mt-5 flex flex-col gap-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => {
+                    if (!ensureKycApproved()) return;
+
+                    const ownedRequest = ownedMap[String(p.id)];
+                    if (ownedRequest) {
+                      navigate(`/client/payment?request=${ownedRequest}`);
+                      return;
+                    }
+                    navigate(`/client/buy?policy=${p.id}`);
+                  }}
+                  className="px-4 py-2 rounded-lg font-semibold bg-primary-light text-white hover:bg-primary-dark"
+                >
+                  {ownedMap[String(p.id)] ? "Renew Now" : "Buy Now"}
+                </button>
+
+                <button
+                  onClick={() => toggle(p)}
+                  className={`w-full flex items-center justify-center gap-2 text-sm font-semibold rounded-lg py-2 transition ${
+                    compare.some(
+                      (policy) => String(policy.id) === String(p.id)
+                    )
+                      ? "bg-primary-light text-white border border-primary-light shadow-sm dark:bg-primary-dark dark:border-primary-dark"
+                      : "bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark border border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark"
+                  }`}
+                >
+                  <ArrowsRightLeftIcon className="w-4 h-4" />
+                  {compare.some(
+                    (policy) => String(policy.id) === String(p.id)
+                  )
+                    ? "Selected"
+                    : "Compare"}
+                </button>
+              </div>
 
               <button
-                onClick={() => toggle(p.id)}
-                className={`px-3 py-1.5 rounded-lg border text-xs ${
-                  selected.includes(p.id)
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark hover:bg-slate-100 dark:hover:bg-slate-800"
-                }`}
+                onClick={() => navigate(`/policy/${p.id}`)}
+                className="text-blue-600 dark:text-blue-400 hover:underline font-semibold text-left"
               >
-                {selected.includes(p.id) ? "Selected" : "Compare"}
+                View Details
               </button>
             </div>
           </div>
         ))}
       </div>
-
-      {/* COMPARE BUTTON */}
-      {selected.length === 2 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-md">
-          <button
-            onClick={compareNow}
-            className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-2xl font-semibold shadow-lg hover:bg-blue-700"
-          >
-            <ArrowsRightLeftIcon className="w-5 h-5" />
-            Compare Selected Policies
-          </button>
-        </div>
-      )}
+      <CompareBar />
     </div>
   );
 };
