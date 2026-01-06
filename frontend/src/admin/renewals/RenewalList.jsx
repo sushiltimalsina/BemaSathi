@@ -103,9 +103,80 @@ const RenewalList = () => {
     });
   };
 
-  const sendReminder = async (renewal) => {
+  const formatDateTime = (date) => {
+    if (!date) return "-";
+    const parsed = new Date(date);
+    if (Number.isNaN(parsed.getTime())) return date;
+    return parsed.toLocaleString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const isSameDay = (a, b) => {
+    if (!a || !b) return false;
+    const da = new Date(a);
+    const db = new Date(b);
+    if (Number.isNaN(da.getTime()) || Number.isNaN(db.getTime())) return false;
+    return (
+      da.getFullYear() === db.getFullYear() &&
+      da.getMonth() === db.getMonth() &&
+      da.getDate() === db.getDate()
+    );
+  };
+
+  const daysPastDue = (date) => {
+    if (!date) return "-";
+    const today = new Date();
+    const startOfToday = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    );
+    const target = new Date(
+      typeof date === "string" && date.length <= 10
+        ? `${date}T00:00:00`
+        : date
+    );
+    if (Number.isNaN(target.getTime())) return "-";
+    const diff = (startOfToday - target) / (1000 * 60 * 60 * 24);
+    return Math.ceil(diff);
+  };
+
+  const lastReminderAt = (renewal) =>
+    renewal.renewal_grace_last_sent_at || renewal.renewal_reminder_sent_at || null;
+
+  const canSendReminder = (renewal) => {
     const remaining = daysLeft(renewal.next_renewal_date);
-    if (remaining === "-" || remaining > 5) return;
+    const pastDue = daysPastDue(renewal.next_renewal_date);
+    const sentCount = Number(renewal.renewal_grace_reminders_sent || 0);
+    const lastSent = lastReminderAt(renewal);
+
+    if (renewal.renewal_status === "active") {
+      return (
+        remaining !== "-" &&
+        remaining >= 0 &&
+        remaining <= 5 &&
+        !renewal.renewal_reminder_sent_at
+      );
+    }
+
+    if (renewal.renewal_status === "due") {
+      return (
+        [4, 6].includes(pastDue) &&
+        sentCount < 3 &&
+        !isSameDay(lastSent, new Date())
+      );
+    }
+
+    return false;
+  };
+
+  const sendReminder = async (renewal) => {
+    if (!canSendReminder(renewal)) return;
 
     const ok = await confirm("Send a renewal reminder to the user?", {
       title: "Send Reminder",
@@ -115,7 +186,15 @@ const RenewalList = () => {
 
     setSendingId(renewal.id);
     try {
-      await API.post(`/admin/renewals/${renewal.id}/notify`);
+      const res = await API.post(`/admin/renewals/${renewal.id}/notify`);
+      const serverRenewal = res.data?.renewal;
+      if (serverRenewal) {
+        setItems((prev) =>
+          prev.map((item) =>
+            item.id === renewal.id ? { ...item, ...serverRenewal } : item
+          )
+        );
+      }
       addToast({ type: "success", title: "Sent", message: "Renewal reminder sent." });
     } catch (e) {
       addToast({ type: "error", title: "Send failed", message: "Failed to send reminder." });
@@ -184,6 +263,7 @@ const RenewalList = () => {
               <th className="px-4 py-3 text-left">Amount</th>
               <th className="px-4 py-3 text-left">Next Renewal</th>
               <th className="px-4 py-3 text-left">Days Left</th>
+              <th className="px-4 py-3 text-left">Last Reminder</th>
               <th className="px-4 py-3 text-left">Status</th>
               <th className="px-4 py-3 text-left">Action</th>
             </tr>
@@ -222,12 +302,14 @@ const RenewalList = () => {
                 >
                   {daysLeft(r.next_renewal_date)}
                 </td>
+                <td className="px-4 py-3 text-xs">
+                  {formatDateTime(lastReminderAt(r))}
+                </td>
                 <td className="px-4 py-3">
                   {badge(r.renewal_status)}
                 </td>
                 <td className="px-4 py-3">
-                  {daysLeft(r.next_renewal_date) !== "-" &&
-                  daysLeft(r.next_renewal_date) <= 5 ? (
+                  {canSendReminder(r) ? (
                     <button
                       type="button"
                       onClick={() => sendReminder(r)}

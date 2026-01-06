@@ -7,6 +7,7 @@ use Illuminate\Console\Command;
 use App\Models\BuyRequest;
 use App\Services\NotificationService;
 use App\Mail\PolicyRenewalReminderMail;
+use App\Mail\PolicyExpiredMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Carbon;
 
@@ -44,9 +45,11 @@ class ProcessRenewals extends Command
                 $dateText = Carbon::parse($br->next_renewal_date, $timezone)->toFormattedDateString();
                 $this->notifier->notify(
                     $user,
-                    'Policy Renewal Reminder',
-                    "Your policy {$br->policy->policy_name} renews on {$dateText}. Please renew within {$graceDays} days to keep your coverage active.",
-                    ['buy_request_id' => $br->id]
+                    'Renewal reminder',
+                    "Your policy {$br->policy->policy_name} renews on {$dateText}. Please renew to keep your coverage active.",
+                    ['buy_request_id' => $br->id],
+                    'system',
+                    false
                 );
             }
 
@@ -63,18 +66,6 @@ class ProcessRenewals extends Command
             $br->renewal_grace_reminders_sent = 0;
             $br->renewal_grace_last_sent_at = null;
             $br->save();
-
-            $user = $br->user; // assumes relation buyRequest->user exists
-            if ($user) {
-                $daysLeft = max($graceDays, 0);
-                $this->notifier->notify(
-                    $user,
-                    'Policy Renewal Due',
-                    "Your policy {$br->policy->policy_name} is due for renewal. Please renew within {$daysLeft} days to avoid expiry.",
-                    ['buy_request_id' => $br->id]
-                );
-            }
-            $this->sendRenewalEmail($br);
         }
 
         // 1b) Send up to 2 grace reminders while status is DUE
@@ -84,31 +75,25 @@ class ProcessRenewals extends Command
 
         foreach ($graceList as $br) {
             $sentCount = (int) ($br->renewal_grace_reminders_sent ?? 0);
-            if ($sentCount >= 2) {
+            if ($sentCount >= 1) {
                 continue;
             }
 
             $dueDate = Carbon::parse($br->next_renewal_date, $timezone)->startOfDay();
             $daysPastDue = $dueDate->diffInDays($today, false);
-            if ($daysPastDue < 0 || $daysPastDue > $graceDays) {
+            if ($daysPastDue !== 2 || $daysPastDue > $graceDays) {
                 continue;
             }
-
-            if ($br->renewal_grace_last_sent_at) {
-                $lastSent = Carbon::parse($br->renewal_grace_last_sent_at, $timezone)->startOfDay();
-                if ($lastSent->diffInDays($today) < 2) {
-                    continue;
-                }
-            }
-
-            $daysLeft = max($graceDays - $daysPastDue, 0);
             $user = $br->user;
             if ($user) {
+                $dateText = Carbon::parse($br->next_renewal_date, $timezone)->toFormattedDateString();
                 $this->notifier->notify(
                     $user,
-                    'Renewal Reminder',
-                    "Your policy {$br->policy->policy_name} is overdue. Please renew within {$daysLeft} days to keep your coverage active, or it will be ineffective after the expiry date.",
-                    ['buy_request_id' => $br->id]
+                    'Renewal reminder',
+                    "Your policy {$br->policy->policy_name} renews on {$dateText}. Please renew to keep your coverage active.",
+                    ['buy_request_id' => $br->id],
+                    'system',
+                    false
                 );
             }
 
@@ -137,6 +122,8 @@ class ProcessRenewals extends Command
                     ['buy_request_id' => $br->id]
                 );
             }
+
+            $this->sendExpiredEmail($br);
         }
 
         $this->info("Renewals processed: due={$dueList->count()}, expired={$expiredList->count()}");
@@ -156,6 +143,24 @@ class ProcessRenewals extends Command
         foreach ($unique as $email) {
             try {
                 Mail::to($email)->send(new PolicyRenewalReminderMail($buyRequest));
+            } catch (\Throwable $e) {
+                // ignore email failures
+            }
+        }
+    }
+
+    private function sendExpiredEmail(BuyRequest $buyRequest): void
+    {
+        $buyRequest->loadMissing('user', 'policy');
+        $emails = array_filter([
+            $buyRequest->user?->email,
+            $buyRequest->email,
+        ]);
+        $unique = array_values(array_unique($emails));
+
+        foreach ($unique as $email) {
+            try {
+                Mail::to($email)->send(new PolicyExpiredMail($buyRequest));
             } catch (\Throwable $e) {
                 // ignore email failures
             }
