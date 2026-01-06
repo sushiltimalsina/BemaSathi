@@ -335,7 +335,7 @@ const AllPolicies = () => {
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <ShieldCheckIcon className="w-6 h-6 text-blue-600" />
-                    <h2 className="font-semibold text-white dark:text-black">{p.policy_name}</h2>
+                    <h2 className="font-semibold text-text-light dark:text-text-dark">{p.policy_name}</h2>
                   </div>
 
                   <p className="text-xs text-text-light dark:text-text-dark opacity-80 -mt-1">
