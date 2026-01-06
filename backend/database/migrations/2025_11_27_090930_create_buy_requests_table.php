@@ -15,8 +15,6 @@ return new class extends Migration
         $table->id();
         $table->unsignedBigInteger('user_id')->nullable();
         $table->unsignedBigInteger('policy_id');
-        $table->string('status')->default('pending'); // pending, contacted, completed
-        $table->text('notes')->nullable(); // admin can update
         $table->timestamps();
     });
 }

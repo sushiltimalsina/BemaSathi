@@ -4,17 +4,14 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\BuyRequest;
+use App\Models\PaymentIntent;
 use App\Models\Policy;
-use App\Services\LeadDistributor;
 use App\Services\PremiumCalculator;
 use Illuminate\Support\Carbon;
 
 class BuyRequestController extends Controller
 {
-    public function __construct(
-        private LeadDistributor $leadDistributor,
-        private PremiumCalculator $calculator
-    ) {}
+    public function __construct(private PremiumCalculator $calculator) {}
 
     public function store(Request $request)
     {
@@ -64,29 +61,36 @@ class BuyRequestController extends Controller
         [$cycleAmount, $nextRenewal] = $this->calculateBillingInterval($interval, $basePremium);
 
         $data['user_id'] = $user->id;
-        $data['status']  = 'pending';
         $data['calculated_premium'] = $basePremium;
         $data['cycle_amount']      = $cycleAmount;
         $data['billing_cycle']     = $interval;
         $data['next_renewal_date'] = $nextRenewal;
         $data['renewal_status']    = 'active';
 
-        $buyRequest = BuyRequest::create($data);
+        $intent = PaymentIntent::create([
+            'user_id' => $data['user_id'],
+            'policy_id' => $data['policy_id'],
+            'email' => $data['email'] ?? $user?->email,
+            'name' => $data['name'],
+            'phone' => $data['phone'],
+            'billing_cycle' => $interval,
+            'calculated_premium' => $basePremium,
+            'cycle_amount' => $cycleAmount,
+            'amount' => $cycleAmount,
+            'currency' => 'NPR',
+            'next_renewal_date' => $nextRenewal,
+            'renewal_status' => 'active',
+            'status' => 'pending',
+            'expires_at' => now()->addDay(),
+        ]);
 
-        // Assign agent
-        $assignedAgent = $this->leadDistributor->assign($buyRequest);
-
-        $msg = $assignedAgent
-            ? 'Request submitted and assigned to an agent.'
-            : 'Request submitted successfully.';
-
-        // Intentionally no email/notification on buy request creation.
+        $msg = 'Request prepared. Proceed to payment.';
 
         return response()->json([
             'success' => true,
             'message' => $msg,
-            'buy_request_id' => $buyRequest->id,
-            'premium' => $buyRequest->cycle_amount,
+            'payment_intent_id' => $intent->id,
+            'premium' => $intent->cycle_amount,
             'billing_cycle' => $interval,
             'next_renewal_date' => $nextRenewal
         ]);

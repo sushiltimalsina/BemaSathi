@@ -3,45 +3,50 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
-class BuyRequest extends Model
+class PaymentIntent extends Model
 {
-    use SoftDeletes;
-
     protected $fillable = [
         'user_id',
         'policy_id',
+        'buy_request_id',
+        'email',
         'name',
         'phone',
-        'email',
-        'calculated_premium',
         'billing_cycle',
+        'calculated_premium',
         'cycle_amount',
+        'amount',
+        'currency',
         'next_renewal_date',
         'renewal_status',
-        'renewal_reminder_sent_at',
-        'renewal_grace_reminders_sent',
-        'renewal_grace_last_sent_at',
+        'status',
+        'expires_at',
+        'meta',
     ];
 
-    protected $dates = ['deleted_at'];
-
     protected $casts = [
-        'cycle_amount' => 'float',
+        'calculated_premium' => 'decimal:2',
+        'cycle_amount' => 'decimal:2',
+        'amount' => 'decimal:2',
         'next_renewal_date' => 'date',
-        'renewal_reminder_sent_at' => 'datetime',
-        'renewal_grace_last_sent_at' => 'datetime',
+        'expires_at' => 'datetime',
+        'meta' => 'array',
     ];
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class);
     }
 
     public function policy()
     {
         return $this->belongsTo(Policy::class);
+    }
+
+    public function buyRequest()
+    {
+        return $this->belongsTo(BuyRequest::class);
     }
 
     public function payments()

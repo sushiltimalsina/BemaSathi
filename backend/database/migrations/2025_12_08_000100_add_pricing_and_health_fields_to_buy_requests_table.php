@@ -12,20 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('buy_requests', function (Blueprint $table) {
-            if (!Schema::hasColumn('buy_requests', 'age')) {
-                $table->unsignedInteger('age')->nullable()->after('policy_id');
-            }
-
-            if (!Schema::hasColumn('buy_requests', 'is_smoker')) {
-                $table->boolean('is_smoker')->default(false)->after('age');
-            }
-
-            if (!Schema::hasColumn('buy_requests', 'health_score')) {
-                $table->unsignedInteger('health_score')->nullable()->after('is_smoker');
-            }
-
             if (!Schema::hasColumn('buy_requests', 'calculated_premium')) {
-                $table->decimal('calculated_premium', 10, 2)->nullable()->after('health_score');
+                $table->decimal('calculated_premium', 10, 2)->nullable()->after('policy_id');
             }
         });
     }
@@ -38,15 +26,6 @@ return new class extends Migration
         Schema::table('buy_requests', function (Blueprint $table) {
             if (Schema::hasColumn('buy_requests', 'calculated_premium')) {
                 $table->dropColumn('calculated_premium');
-            }
-            if (Schema::hasColumn('buy_requests', 'health_score')) {
-                $table->dropColumn('health_score');
-            }
-            if (Schema::hasColumn('buy_requests', 'is_smoker')) {
-                $table->dropColumn('is_smoker');
-            }
-            if (Schema::hasColumn('buy_requests', 'age')) {
-                $table->dropColumn('age');
             }
         });
     }

@@ -21,6 +21,7 @@ const PaymentPage = () => {
   const [loading, setLoading] = useState(true);
   const [buyRequest, setBuyRequest] = useState(null);
   const [policy, setPolicy] = useState(null);
+  const [paymentStatus, setPaymentStatus] = useState(null);
   const [error, setError] = useState("");
   const [paying, setPaying] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
@@ -135,6 +136,7 @@ const PaymentPage = () => {
 
       setBuyRequest(payment.buy_request);
       setPolicy(payment.policy || payment.buy_request?.policy || {});
+      setPaymentStatus(payment.status || null);
     } catch (err) {
       console.error(err);
       setError("Unable to load payment details.");
@@ -244,7 +246,9 @@ const PaymentPage = () => {
 
         <div className="mt-4 flex items-center justify-between text-sm">
           <span>Status:</span>
-          <span className="font-semibold capitalize">{buyRequest.status}</span>
+          <span className="font-semibold capitalize">
+            {paymentStatus || buyRequest.renewal_status || "active"}
+          </span>
         </div>
       </div>
 

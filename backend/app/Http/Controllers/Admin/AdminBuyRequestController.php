@@ -11,41 +11,40 @@ class AdminBuyRequestController extends Controller
 {
     public function index()
     {
-        // Load buy requests with related policy, client, and agent (if assigned)
-        $requests = BuyRequest::with(['policy', 'user', 'agent'])->latest()->get();
-        return BuyRequest::with('policy', 'agent')
-        ->orderBy('created_at', 'desc')
-        ->get();
+        return BuyRequest::with(['policy', 'user'])
+            ->orderBy('created_at', 'desc')
+            ->get();
     }
 
     public function show(BuyRequest $buyRequest)
     {
-        $buyRequest->load(['policy', 'user', 'agent']);
+        $buyRequest->load(['policy', 'user']);
         return response()->json($buyRequest);
     }
 
     public function update(BuyRequest $buyRequest, Request $request)
     {
         $validated = $request->validate([
-            'status' => 'required|in:pending,processing,assigned,completed,rejected',
-            'agent_id' => 'nullable|exists:agents,id',
+            'billing_cycle' => 'nullable|in:monthly,quarterly,half_yearly,yearly',
+            'cycle_amount' => 'nullable|numeric|min:0',
+            'next_renewal_date' => 'nullable|date',
+            'renewal_status' => 'nullable|in:active,due,expired',
         ]);
 
-        $buyRequest->update($validated);
+        $buyRequest->update(array_filter($validated, fn ($value) => $value !== null));
 
-        // Notify client about status/assignment changes
+        // Notify client about updates (no agent assignment tracking)
         Notification::create([
             'user_id' => $buyRequest->user_id,
             'title' => 'Request Updated',
-            'message' => "Your request status is now: {$validated['status']}" .
-                (!empty($validated['agent_id']) ? ' (agent assigned).' : '.'),
+            'message' => 'Your request details were updated by the admin.',
             'buy_request_id' => $buyRequest->id,
             'policy_id' => $buyRequest->policy_id,
         ]);
 
         return response()->json([
             'message'    => 'Buy request updated successfully',
-            'buyRequest' => $buyRequest->fresh(['policy','user','agent']),
+            'buyRequest' => $buyRequest->fresh(['policy','user']),
         ]);
     }
 
