@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from "react";
 import API from "../utils/adminApi";
-import { CheckCircleIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import {
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  EyeIcon,
+  EyeSlashIcon,
+} from "@heroicons/react/24/outline";
 import { useAdminToast } from "../ui/AdminToast";
 import { useAdminConfirm } from "../ui/AdminConfirm";
 
@@ -9,6 +14,7 @@ const Settings = () => {
   const [loading, setLoading] = useState(true);
   const [successMsg, setSuccessMsg] = useState("");
   const [isDirty, setIsDirty] = useState(false);
+  const [showSmtpPassword, setShowSmtpPassword] = useState(false);
   const { addToast } = useAdminToast();
   const confirm = useAdminConfirm();
 
@@ -113,15 +119,6 @@ const Settings = () => {
     loadSettings("env");
   };
 
-  const confirmLoadSaved = async () => {
-    const ok = await confirm("Load the last saved settings from the backend?", {
-      title: "Load Saved Settings",
-      confirmText: "Load",
-    });
-    if (!ok) return;
-    loadSettings("cache");
-  };
-
   if (loading)
     return <p className="opacity-70">Loading settings...</p>;
 
@@ -151,21 +148,6 @@ const Settings = () => {
               title="Pull the latest values directly from the backend .env file"
             >
               Use .env values
-            </button>
-            <button
-              onClick={confirmLoadSaved}
-              disabled={saving}
-              className="
-                px-4 py-2 rounded-lg font-semibold
-                border border-border-light dark:border-border-dark
-                bg-card-light dark:bg-card-dark
-                text-text-light dark:text-text-dark
-                hover:bg-hover-light dark:hover:bg-hover-dark
-                disabled:opacity-60
-              "
-              title="Load the last saved settings stored in the backend"
-            >
-              Use saved settings
             </button>
           </div>
           <button
@@ -283,15 +265,43 @@ const Settings = () => {
           value={form.smtp_username}
           onChange={(e) => update("smtp_username", e.target.value)}
         />
-        <Input
-          label="SMTP Password"
-          hint="Use an app password if your provider requires it."
-          hintPath="backend/.env"
-          hintKey="MAIL_PASSWORD"
-          type="password"
-          value={form.smtp_password}
-          onChange={(e) => update("smtp_password", e.target.value)}
-        />
+        <div className="space-y-1">
+          <label
+            className="text-sm font-medium"
+            title="backend/.env (MAIL_PASSWORD)"
+          >
+            SMTP Password
+          </label>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Use an app password if your provider requires it.
+          </p>
+          <div className="relative">
+            <input
+              type={showSmtpPassword ? "text" : "password"}
+              value={form.smtp_password}
+              onChange={(e) => update("smtp_password", e.target.value)}
+              title="backend/.env (MAIL_PASSWORD)"
+              className="
+                w-full px-4 py-2 pr-12 rounded-lg border
+                bg-card-light dark:bg-card-dark
+                border-border-light dark:border-border-dark
+                focus:outline-none
+              "
+            />
+            <button
+              type="button"
+              onClick={() => setShowSmtpPassword((prev) => !prev)}
+              className="absolute inset-y-0 right-3 flex items-center text-slate-500 dark:text-slate-300 hover:text-slate-700 dark:hover:text-white"
+              aria-label={showSmtpPassword ? "Hide password" : "Show password"}
+            >
+              {showSmtpPassword ? (
+                <EyeSlashIcon className="w-5 h-5" />
+              ) : (
+                <EyeIcon className="w-5 h-5" />
+              )}
+            </button>
+          </div>
+        </div>
         <Input
           label='"Mail From" Name'
           hint="Displayed as the sender name in outgoing emails."
