@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import API from "../../../api/api";
 import {
   BellIcon,
@@ -8,6 +9,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 const Notifications = () => {
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
@@ -24,11 +26,11 @@ const Notifications = () => {
   });
 
   const unreadCount = useMemo(
-    () => items.filter((n) => !isRead(n) && !isReminder(getId(n))).length,
+    () => items.filter((n) => !isRead(n)).length,
     [items]
   );
   const realCount = useMemo(
-    () => items.filter((n) => !isReminder(getId(n))).length,
+    () => items.length,
     [items]
   );
 
@@ -36,18 +38,9 @@ const Notifications = () => {
     setLoading(true);
     setError("");
     try {
-      const [notifRes, requestsRes] = await Promise.all([
-        API.get("/notifications"),
-        API.get("/my-requests"),
-      ]);
-
+      const notifRes = await API.get("/notifications");
       const notifData = notifRes.data?.data ?? notifRes.data ?? [];
-      const reminders = buildRenewalReminders(requestsRes.data || []);
-
-      const nextItems = [
-        ...reminders,
-        ...(Array.isArray(notifData) ? notifData : []),
-      ];
+      const nextItems = Array.isArray(notifData) ? notifData : [];
 
       if (clearedAt) {
         const clearedDate = new Date(clearedAt);
@@ -94,18 +87,6 @@ const Notifications = () => {
   };
 
   const markOneRead = async (id) => {
-    // Synthetic reminder notifications are local-only
-    if (isReminder(id)) {
-      setItems((prev) => {
-        const next = prev.map((n) =>
-          getId(n) === id ? { ...n, is_read: true, read_at: new Date().toISOString() } : n
-        );
-        emitUnread(next);
-        return next;
-      });
-      return;
-    }
-
     setWorking(true);
     try {
       try {
@@ -341,11 +322,12 @@ const Notifications = () => {
         {paged.map((n) => {
           const id = getId(n);
           const read = isRead(n);
-          const reminder = isReminder(id);
+          const reminder = false;
           const title = getTitle(n);
           const message = getMessage(n);
           const when = formatWhen(getCreatedAt(n));
           const meta = getMeta(n);
+          const link = getNotificationLink(n);
 
           return (
             <div
@@ -358,10 +340,10 @@ const Notifications = () => {
                 shadow-sm hover:shadow-lg transition
               `}
             >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span
                       className={`
                         inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border
                         ${read
@@ -378,7 +360,7 @@ const Notifications = () => {
                   <p className="mt-1 text-sm text-muted-light dark:text-muted-dark leading-relaxed">{message}</p>
 
                   {/* Optional meta (buy_request_id etc.) */}
-                  {meta && (
+                  {meta && !title.toLowerCase().includes("renewal") && (
                     <div className="mt-3 text-xs text-muted-light dark:text-muted-dark">
                       {Object.entries(meta).slice(0, 3).map(([k, v]) => (
                         <span key={k} className="mr-3">
@@ -389,23 +371,39 @@ const Notifications = () => {
                   )}
                 </div>
 
-                {!read && (
-                  <button
-                    onClick={() => markOneRead(id)}
-                    disabled={working}
-                    className="
-                      shrink-0 px-4 py-2 rounded-xl text-sm font-semibold
-                      bg-card-light dark:bg-card-dark
-                      border border-border-light dark:border-border-dark
-                      hover:bg-hover-light dark:hover:bg-hover-dark transition
-                      disabled:opacity-60 disabled:cursor-not-allowed
-                      inline-flex items-center gap-2
-                    "
-                  >
-                    <EnvelopeOpenIcon className="w-4 h-4" />
-                    Mark read
-                  </button>
-                )}
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  {link && (
+                    <button
+                      type="button"
+                      onClick={() => navigate(link)}
+                      className="
+                        px-4 py-2 rounded-xl text-sm font-semibold
+                        bg-primary-light text-white
+                        hover:opacity-90 transition
+                        inline-flex items-center gap-2
+                      "
+                    >
+                      View
+                    </button>
+                  )}
+                  {!read && (
+                    <button
+                      onClick={() => markOneRead(id)}
+                      disabled={working}
+                      className="
+                        px-4 py-2 rounded-xl text-sm font-semibold
+                        bg-card-light dark:bg-card-dark
+                        border border-border-light dark:border-border-dark
+                        hover:bg-hover-light dark:hover:bg-hover-dark transition
+                        disabled:opacity-60 disabled:cursor-not-allowed
+                        inline-flex items-center gap-2
+                      "
+                    >
+                      <EnvelopeOpenIcon className="w-4 h-4" />
+                      Mark read
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -500,34 +498,54 @@ function formatWhen(dt) {
   return d.toLocaleString();
 }
 
-function isReminder(id) {
-  return String(id).startsWith("reminder-");
-}
+function getNotificationLink(n) {
+  const title = String(getTitle(n)).toLowerCase();
+  const message = String(getMessage(n)).toLowerCase();
+  const type = String(n.type ?? "").toLowerCase();
+  const meta = getMeta(n) || {};
 
-// Build renewal reminders for policies expiring within 5 days
-function buildRenewalReminders(requests) {
-  const now = new Date();
-  const soon = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
+  const buyRequestId =
+    n.buy_request_id ??
+    n.buyRequestId ??
+    meta.buy_request_id ??
+    meta.buyRequestId ??
+    meta.buy_request?.id;
 
-  return (requests || [])
-    .filter((r) => r.next_renewal_date)
-    .map((r) => ({
-      raw: r,
-      date: new Date(r.next_renewal_date),
-    }))
-    .filter(({ date }) => !Number.isNaN(date) && date >= now && date <= soon)
-    .map(({ raw, date }) => ({
-      id: `reminder-${raw.id}`,
-      title: "Renewal Reminder",
-      message: `Your policy ${raw.policy?.policy_name || ""} renews on ${date.toLocaleDateString()}.`,
-      created_at: raw.next_renewal_date,
-      is_read: false,
-      meta: {
-        policy: raw.policy?.policy_name,
-        company: raw.policy?.company_name,
-        next_renewal_date: raw.next_renewal_date,
-      },
-    }));
+  const policyId =
+    n.policy_id ??
+    n.policyId ??
+    meta.policy_id ??
+    meta.policyId ??
+    meta.policy?.id;
+
+  const ticketId =
+    n.ticket_id ??
+    n.ticketId ??
+    meta.ticket_id ??
+    meta.ticketId ??
+    meta.ticket?.id;
+
+  if (title.includes("renewal") || message.includes("renew")) {
+    return buyRequestId ? `/client/payment?request=${buyRequestId}` : "/client/my-policies";
+  }
+
+  if (type === "payment" || title.includes("payment")) {
+    return "/client/payments";
+  }
+
+  if (title.includes("policy verified") || title.includes("policy issued")) {
+    return "/client/my-policies";
+  }
+
+  if (title.includes("support") || message.includes("ticket")) {
+    return ticketId ? `/client/support/${ticketId}` : "/client/support";
+  }
+
+  if (policyId) {
+    return `/policy/${policyId}`;
+  }
+
+  return null;
 }
 
 export default Notifications;

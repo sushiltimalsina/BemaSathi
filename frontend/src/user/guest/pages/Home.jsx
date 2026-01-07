@@ -21,6 +21,10 @@ const Home = () => {
     "whole-life": null,
   });
   const [snapshotLoading, setSnapshotLoading] = useState(true);
+  const [showDisclaimer, setShowDisclaimer] = useState(() => {
+    const raw = sessionStorage.getItem("bemasathi_disclaimer_ack");
+    return raw !== "1";
+  });
 
   const formatNpr = (value) => {
     if (typeof value !== "number") return "--";
@@ -101,6 +105,26 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark transition-colors">
+      {showDisclaimer && (
+        <div className="bg-amber-50 dark:bg-amber-900/30 border-b border-amber-800 dark:border-amber-700">
+          <div className="max-w-6xl mx-auto px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <p className="text-sm text-amber-900 dark:text-amber-700">
+              <span className="font-semibold"> Disclaimer:</span>
+              This is a test project. The policies shown on this site are dummy, and the payment process is also dummy.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                sessionStorage.setItem("bemasathi_disclaimer_ack", "1");
+                setShowDisclaimer(false);
+              }}
+              className="px-4 py-2 rounded-lg text-sm font-semibold bg-amber-500 text-white hover:bg-amber-600 transition"
+            >
+              I understand
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* HERO SECTION */}
       <section className={`relative overflow-hidden ${heroBg}`}>

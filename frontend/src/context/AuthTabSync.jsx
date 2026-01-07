@@ -44,7 +44,11 @@ const AuthTabSync = () => {
       localStorage.removeItem(key);
     });
 
-    if (!canBroadcast()) return;
+    if (!canBroadcast()) {
+      window.__authSyncReady = true;
+      window.dispatchEvent(new Event("auth-sync-ready"));
+      return;
+    }
 
     window.__authSyncReady = false;
     const channel = new BroadcastChannel(AUTH_CHANNEL);

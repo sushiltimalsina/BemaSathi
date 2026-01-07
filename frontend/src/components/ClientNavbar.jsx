@@ -118,6 +118,7 @@ const ClientNavbar = ({ isDark, mode, onToggleMode, onLogout }) => {
         bg-nav-light/80 dark:bg-nav-dark/80
         text-text-light dark:text-text-dark
         transition
+        client-navbar
       "
     >
       <div className="max-w-6xl mx-auto px-6 py-3 flex items-center gap-4">
