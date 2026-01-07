@@ -2,8 +2,14 @@ import axios from "axios";
 
 // Shared API client for user-facing requests.
 // Falls back to same-origin /api, but can be overridden with Vite env var.
+const configuredBase = import.meta.env.VITE_API_BASE_URL;
+const backendBase = import.meta.env.VITE_BACKEND_URL;
+const resolvedBase =
+  configuredBase || (backendBase ? `${backendBase}/api` : "/api");
+
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "/api",
+  baseURL: resolvedBase,
+  timeout: 15000,
 });
 
 // Attach client auth token (if present) to every request.

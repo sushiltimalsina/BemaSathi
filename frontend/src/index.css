@@ -222,3 +222,49 @@ input[type="file"] {
   background-color: transparent !important;
   color: var(--text-dark);
 }
+
+/* -----------------------------------------------------------
+   CLIENT NAVBAR OFFSET (AVOID SIDEBAR OVERLAP)
+----------------------------------------------------------- */
+.client-navbar {
+  padding-left: 0;
+}
+
+@media (min-width: 768px) {
+  .client-navbar {
+    padding-left: 5rem; /* collapsed sidebar (w-20) */
+  }
+
+  body.client-sidebar-expanded .client-navbar {
+    padding-left: 16rem; /* expanded sidebar (w-64) */
+  }
+}
+
+/* -----------------------------------------------------------
+   MOBILE SAFE MODE (REDUCE GPU/DOM PRESSURE)
+----------------------------------------------------------- */
+@media (max-width: 767px) {
+  .backdrop-blur,
+  .backdrop-blur-sm,
+  .backdrop-blur-md,
+  .backdrop-blur-lg,
+  .backdrop-blur-xl,
+  .backdrop-blur-2xl {
+    backdrop-filter: none !important;
+  }
+
+  .shadow,
+  .shadow-sm,
+  .shadow-md,
+  .shadow-lg,
+  .shadow-xl,
+  .shadow-2xl {
+    box-shadow: none !important;
+  }
+
+  .compare-bar {
+    position: static !important;
+    margin: 12px 0;
+    padding-right: 1rem;
+  }
+}

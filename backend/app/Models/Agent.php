@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\AgentInquiry;
 
 class Agent extends Model
 {
@@ -28,9 +29,9 @@ class Agent extends Model
         return $this->belongsTo(Company::class);
     }
 
-    public function buyRequests()
+    public function agentInquiries()
     {
-        return $this->hasMany(BuyRequest::class);
+        return $this->hasMany(AgentInquiry::class);
     }
 }
 ?>
