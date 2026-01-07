@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Mail\PaymentFailureMail;
 use App\Mail\PaymentSuccessMail;
 use App\Mail\PolicyPurchaseConfirmationMail;
+use App\Models\BuyRequest;
 use App\Models\Payment;
+use App\Models\PaymentIntent;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -14,7 +16,6 @@ use Illuminate\Support\Facades\Mail;
 class AdminPaymentController extends Controller
 {
     private NotificationService $notifier;
-
     public function __construct(NotificationService $notifier)
     {
         $this->notifier = $notifier;
@@ -25,6 +26,8 @@ class AdminPaymentController extends Controller
         $payments = Payment::with(['user', 'buyRequest.policy'])
             ->orderByDesc('created_at')
             ->get();
+
+        $this->autoVerifyCompletedPayments($payments);
 
         $mapped = $payments->map(function (Payment $payment) {
             $payment->payment_method = $payment->method;
@@ -93,6 +96,8 @@ class AdminPaymentController extends Controller
             ]);
         }
 
+        $this->ensureBuyRequestForPayment($payment);
+
         if ($payment->is_verified) {
             return response()->json([
                 'message' => 'Payment already verified.',
@@ -135,6 +140,49 @@ class AdminPaymentController extends Controller
             'message' => 'Payment verified.',
             'payment' => $payment,
         ]);
+    }
+
+    private function ensureBuyRequestForPayment(Payment $payment): void
+    {
+        if ($payment->buy_request_id || !$payment->payment_intent_id) {
+            return;
+        }
+
+        $intent = PaymentIntent::find($payment->payment_intent_id);
+        if (!$intent) {
+            return;
+        }
+
+        if ($intent->buy_request_id) {
+            $payment->buy_request_id = $intent->buy_request_id;
+            $payment->policy_id = $payment->policy_id ?? $intent->policy_id;
+            $payment->billing_cycle = $payment->billing_cycle ?? $intent->billing_cycle;
+            $payment->save();
+            return;
+        }
+
+        $buyRequest = BuyRequest::create([
+            'user_id' => $intent->user_id,
+            'policy_id' => $intent->policy_id,
+            'name' => $intent->name,
+            'phone' => $intent->phone,
+            'email' => $intent->email,
+            'calculated_premium' => $intent->calculated_premium,
+            'cycle_amount' => $intent->cycle_amount ?? $intent->amount,
+            'billing_cycle' => $intent->billing_cycle ?? 'yearly',
+            'next_renewal_date' => $intent->next_renewal_date,
+            'renewal_status' => $intent->renewal_status ?? 'active',
+        ]);
+
+        $intent->update([
+            'buy_request_id' => $buyRequest->id,
+            'status' => 'completed',
+        ]);
+
+        $payment->buy_request_id = $buyRequest->id;
+        $payment->policy_id = $payment->policy_id ?? $intent->policy_id;
+        $payment->billing_cycle = $payment->billing_cycle ?? $intent->billing_cycle;
+        $payment->save();
     }
 
     private function shouldSendPolicyDocument(Payment $payment): bool
@@ -184,5 +232,51 @@ class AdminPaymentController extends Controller
             'next_renewal_date' => $next->toDateString(),
             'renewal_status' => 'active',
         ]);
+    }
+
+    private function autoVerifyCompletedPayments($payments): void
+    {
+        foreach ($payments as $payment) {
+            $status = strtolower((string) $payment->status);
+            if ($payment->is_verified || !in_array($status, ['success', 'paid', 'completed'], true)) {
+                continue;
+            }
+
+            $this->ensureBuyRequestForPayment($payment);
+            $payment->loadMissing(['user', 'buyRequest.policy']);
+
+            $payment->is_verified = true;
+            $payment->verified_at = now();
+            $payment->save();
+            $this->updateRenewalAfterVerification($payment);
+
+            $policyName = optional(optional($payment->buyRequest)->policy)->policy_name ?? 'your policy';
+            $notifyUser = $payment->user ?? $payment->buyRequest?->user;
+            if ($notifyUser) {
+                $this->notifier->notify(
+                    $notifyUser,
+                    'Payment verified',
+                    "Your payment for {$policyName} is verified. Please find the policy document and receipt in your email.",
+                    [
+                        'buy_request_id' => $payment->buy_request_id,
+                        'policy_id' => $payment->policy_id,
+                    ],
+                    'payment',
+                    false
+                );
+            }
+
+            $recipient = $payment->buyRequest?->email ?: $payment->user?->email;
+            if ($recipient) {
+                try {
+                    Mail::to($recipient)->send(new PaymentSuccessMail($payment));
+                    if ($this->shouldSendPolicyDocument($payment)) {
+                        Mail::to($recipient)->send(new PolicyPurchaseConfirmationMail($payment));
+                    }
+                } catch (\Throwable $e) {
+                    // ignore email failures
+                }
+            }
+        }
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Payment;
+use App\Models\PaymentIntent;
 use App\Models\BuyRequest;
 use App\Models\Policy;
 use App\Mail\PaymentSuccessMail;
@@ -13,7 +14,6 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Str;
 use App\Services\NotificationService;
-use App\Services\LeadDistributor;
 use App\Services\PremiumCalculator;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Carbon;
@@ -29,17 +29,14 @@ class PaymentController extends Controller
     private string $khaltiSecret;
     private string $khaltiPublic;
     private NotificationService $notifier;
-    private LeadDistributor $leadDistributor;
     private PremiumCalculator $calculator;
 
     public function __construct(
         NotificationService $notifier,
-        LeadDistributor $leadDistributor,
         PremiumCalculator $calculator
     )
     {
         $this->notifier = $notifier;
-        $this->leadDistributor = $leadDistributor;
         $this->calculator = $calculator;
         $merchant = config('services.esewa.merchant_code');
         $secret   = config('services.esewa.secret_key');
@@ -92,21 +89,6 @@ class PaymentController extends Controller
             return response()->json(['message' => 'buy_request_id or policy_id is required.'], 422);
         }
 
-        if (!empty($data['buy_request_id'])) {
-            $br = BuyRequest::with('policy')->findOrFail($data['buy_request_id']);
-
-            if ($br->user_id !== $request->user()?->id) {
-                return response()->json(['message' => 'Forbidden'], 403);
-            }
-        } else {
-            $br = $this->createBuyRequestFromPolicy(
-                $request,
-                (int) $data['policy_id'],
-                $data['billing_cycle'] ?? null,
-                $data['email'] ?? null
-            );
-        }
-
         $latestKyc = $request->user()?->kycDocuments()->latest()->first();
         if (!$latestKyc || $latestKyc->status !== 'approved') {
             return response()->json(['message' => 'KYC approval required before payment.'], 403);
@@ -117,16 +99,36 @@ class PaymentController extends Controller
             ], 403);
         }
 
-        $cycle = $data['billing_cycle'] ?? $br->billing_cycle;
+        $buyRequest = null;
+        $intent = null;
+        $cycle = $data['billing_cycle'] ?? null;
+        $amount = null;
 
-        $amount = $this->resolveAmount($br, $cycle);
+        if (!empty($data['buy_request_id'])) {
+            $buyRequest = BuyRequest::with('policy')->findOrFail($data['buy_request_id']);
 
-        // ensure buy request carries the latest cycle + amount
-        if (!$br->cycle_amount || $cycle !== $br->billing_cycle) {
-            $br->update([
-                'billing_cycle' => $cycle ?? 'yearly',
-                'cycle_amount'  => $amount,
-            ]);
+            if ($buyRequest->user_id !== $request->user()?->id) {
+                return response()->json(['message' => 'Forbidden'], 403);
+            }
+
+            $cycle = $cycle ?? $buyRequest->billing_cycle;
+            $amount = $this->resolveAmount($buyRequest, $cycle);
+
+            if (!$buyRequest->cycle_amount || $cycle !== $buyRequest->billing_cycle) {
+                $buyRequest->update([
+                    'billing_cycle' => $cycle ?? 'yearly',
+                    'cycle_amount' => $amount,
+                ]);
+            }
+        } else {
+            $intent = $this->createPaymentIntentFromPolicy(
+                $request,
+                (int) $data['policy_id'],
+                $cycle,
+                $data['email'] ?? null
+            );
+            $cycle = $intent->billing_cycle;
+            $amount = $intent->amount;
         }
 
         if (!$amount || $amount <= 0) {
@@ -139,15 +141,17 @@ class PaymentController extends Controller
 
         // Create payment entry
         $payment = Payment::create([
-            'user_id'       => $br->user_id,
-            'policy_id'     => $br->policy_id,
-            'buy_request_id'=> $br->id,
-            'amount'        => $amount,
-            'currency'      => 'NPR',
-            'method'        => 'esewa',
-            'provider'      => 'eSewa',
-            'status'        => 'pending',
-            'meta'          => [
+            'user_id' => $buyRequest?->user_id ?? $intent?->user_id,
+            'policy_id' => $buyRequest?->policy_id ?? $intent?->policy_id,
+            'buy_request_id' => $buyRequest?->id,
+            'payment_intent_id' => $intent?->id,
+            'amount' => $amount,
+            'currency' => $intent?->currency ?? 'NPR',
+            'method' => 'esewa',
+            'provider' => 'eSewa',
+            'status' => 'pending',
+            'billing_cycle' => $cycle ?? 'yearly',
+            'meta' => [
                 'transaction_uuid' => (string) Str::uuid(),
             ],
         ]);
@@ -181,6 +185,8 @@ class PaymentController extends Controller
         if (!$verify->ok() || $status !== 'COMPLETE') {
             return response()->json(['message' => 'Verification failed', 'gateway_status' => $status], 400);
         }
+
+        $this->ensureBuyRequestForPayment($payment);
 
         // Update payment
         try {
@@ -229,6 +235,13 @@ class PaymentController extends Controller
             'status' => $status,
             'meta'   => ['reason' => $isCancelled ? 'User cancelled payment' : 'Payment failed', 'transaction_uuid' => $transactionUuid]
         ]);
+
+        if ($payment->payment_intent_id) {
+            PaymentIntent::where('id', $payment->payment_intent_id)
+                ->whereNull('buy_request_id')
+                ->update(['status' => $status]);
+        }
+
         $this->notifyPayment($payment, $status);
 
         $failureRedirect = $this->frontendBase() . "/client/payment-failure?payment={$payment->id}";
@@ -253,21 +266,6 @@ class PaymentController extends Controller
             return response()->json(['message' => 'buy_request_id or policy_id is required.'], 422);
         }
 
-        if (!empty($data['buy_request_id'])) {
-            $br = BuyRequest::with('policy')->findOrFail($data['buy_request_id']);
-
-            if ($br->user_id !== $request->user()?->id) {
-                return response()->json(['message' => 'Forbidden'], 403);
-            }
-        } else {
-            $br = $this->createBuyRequestFromPolicy(
-                $request,
-                (int) $data['policy_id'],
-                $data['billing_cycle'] ?? null,
-                $data['email'] ?? null
-            );
-        }
-
         $latestKyc = $request->user()?->kycDocuments()->latest()->first();
         if (!$latestKyc || $latestKyc->status !== 'approved') {
             return response()->json(['message' => 'KYC approval required before payment.'], 403);
@@ -278,14 +276,36 @@ class PaymentController extends Controller
             ], 403);
         }
 
-        $cycle = $data['billing_cycle'] ?? $br->billing_cycle;
-        $amount = $this->resolveAmount($br, $cycle);
+        $buyRequest = null;
+        $intent = null;
+        $cycle = $data['billing_cycle'] ?? null;
+        $amount = null;
 
-        if (!$br->cycle_amount || $cycle !== $br->billing_cycle) {
-            $br->update([
-                'billing_cycle' => $cycle ?? 'yearly',
-                'cycle_amount'  => $amount,
-            ]);
+        if (!empty($data['buy_request_id'])) {
+            $buyRequest = BuyRequest::with('policy')->findOrFail($data['buy_request_id']);
+
+            if ($buyRequest->user_id !== $request->user()?->id) {
+                return response()->json(['message' => 'Forbidden'], 403);
+            }
+
+            $cycle = $cycle ?? $buyRequest->billing_cycle;
+            $amount = $this->resolveAmount($buyRequest, $cycle);
+
+            if (!$buyRequest->cycle_amount || $cycle !== $buyRequest->billing_cycle) {
+                $buyRequest->update([
+                    'billing_cycle' => $cycle ?? 'yearly',
+                    'cycle_amount' => $amount,
+                ]);
+            }
+        } else {
+            $intent = $this->createPaymentIntentFromPolicy(
+                $request,
+                (int) $data['policy_id'],
+                $cycle,
+                $data['email'] ?? null
+            );
+            $cycle = $intent->billing_cycle;
+            $amount = $intent->amount;
         }
 
         if (!$amount || $amount <= 0) {
@@ -297,14 +317,16 @@ class PaymentController extends Controller
         }
 
         $payment = Payment::create([
-            'user_id'       => $br->user_id,
-            'policy_id'     => $br->policy_id,
-            'buy_request_id'=> $br->id,
-            'amount'        => $amount,
-            'currency'      => 'NPR',
-            'method'        => 'khalti',
-            'provider'      => 'Khalti',
-            'status'        => 'pending',
+            'user_id' => $buyRequest?->user_id ?? $intent?->user_id,
+            'policy_id' => $buyRequest?->policy_id ?? $intent?->policy_id,
+            'buy_request_id' => $buyRequest?->id,
+            'payment_intent_id' => $intent?->id,
+            'amount' => $amount,
+            'currency' => $intent?->currency ?? 'NPR',
+            'method' => 'khalti',
+            'provider' => 'Khalti',
+            'status' => 'pending',
+            'billing_cycle' => $cycle ?? 'yearly',
         ]);
 
         $payload = [
@@ -312,11 +334,15 @@ class PaymentController extends Controller
             'website_url'        => $this->frontendBase(),
             'amount'             => (int) round($amount * 100), // paisa
             'purchase_order_id'  => (string) $payment->id,
-            'purchase_order_name'=> $br->policy?->policy_name ?? 'Policy Purchase',
+            'purchase_order_name'=> $buyRequest?->policy?->policy_name
+                ?? $intent?->policy?->policy_name
+                ?? 'Policy Purchase',
             'customer_info'      => [
-                'name'  => $br->name,
-                'email' => $br->email ?: $request->user()?->email,
-                'phone' => $br->phone,
+                'name'  => $buyRequest?->name ?? $intent?->name,
+                'email' => $buyRequest?->email
+                    ?: $intent?->email
+                    ?: $request->user()?->email,
+                'phone' => $buyRequest?->phone ?? $intent?->phone,
             ],
         ];
 
@@ -381,6 +407,8 @@ class PaymentController extends Controller
 
             return redirect()->away($this->frontendBase() . "/client/payment-failure?payment={$payment->id}");
         }
+
+        $this->ensureBuyRequestForPayment($payment);
 
         try {
             $payment->update([
@@ -520,8 +548,12 @@ class PaymentController extends Controller
         };
     }
 
-    private function createBuyRequestFromPolicy(Request $request, int $policyId, ?string $billingCycle, ?string $email): BuyRequest
-    {
+    private function createPaymentIntentFromPolicy(
+        Request $request,
+        int $policyId,
+        ?string $billingCycle,
+        ?string $email
+    ): PaymentIntent {
         $user = $request->user();
         $profile = $this->resolveProfile($user);
         $policy = Policy::findOrFail($policyId);
@@ -545,27 +577,42 @@ class PaymentController extends Controller
         $phone = $latestKyc?->phone ?? $user?->phone;
         $recipientEmail = $email ?: ($user?->email ?? null);
 
-        $buyRequest = BuyRequest::create([
+        $intent = PaymentIntent::create([
             'user_id' => $user?->id,
             'policy_id' => $policyId,
+            'email' => $recipientEmail,
             'name' => $name,
             'phone' => $phone,
-            'email' => $recipientEmail,
-            'status' => 'pending',
+            'billing_cycle' => $interval,
             'calculated_premium' => $basePremium,
             'cycle_amount' => $cycleAmount,
-            'billing_cycle' => $interval,
+            'amount' => $cycleAmount,
+            'currency' => 'NPR',
             'next_renewal_date' => $nextRenewal,
             'renewal_status' => 'active',
+            'status' => 'pending',
+            'expires_at' => now()->addDay(),
         ]);
 
-        try {
-            $this->leadDistributor->assign($buyRequest);
-        } catch (\Throwable $e) {
-            // ignore agent assignment failures
-        }
+        $intent->setRelation('policy', $policy);
 
-        // Intentionally no email/notification on buy request creation.
+        return $intent;
+    }
+
+    private function createBuyRequestFromIntent(PaymentIntent $intent): BuyRequest
+    {
+        $buyRequest = BuyRequest::create([
+            'user_id' => $intent->user_id,
+            'policy_id' => $intent->policy_id,
+            'name' => $intent->name,
+            'phone' => $intent->phone,
+            'email' => $intent->email,
+            'calculated_premium' => $intent->calculated_premium,
+            'cycle_amount' => $intent->cycle_amount ?? $intent->amount,
+            'billing_cycle' => $intent->billing_cycle ?? 'yearly',
+            'next_renewal_date' => $intent->next_renewal_date,
+            'renewal_status' => $intent->renewal_status ?? 'active',
+        ]);
 
         return $buyRequest;
     }
@@ -616,6 +663,37 @@ class PaymentController extends Controller
             ?? url('/'),
             '/'
         );
+    }
+
+    private function ensureBuyRequestForPayment(Payment $payment): void
+    {
+        if ($payment->buy_request_id || !$payment->payment_intent_id) {
+            return;
+        }
+
+        $intent = PaymentIntent::find($payment->payment_intent_id);
+        if (!$intent) {
+            return;
+        }
+
+        if ($intent->buy_request_id) {
+            $payment->buy_request_id = $intent->buy_request_id;
+            $payment->policy_id = $payment->policy_id ?? $intent->policy_id;
+            $payment->billing_cycle = $payment->billing_cycle ?? $intent->billing_cycle;
+            $payment->save();
+            return;
+        }
+
+        $buyRequest = $this->createBuyRequestFromIntent($intent);
+        $intent->update([
+            'buy_request_id' => $buyRequest->id,
+            'status' => 'completed',
+        ]);
+
+        $payment->buy_request_id = $buyRequest->id;
+        $payment->policy_id = $payment->policy_id ?? $intent->policy_id;
+        $payment->billing_cycle = $payment->billing_cycle ?? $intent->billing_cycle;
+        $payment->save();
     }
 
     /**

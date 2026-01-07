@@ -18,7 +18,7 @@ class PaymentFailureMail extends Mailable
 
     public function build()
     {
-        $this->payment->loadMissing('user', 'policy', 'buyRequest.policy');
+        $this->payment->loadMissing('user', 'policy', 'buyRequest.policy', 'paymentIntent');
 
         $policy = $this->payment->policy ?? $this->payment->buyRequest?->policy;
         $user = $this->payment->user;
@@ -26,6 +26,14 @@ class PaymentFailureMail extends Mailable
         $paymentType = $this->resolvePaymentType();
         $timezone = config('app.timezone', 'Asia/Kathmandu');
         $failedAt = Carbon::parse($this->payment->updated_at ?? now())->timezone($timezone);
+        $retryUrl = $frontend . '/client/payment?buy_request_id=' . ($this->payment->buy_request_id ?? '');
+
+        if (
+            !$this->payment->buy_request_id
+            && $this->payment->paymentIntent?->policy_id
+        ) {
+            $retryUrl = $frontend . '/client/buy?policy=' . $this->payment->paymentIntent->policy_id;
+        }
 
         return $this->subject('Payment Failed')
             ->view('emails.payment-failure')
@@ -33,7 +41,7 @@ class PaymentFailureMail extends Mailable
                 'name' => $user?->name ?? 'there',
                 'policyName' => $policy?->policy_name ?? 'your policy',
                 'reason' => $this->reason ?? ($this->payment->meta['reason'] ?? null),
-                'retryUrl' => $frontend . '/client/payment?buy_request_id=' . ($this->payment->buy_request_id ?? ''),
+                'retryUrl' => $retryUrl,
                 'paymentType' => $paymentType,
                 'failedAt' => $failedAt,
             ]);

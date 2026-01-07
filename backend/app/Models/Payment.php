@@ -9,6 +9,7 @@ class Payment extends Model
     protected $fillable = [
         'user_id',
         'buy_request_id',
+        'payment_intent_id',
         'policy_id',
         'amount',
         'currency',
@@ -42,6 +43,11 @@ class Payment extends Model
     public function buyRequest()
     {
         return $this->belongsTo(BuyRequest::class);
+    }
+
+    public function paymentIntent()
+    {
+        return $this->belongsTo(PaymentIntent::class);
     }
 
     public function policy()
