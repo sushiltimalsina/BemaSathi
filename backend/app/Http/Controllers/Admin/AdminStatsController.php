@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Policy;
 use App\Models\Agent;
+use App\Models\AgentInquiry;
 use App\Models\Inquiry;
 use App\Models\BuyRequest;
 use App\Models\Payment;
@@ -46,21 +47,17 @@ class AdminStatsController extends Controller
             ->groupBy('status')
             ->pluck('total', 'status');
 
+        $totalBuyRequests = BuyRequest::count();
+        $completedBuyRequests = BuyRequest::whereHas('payments', function ($query) {
+            $query->where('is_verified', true)
+                ->whereIn('status', ['success', 'paid', 'completed']);
+        })->count();
+
         $topAgents = Agent::query()
-            ->withCount([
-                'buyRequests as completed_leads_count' => function ($query) {
-                    $query->where('status', 'completed');
-                },
-                'buyRequests as active_leads_count' => function ($query) {
-                    $query->whereIn('status', ['pending', 'processing', 'assigned']);
-                },
-            ])
-            ->orderByDesc('completed_leads_count')
+            ->withCount('agentInquiries')
+            ->orderByDesc('agent_inquiries_count')
             ->take(5)
             ->get(['id', 'name', 'email']);
-
-        $totalBuyRequests = BuyRequest::count();
-        $completedBuyRequests = BuyRequest::where('status', 'completed')->count();
 
         $activePolicies = Schema::hasColumn('policies', 'is_active')
             ? Policy::where('is_active', true)->count()
