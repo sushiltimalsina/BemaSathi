@@ -243,6 +243,10 @@ const AllPolicies = () => {
       return;
     }
 
+    if (!policy || !policy.id) {
+      return;
+    }
+
     const idStr = String(policy.id);
     if (compare.some((p) => String(p.id) === idStr)) {
       removeFromCompare(policy.id);
@@ -325,7 +329,7 @@ const AllPolicies = () => {
         </p>
       ) : (
         <div className="grid md:grid-cols-3 gap-6">
-          {paged.map((p) => (
+          {paged.filter(Boolean).map((p) => (
             <div
               key={p.id}
               className="relative bg-card-light dark:bg-card-dark rounded-2xl p-6 border border-border-light dark:border-border-dark shadow-sm hover:shadow-md transition"
@@ -335,11 +339,13 @@ const AllPolicies = () => {
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <ShieldCheckIcon className="w-6 h-6 text-blue-600" />
-                    <h2 className="font-semibold text-text-light dark:text-text-dark">{p.policy_name}</h2>
+                    <h2 className="font-semibold text-text-light dark:text-text-dark">
+                      {p.policy_name || "Policy"}
+                    </h2>
                   </div>
 
                   <p className="text-xs text-text-light dark:text-text-dark opacity-80 -mt-1">
-                    Provided by: {p.company_name}
+                    Provided by: {p.company_name || "Unknown"}
                   </p>
                 </div>
 

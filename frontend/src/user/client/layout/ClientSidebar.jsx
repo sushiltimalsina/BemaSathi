@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { NavLink, Link } from "react-router-dom";
 import {
   HomeIcon,
@@ -28,11 +28,36 @@ const navItems = [
 ];
 
 const ClientSidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
+  const [canHover, setCanHover] = useState(false);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const update = () => setCanHover(mql.matches);
+    update();
+    if (mql.addEventListener) {
+      mql.addEventListener("change", update);
+    } else if (mql.addListener) {
+      mql.addListener(update);
+    }
+    return () => {
+      if (mql.removeEventListener) {
+        mql.removeEventListener("change", update);
+      } else if (mql.removeListener) {
+        mql.removeListener(update);
+      }
+    };
+  }, []);
 
   // Same default behavior as PHP
   useEffect(() => {
     setCollapsed(true);
   }, [setCollapsed]);
+
+  useEffect(() => {
+    if (!canHover) {
+      setCollapsed(true);
+    }
+  }, [canHover, setCollapsed]);
 
   // Push layout (NO overlay)
   useEffect(() => {
@@ -53,8 +78,8 @@ const ClientSidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) =
           DESKTOP SIDEBAR
       ============================================ */}
       <aside
-        onMouseEnter={() => setCollapsed(false)}
-        onMouseLeave={() => setCollapsed(true)}
+        onMouseEnter={canHover ? () => setCollapsed(false) : undefined}
+        onMouseLeave={canHover ? () => setCollapsed(true) : undefined}
         className={`
           hidden md:flex flex-col fixed top-0 left-0 h-screen z-50
           bg-sidebar-light dark:bg-sidebar-dark

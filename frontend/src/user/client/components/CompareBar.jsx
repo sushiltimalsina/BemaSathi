@@ -29,7 +29,7 @@ const CompareBar = () => {
   if (compare.length === 0 || onComparePage) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark border-t border-border-light dark:border-border-dark shadow-2xl p-4 pr-16 sm:pr-24 flex items-center justify-between z-50 transition-colors">
+    <div className="compare-bar fixed bottom-0 left-0 right-0 bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark border-t border-border-light dark:border-border-dark shadow-2xl p-4 pr-16 sm:pr-24 flex items-center justify-between z-50 transition-colors">
       <div className="flex flex-col gap-2">
         {compareError && (
           <span className="text-xs font-semibold text-red-600 dark:text-red-400">

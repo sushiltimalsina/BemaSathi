@@ -6,11 +6,12 @@ import useAuthSyncReady from "../../../hooks/useAuthSyncReady";
 
 const formatRs = (n) => {
   const num = Number(n ?? 0);
-  return `रु. ${num.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+  return `Rs. ${num.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 };
 
 const getTitle = (p) => (p?.policy_name ? p.policy_name : "Policy");
-const labelWithCompany = (p) => `${getTitle(p)} (${p.company_name})`;
+const labelWithCompany = (p) =>
+  `${getTitle(p)} (${p?.company_name ?? "Unknown"})`;
 
 const CompareClient = () => {
   const [policy1, setPolicy1] = useState(null);
@@ -264,7 +265,7 @@ const CompareClient = () => {
     };
   };
 
-  if (loading || !policy1 || !policy2 || !user) {
+  if (loading) {
     return (
       <p className="text-center mt-12 text-text-light dark:text-text-dark opacity-70">
         Loading comparison...
@@ -272,6 +273,41 @@ const CompareClient = () => {
     );
   }
 
+  if (!policy1 || !policy2) {
+    return (
+      <div className="min-h-screen bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
+        <div className="max-w-6xl mx-auto px-6 py-10">
+          <div className="rounded-2xl border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark p-6 text-center">
+            <p className="text-sm opacity-80">
+              Unable to load policies for comparison. Please select them again.
+            </p>
+            <button
+              onClick={() => navigate("/client/policies")}
+              className="mt-4 px-4 py-2 rounded-lg text-sm font-semibold bg-primary-light text-white hover:opacity-90"
+            >
+              Back to Policies
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
+        <div className="max-w-6xl mx-auto px-6 py-10 text-center">
+          <p className="text-sm opacity-80">Please log in to compare policies.</p>
+          <button
+            onClick={() => navigate("/login")}
+            className="mt-4 px-4 py-2 rounded-lg text-sm font-semibold bg-primary-light text-white hover:opacity-90"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
   const comparison = typeMismatch ? null : scorePolicy(policy1, policy2);
 
   const metrics1 = {
@@ -449,6 +485,7 @@ const PolicyCard = ({
   metrics,
   ownedRequestId,
 }) => {
+  if (!policy) return null;
   const owned = Boolean(ownedRequestId);
   const detailTo = owned
     ? {
@@ -480,7 +517,7 @@ const PolicyCard = ({
               border border-primary-light/30 dark:border-primary-dark/30
             "
           >
-            {policy.insurance_type}
+            {String(policy.insurance_type || "").toUpperCase()}
           </span>
         </div>
 
@@ -620,3 +657,4 @@ const ComparisonRow = ({
 };
 
 export default CompareClient;
+
