@@ -1,50 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <style>
-    body { font-family: Arial, sans-serif; color: #111; font-size: 12px; }
-    .header { border-bottom: 2px solid #0f2d52; padding-bottom: 10px; margin-bottom: 16px; }
-    .brand { font-size: 20px; font-weight: bold; color: #0f2d52; }
-    .tagline { font-size: 11px; color: #4b5563; }
-    .section-title { font-size: 14px; font-weight: bold; margin: 16px 0 6px; color: #0f2d52; }
-    table { width: 100%; border-collapse: collapse; }
-    td { padding: 6px 0; vertical-align: top; }
-    .label { font-weight: bold; width: 160px; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div class="brand">BemaSathi</div>
-    <div class="tagline">Payment Receipt</div>
-  </div>
-
-  <div class="section-title">Receipt Details</div>
-  <table>
-    <tr><td class="label">Receipt number</td><td>{{ $receiptNumber }}</td></tr>
-    <tr><td class="label">Policy number</td><td>{{ $policyNumber }}</td></tr>
-    <tr><td class="label">Transaction ID</td><td>{{ $transactionId }}</td></tr>
-    <tr><td class="label">Amount</td><td>{{ $currency }} {{ number_format((float) $amount, 2) }}</td></tr>
-    <tr><td class="label">Paid at</td><td>{{ \Illuminate\Support\Carbon::parse($paidAt)->toDayDateTimeString() }}</td></tr>
-  </table>
-
-  <div class="section-title">Policy Details</div>
-  <table>
-    <tr><td class="label">Policy</td><td>{{ $policyName }}</td></tr>
-    <tr><td class="label">Company</td><td>{{ $companyName }}</td></tr>
-    <tr><td class="label">Billing cycle</td><td>{{ ucfirst(str_replace('_', ' ', $billingCycle)) }}</td></tr>
-    @if(!empty($nextRenewalDate))
+<body style="margin:0; padding:0; background:#f5f7fb; font-family: Arial, sans-serif; color:#111;">
+  <table align="center" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:auto;">
     <tr>
-      <td class="label">Next renewal</td>
-      <td>{{ \Illuminate\Support\Carbon::parse($nextRenewalDate)->toDayDateTimeString() }}</td>
+      <td style="background:#0f2d52; padding:20px 30px; text-align:center;">
+        <h1 style="margin:0; color:#ffffff; font-size:24px;">BeemaSathi</h1>
+        <p style="margin:6px 0 0; color:#cfe0ff; font-size:12px;">Smart Digital Insurance Companion</p>
+      </td>
     </tr>
-    @endif
-  </table>
-
-  <div class="section-title">Payer</div>
-  <table>
-    <tr><td class="label">Name</td><td>{{ $userName }}</td></tr>
-    <tr><td class="label">Email</td><td>{{ $userEmail }}</td></tr>
+    <tr>
+      <td style="background:#ffffff; padding:28px 30px;">
+        <p style="margin:0 0 12px; font-size:16px;">Hi <strong>{{ $name ?? 'there' }}</strong>,</p>
+        <p style="margin:0 0 16px; font-size:14px; line-height:1.6;">
+          Your payment was successful. Your receipt is attached to this email.
+        </p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin-bottom:16px;">
+          <tr>
+            <td style="padding:8px 0; font-size:14px;"><strong>Payment type</strong></td>
+            <td style="padding:8px 0; font-size:14px;">{{ ucfirst($paymentType ?? 'new') }}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0; font-size:14px;"><strong>Policy</strong></td>
+            <td style="padding:8px 0; font-size:14px;">{{ $policyName }}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0; font-size:14px;"><strong>Policy number</strong></td>
+            <td style="padding:8px 0; font-size:14px;">{{ $policyNumber }}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0; font-size:14px;"><strong>Company</strong></td>
+            <td style="padding:8px 0; font-size:14px;">{{ $companyName }}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0; font-size:14px;"><strong>Billing cycle</strong></td>
+            <td style="padding:8px 0; font-size:14px;">{{ ucfirst(str_replace('_', ' ', $billingCycle)) }}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0; font-size:14px;"><strong>Amount</strong></td>
+            <td style="padding:8px 0; font-size:14px;">NPR {{ number_format((float) $amount, 2) }}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0; font-size:14px;"><strong>Transaction ID</strong></td>
+            <td style="padding:8px 0; font-size:14px;">{{ $transactionId }}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0; font-size:14px;"><strong>Timestamp</strong></td>
+            <td style="padding:8px 0; font-size:14px;">
+              {{ $paidAtText ?? (\Illuminate\Support\Carbon::parse($paidAt)->timezone('Asia/Kathmandu')->toDayDateTimeString().' (NPT)') }}
+            </td>
+          </tr>
+          @if(!empty($nextRenewalDate))
+          <tr>
+            <td style="padding:8px 0; font-size:14px;"><strong>Next renewal</strong></td>
+            <td style="padding:8px 0; font-size:14px;">
+              {{ $nextRenewalDateText ?? (\Illuminate\Support\Carbon::parse($nextRenewalDate)->timezone('Asia/Kathmandu')->toDayDateTimeString().' (NPT)') }}
+            </td>
+          </tr>
+          @endif
+        </table>
+        <p style="margin:0; font-size:14px; line-height:1.6;">Thank you for your payment.</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:18px; text-align:center; font-size:12px; color:#6b7280;">
+        &copy; {{ date('Y') }} BemaSathi. All rights reserved.
+      </td>
+    </tr>
   </table>
 </body>
 </html>
