@@ -47,6 +47,7 @@ use App\Http\Controllers\KycController;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login',    [AuthController::class, 'login']);
 Route::post('/password/forgot', [PasswordResetController::class, 'forgot']);
+Route::post('/password/verify', [PasswordResetController::class, 'verify']);
 Route::post('/password/reset',  [PasswordResetController::class, 'reset']);
 
 
