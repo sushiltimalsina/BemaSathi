@@ -10,9 +10,12 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use App\Mail\ResetPasswordMail;
+use App\Mail\PasswordResetSuccessMail;
 
 class PasswordResetController extends Controller
 {
+    private const OTP_TTL_MINUTES = 15;
+
     // Request a reset token and send via email.
     public function forgot(Request $request)
     {
@@ -50,6 +53,35 @@ class PasswordResetController extends Controller
 
         return response()->json([
             'message' => 'Reset link sent if the email exists.',
+            'expires_in' => self::OTP_TTL_MINUTES * 60,
+        ]);
+    }
+
+    // Verify OTP validity (without resetting password).
+    public function verify(Request $request)
+    {
+        $data = $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'token' => 'required|string',
+        ]);
+
+        $row = DB::table('password_reset_tokens')->where('email', $data['email'])->first();
+        if (!$row) {
+            return response()->json(['message' => 'Invalid token or email.'], 422);
+        }
+
+        $createdAt = isset($row->created_at) ? \Carbon\Carbon::parse($row->created_at) : null;
+        if ($createdAt && $createdAt->lt(now()->subMinutes(self::OTP_TTL_MINUTES))) {
+            return response()->json(['message' => 'OTP expired.'], 422);
+        }
+
+        if (!Hash::check($data['token'], $row->token)) {
+            return response()->json(['message' => 'Invalid token or email.'], 422);
+        }
+
+        return response()->json([
+            'message' => 'OTP verified.',
+            'expires_in' => self::OTP_TTL_MINUTES * 60,
         ]);
     }
 
@@ -62,22 +94,47 @@ class PasswordResetController extends Controller
             'password' => 'required|string|min:6|confirmed',
         ]);
 
-        $status = Password::reset(
-            [
-                'email' => $data['email'],
-                'token' => $data['token'],
-                'password' => $data['password'],
-                'password_confirmation' => $request->input('password_confirmation'),
-            ],
-            function ($user, $password) {
-                $user->forceFill(['password' => Hash::make($password)])->save();
-            }
-        );
-
-        if ($status === Password::PASSWORD_RESET) {
-            return response()->json(['message' => 'Password reset successful.']);
+        $user = User::where('email', $data['email'])->first();
+        if ($user && \Hash::check($data['password'], $user->password)) {
+            return response()->json(
+                ['message' => 'New password cannot match the current password.'],
+                422
+            );
         }
 
-        return response()->json(['message' => 'Invalid token or email.'], 422);
+        $row = DB::table('password_reset_tokens')->where('email', $data['email'])->first();
+        if (!$row) {
+            return response()->json(['message' => 'Invalid token or email.'], 422);
+        }
+
+        $createdAt = isset($row->created_at) ? \Carbon\Carbon::parse($row->created_at) : null;
+        if ($createdAt && $createdAt->lt(now()->subMinutes(self::OTP_TTL_MINUTES))) {
+            return response()->json(['message' => 'OTP expired.'], 422);
+        }
+
+        if (!Hash::check($data['token'], $row->token)) {
+            return response()->json(['message' => 'Invalid token or email.'], 422);
+        }
+
+        $user->forceFill(['password' => Hash::make($data['password'])])->save();
+        DB::table('password_reset_tokens')->where('email', $data['email'])->delete();
+
+        try {
+            $mail = new PasswordResetSuccessMail($user);
+            $from = config('mail.from.address');
+            $smtpUser = config('mail.mailers.smtp.username');
+            if ($smtpUser && $from && strcasecmp($from, $smtpUser) !== 0) {
+                $mail->from($smtpUser, config('mail.from.name'));
+            }
+            Mail::to($user->email)->send($mail);
+        } catch (\Throwable $e) {
+            Log::warning('Failed sending password reset success email', [
+                'user_id' => $user?->id,
+                'email' => $user?->email,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return response()->json(['message' => 'Password reset successful.']);
     }
 }
