@@ -262,9 +262,4 @@ input[type="file"] {
     box-shadow: none !important;
   }
 
-  .compare-bar {
-    position: static !important;
-    margin: 12px 0;
-    padding-right: 1rem;
-  }
 }
