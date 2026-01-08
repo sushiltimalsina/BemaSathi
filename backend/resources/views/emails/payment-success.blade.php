@@ -45,12 +45,16 @@
           </tr>
           <tr>
             <td style="padding:8px 0; font-size:14px;"><strong>Timestamp</strong></td>
-            <td style="padding:8px 0; font-size:14px;">{{ \Illuminate\Support\Carbon::parse($paidAt)->toDayDateTimeString() }}</td>
+            <td style="padding:8px 0; font-size:14px;">
+              {{ $paidAtText ?? (\Illuminate\Support\Carbon::parse($paidAt)->timezone('Asia/Kathmandu')->toDayDateTimeString().' (NPT)') }}
+            </td>
           </tr>
           @if(!empty($nextRenewalDate))
           <tr>
             <td style="padding:8px 0; font-size:14px;"><strong>Next renewal</strong></td>
-            <td style="padding:8px 0; font-size:14px;">{{ \Illuminate\Support\Carbon::parse($nextRenewalDate)->toDayDateTimeString() }}</td>
+            <td style="padding:8px 0; font-size:14px;">
+              {{ $nextRenewalDateText ?? (\Illuminate\Support\Carbon::parse($nextRenewalDate)->timezone('Asia/Kathmandu')->toDayDateTimeString().' (NPT)') }}
+            </td>
           </tr>
           @endif
         </table>

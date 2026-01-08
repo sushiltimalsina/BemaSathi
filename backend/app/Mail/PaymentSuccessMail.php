@@ -28,15 +28,21 @@ class PaymentSuccessMail extends Mailable
         $billingCycle = $this->payment->buyRequest?->billing_cycle ?? $this->payment->billing_cycle ?? 'yearly';
         $transactionId = $this->payment->provider_reference
             ?? ($this->payment->meta['transaction_uuid'] ?? (string) $this->payment->id);
-        $timezone = config('app.timezone', 'Asia/Kathmandu');
+        $tz = 'Asia/Kathmandu';
         $paidAt = Carbon::parse($this->payment->verified_at ?? $this->payment->paid_at ?? now())
-            ->timezone($timezone);
+            ->timezone($tz);
         $receiptNumber = 'RCPT-' . str_pad((string) $this->payment->id, 6, '0', STR_PAD_LEFT);
         $policyNumber = $this->resolvePolicyNumber();
         $nextRenewalDate = $this->payment->buyRequest?->next_renewal_date
-            ? Carbon::parse($this->payment->buyRequest->next_renewal_date)->timezone($timezone)
+            ? Carbon::parse($this->payment->buyRequest->next_renewal_date)->timezone($tz)
             : null;
         $paymentType = $this->resolvePaymentType();
+
+        $timezoneLabel = 'NPT';
+        $paidAtText = $paidAt->format('M j, Y g:i A') . " ({$timezoneLabel})";
+        $nextRenewalDateText = $nextRenewalDate
+            ? $nextRenewalDate->format('M j, Y') . " ({$timezoneLabel})"
+            : null;
 
         $pdf = null;
         try {
@@ -47,13 +53,16 @@ class PaymentSuccessMail extends Mailable
                 'amount' => $this->payment->amount,
                 'currency' => $this->payment->currency ?? 'NPR',
                 'paidAt' => $paidAt,
+                'paidAtText' => $paidAtText,
                 'policyName' => $policy?->policy_name ?? 'Policy',
                 'companyName' => $policy?->company_name ?? 'Insurance Company',
                 'billingCycle' => $billingCycle,
                 'userName' => $user?->name ?? 'Customer',
                 'userEmail' => $recipientEmail,
                 'nextRenewalDate' => $nextRenewalDate,
+                'nextRenewalDateText' => $nextRenewalDateText,
                 'paymentType' => $paymentType,
+                'timezoneLabel' => $timezoneLabel,
             ]);
         } catch (\Throwable $e) {
             Log::warning('Payment receipt PDF generation failed', [
@@ -73,8 +82,11 @@ class PaymentSuccessMail extends Mailable
                 'amount' => $this->payment->amount,
                 'transactionId' => $transactionId,
                 'paidAt' => $paidAt,
+                'paidAtText' => $paidAtText,
                 'nextRenewalDate' => $nextRenewalDate,
+                'nextRenewalDateText' => $nextRenewalDateText,
                 'paymentType' => $paymentType,
+                'timezoneLabel' => $timezoneLabel,
             ]);
 
         if ($pdf) {
