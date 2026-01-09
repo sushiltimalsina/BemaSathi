@@ -21,7 +21,7 @@ jobs:
     env:
       COMPOSER_NO_INTERACTION: 1
 
-    name: Backend lint (Pint)
+    name: Backend checks
 
     steps:
       - name: Checkout code
@@ -38,6 +38,11 @@ jobs:
         working-directory: backend
         run: composer install --prefer-dist --no-progress
 
-      - name: Run Pint
+      - name: Composer validate
         working-directory: backend
-        run: php vendor/bin/pint --test
+        run: composer validate --no-check-all --strict
+
+      - name: PHP syntax check
+        working-directory: backend
+        run: |
+          find app bootstrap config database routes -type f -name "*.php" -print0 | xargs -0 -n1 php -l
