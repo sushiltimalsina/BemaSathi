@@ -331,6 +331,13 @@ Frontend environment:
 - Multiple migrations touch buy_request pricing fields. Ensure migrations are applied in order and guard against duplicates.
 - Premium endpoints now map to dedicated controllers for quote generation.
 
+Recent changes (documentation + backend fixes):
+- Added `PROJECT_DOCS.md` as a dedicated project documentation file.
+- Fixed `/api/premium/quote` by implementing `backend/app/Http/Controllers/PremiumQuoteController.php` with a real `quote()` method using `PremiumCalculator`.
+- Implemented the missing `/api/premium/calculate` handler in `backend/app/Http/Controllers/PolicyController.php` (`calculatePremium()`), matching the existing route.
+- Hardened migration `backend/database/migrations/2025_12_11_174545_add_billing_cycle_to_buy_requests_table.php` with `Schema::hasColumn` checks and a reversible `down()` to reduce conflicts with other migrations.
+- Documented that algorithms are custom rule-based logic (not external API / not ML).
+
 ## Quick Start (Local)
 Backend (Laravel):
 - Configure `backend/.env`
