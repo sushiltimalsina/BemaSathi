@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import API from "../../../api/api";
 import { useCompare } from "../../../context/CompareContext";
 import useAuthSyncReady from "../../../hooks/useAuthSyncReady";
+import { isRenewable } from "../../utils/renewal";
 
 const formatRs = (n) => {
   const num = Number(n ?? 0);
@@ -20,6 +21,7 @@ const CompareClient = () => {
   const [loading, setLoading] = useState(true);
   const [typeMismatch, setTypeMismatch] = useState(false);
   const [ownedMap, setOwnedMap] = useState({});
+  const [kycStatus, setKycStatus] = useState("not_submitted");
   const { clearCompare } = useCompare();
 
   const navigate = useNavigate();
@@ -89,6 +91,26 @@ const CompareClient = () => {
       window.removeEventListener("profile:updated", handleProfileUpdated);
   }, [p1, p2]);
 
+  useEffect(() => {
+    const fetchKyc = async () => {
+      if (!sessionStorage.getItem("client_token")) return;
+      try {
+        const res = await API.get("/kyc/me", {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("client_token")}`,
+          },
+        });
+        const data = res.data?.data;
+        const latest = Array.isArray(data) ? data[0] : data;
+        setKycStatus(latest?.status || "not_submitted");
+      } catch (err) {
+        console.error("KYC fetch failed", err);
+        setKycStatus("not_submitted");
+      }
+    };
+    fetchKyc();
+  }, []);
+
   const fetchUser = async () => {
     try {
       if (!sessionStorage.getItem("client_token")) {
@@ -134,7 +156,7 @@ const CompareClient = () => {
       const map = {};
       (res.data || []).forEach((r) => {
         if (r.policy_id) {
-          map[r.policy_id] = r.id;
+          map[r.policy_id] = r;
         }
       });
       setOwnedMap(map);
@@ -459,7 +481,8 @@ const CompareClient = () => {
             coveredCount={covered1}
             totalConditions={totalConditions}
             metrics={metrics1}
-            ownedRequestId={ownedMap?.[policy1?.id]}
+            ownedRequest={ownedMap?.[policy1?.id]}
+            kycStatus={kycStatus}
           />
           <PolicyCard
             policy={policy2}
@@ -468,7 +491,8 @@ const CompareClient = () => {
             coveredCount={covered2}
             totalConditions={totalConditions}
             metrics={metrics2}
-            ownedRequestId={ownedMap?.[policy2?.id]}
+            ownedRequest={ownedMap?.[policy2?.id]}
+            kycStatus={kycStatus}
           />
         </div>
       </div>
@@ -483,15 +507,18 @@ const PolicyCard = ({
   coveredCount,
   totalConditions,
   metrics,
-  ownedRequestId,
+  ownedRequest,
+  kycStatus,
 }) => {
+  const navigate = useNavigate();
   if (!policy) return null;
-  const owned = Boolean(ownedRequestId);
+  const owned = Boolean(ownedRequest);
+  const renewalBlocked = owned && !isRenewable(ownedRequest);
   const detailTo = owned
     ? {
         pathname: `/policy/${policy.id}`,
-        search: `?owned=1&buyRequest=${ownedRequestId}`,
-        state: { owned: true, buyRequestId: ownedRequestId },
+        search: `?owned=1&buyRequest=${ownedRequest?.id}`,
+        state: { owned: true, buyRequestId: ownedRequest?.id },
       }
     : { pathname: `/policy/${policy.id}` };
 
@@ -610,15 +637,26 @@ const PolicyCard = ({
           View Agent
         </Link>
         {owned ? (
-          <Link
-            to={`/client/payment?request=${ownedRequestId}`}
+          <button
+            type="button"
+            onClick={() => {
+              if (renewalBlocked) {
+                if (kycStatus !== "approved") {
+                  navigate(`/client/kyc?policy=${policy.id}`);
+                  return;
+                }
+                navigate(`/client/buy?policy=${policy.id}`);
+                return;
+              }
+              navigate(`/client/payment?request=${ownedRequest?.id}`);
+            }}
             className="
               px-4 py-2 rounded-lg text-sm font-semibold
               bg-primary-light text-white hover:opacity-90 shadow
             "
           >
-            Renew Now
-          </Link>
+            {renewalBlocked ? "Buy Again" : "Renew Now"}
+          </button>
         ) : (
           <Link
           to={`/client/buy?policy=${policy.id}`}
