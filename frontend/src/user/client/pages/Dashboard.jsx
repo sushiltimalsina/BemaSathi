@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../../../api/api";
 import RecommendationCard from "../components/RecommendationCard";
+import ProfileCompletionBanner from "../components/ProfileCompletionBanner";
 import { useCompare } from "../../../context/CompareContext";
 
 const INSURANCE_TYPES = [
@@ -61,7 +62,7 @@ const ClientDashboard = () => {
     } catch (err) {
       setRecError(
         err.response?.data?.message ||
-          "Unable to load recommendations right now."
+        "Unable to load recommendations right now."
       );
       setRecommended([]);
     } finally {
@@ -85,7 +86,7 @@ const ClientDashboard = () => {
         });
         const map = {};
         (res.data || []).forEach((r) => {
-          if (r.policy_id) map[r.policy_id] = r.id;
+          if (r.policy_id) map[r.policy_id] = r;
         });
         setOwnedMap(map);
       } catch {
@@ -133,12 +134,12 @@ const ClientDashboard = () => {
     kycStatus === "approved" && allowEdit
       ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100"
       : kycStatus === "approved"
-      ? "bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-100"
-      : kycStatus === "pending"
-      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100"
-      : kycStatus === "rejected"
-      ? "bg-red-100 text-red-700 dark:bg-red-700 dark:text-red-100"
-      : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-100";
+        ? "bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-100"
+        : kycStatus === "pending"
+          ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100"
+          : kycStatus === "rejected"
+            ? "bg-red-100 text-red-700 dark:bg-red-700 dark:text-red-100"
+            : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-100";
 
   if (loadingUser)
     return (
@@ -192,7 +193,7 @@ const ClientDashboard = () => {
 
           {/* STATS */}
           <div
-        className="
+            className="
           bg-card-light dark:bg-card-dark
           border border-border-light dark:border-border-dark
           rounded-xl p-4 mb-4
@@ -203,7 +204,7 @@ const ClientDashboard = () => {
           flex justify-between items-center
           text-text-light dark:text-text-dark
             "
-             onClick={() => navigate("/client/kyc")}
+            onClick={() => navigate("/client/kyc")}
           >
             <div>
               <div className="font-semibold text-sm">KYC Status</div>
@@ -212,17 +213,20 @@ const ClientDashboard = () => {
 
             <span
               className={`px-3 py-1 rounded-full text-xs font-semibold ${badgeColor}`}
-        >
-        {kycStatus === "approved" && allowEdit
-            ? "Reapproval Needed"
-            : kycStatus === "not_submitted"
-            ? "Not Submitted"
-            : kycStatus.charAt(0).toUpperCase() + kycStatus.slice(1)}
-        </span>
-      </div>
+            >
+              {kycStatus === "approved" && allowEdit
+                ? "Reapproval Needed"
+                : kycStatus === "not_submitted"
+                  ? "Not Submitted"
+                  : kycStatus.charAt(0).toUpperCase() + kycStatus.slice(1)}
+            </span>
+          </div>
+
+          {/* Profile Completion Banner */}
+          <ProfileCompletionBanner />
         </div>
 
-          {/* <div className="flex flex-wrap gap-2">
+        {/* <div className="flex flex-wrap gap-2">
             <span className="px-4 py-2 rounded-xl text-xs bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark">
               Budget:{" "}
               <span className="font-semibold text-emerald-600 dark:text-emerald-300">
@@ -241,47 +245,46 @@ const ClientDashboard = () => {
 
         {/* INSURANCE TYPE SWITCHER */}
         <div
-  className="
+          className="
     bg-card-light dark:bg-card-dark
     border border-border-light dark:border-border-dark
     rounded-2xl p-4 mb-8
     shadow-sm dark:shadow-md
     transition-all
   "
->
-  <div className="flex flex-wrap gap-3">
-    {INSURANCE_TYPES.map((t) => {
-      const isActive = type === t.value;
+        >
+          <div className="flex flex-wrap gap-3">
+            {INSURANCE_TYPES.map((t) => {
+              const isActive = type === t.value;
 
-      return (
-        <button
-          key={t.value}
-          onClick={() => setType(t.value)}
-          className={`
+              return (
+                <button
+                  key={t.value}
+                  onClick={() => setType(t.value)}
+                  className={`
             px-4 py-2 rounded-xl text-sm font-semibold
             transition-all duration-200 border
 
-            ${
-              isActive
-                ? `
+            ${isActive
+                      ? `
                   bg-primary-light text-white border-primary-light 
                   shadow-md hover:brightness-110
                 `
-                : `
+                      : `
                   bg-card-light dark:bg-card-dark
                   text-text-light dark:text-text-dark
                   border-border-light dark:border-border-dark
                   hover:bg-hover-light dark:hover:bg-hover-dark
                 `
-            }
+                    }
           `}
-        >
-          {t.label}
-        </button>
-      );
-    })}
-  </div>
-</div>
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {/* RECOMMENDATIONS */}
         <div>
@@ -301,7 +304,7 @@ const ClientDashboard = () => {
                   policy={policy}
                   user={user}
                   kycStatus={kycStatus}
-                  ownedRequestId={ownedMap?.[policy.id]}
+                  ownedRequest={ownedMap?.[policy.id]}
                 />
               ))}
             </div>

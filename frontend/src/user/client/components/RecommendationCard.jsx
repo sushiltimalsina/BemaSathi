@@ -2,6 +2,7 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/solid";
 import { useCompare } from "../../../context/CompareContext";
+import { isRenewable } from "../../utils/renewal";
 
 const parseBudgetRange = (range) => {
   switch (range) {
@@ -22,7 +23,7 @@ const RecommendationCard = ({
   policy,
   user,
   kycStatus: kycStatusProp,
-  ownedRequestId,
+  ownedRequest,
 }) => {
   const navigate = useNavigate();
   const { compare, addToCompare, removeFromCompare } = useCompare();
@@ -32,7 +33,8 @@ const RecommendationCard = ({
   const compareDisabled = compare.length === 2 && !isAdded;
   const isClient = !!sessionStorage.getItem("client_token");
   const kycStatus = kycStatusProp ?? user?.kyc_status;
-  const isOwned = Boolean(ownedRequestId);
+  const isOwned = Boolean(ownedRequest);
+  const renewalBlocked = isOwned && !isRenewable(ownedRequest);
 
   const fmt = (n) =>
     Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
@@ -40,56 +42,12 @@ const RecommendationCard = ({
   const effectivePremium =
     policy.personalized_premium ?? policy.premium_amt ?? 0;
 
-  const { max: budgetMax } = parseBudgetRange(user?.budget_range);
-  const fitsBudget =
-    !Number.isFinite(budgetMax) || effectivePremium <= budgetMax;
-
-  let budgetText = "";
-  if (!user?.budget_range) {
-    budgetText = "Budget not provided.";
-  } else if (!Number.isFinite(budgetMax)) {
-    budgetText = `Evaluated against your budget preference (${user.budget_range}).`;
-  } else if (fitsBudget) {
-    budgetText = `Fits your budget (रु. ${fmt(effectivePremium)} ≤ रु. ${fmt(
-      budgetMax
-    )}).`;
-  } else {
-    budgetText = `Exceeds your budget by रु. ${fmt(
-      effectivePremium - budgetMax
-    )}.`;
-  }
-
-  const userConditions = user?.pre_existing_conditions || [];
-  const policyConditions = policy.covered_conditions || [];
-  const matches = userConditions.filter((c) => policyConditions.includes(c));
-
-  const criteria = [];
-
-  if (user?.budget_range) criteria.push(fitsBudget);
-
-  if (typeof user?.is_smoker !== "undefined") {
-    const smokerAllowed = user.is_smoker ? policy.supports_smokers : true;
-    criteria.push(smokerAllowed);
-  }
-
-  if (userConditions.length > 0) {
-    criteria.push(matches.length > 0);
-  }
-
-  if (typeof policy.company_rating === "number") {
-    criteria.push(policy.company_rating >= 3.5);
-  }
-
-  criteria.push(true);
-
-  const satisfiedCriteria = criteria.filter(Boolean).length;
-  const score = Math.round((satisfiedCriteria / criteria.length) * 100);
+  // Use the enhanced score and reasons from the API
+  const score = policy.match_score ?? 0;
+  const reasons = policy.match_reasons || [];
 
   const Green = () => (
     <CheckCircleIcon className="w-5 h-5 text-emerald-600 dark:text-emerald-300" />
-  );
-  const Red = () => (
-    <XCircleIcon className="w-5 h-5 text-rose-600 dark:text-rose-400" />
   );
 
   const handleCompareClick = () => {
@@ -118,17 +76,43 @@ const RecommendationCard = ({
           <p className="text-xs opacity-60">{policy.company_name}</p>
         </div>
 
-        {/* Fit Score */}
-        <span
-          className="
-            px-3 py-1 rounded-full text-[11px] font-semibold
-            bg-primary-light/20 dark:bg-primary-dark/20
-            border border-primary-light/40 dark:border-primary-dark/40
-            text-primary-light dark:text-primary-dark
-          "
-        >
-          Fit Score: <span className="font-bold">{score}%</span>
-        </span>
+        {/* Fit Score & Approval Likelihood */}
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex gap-2">
+            {policy.approval_likelihood && (
+              <span
+                className={`
+                  px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider
+                  ${policy.approval_likelihood === 'Guaranteed' || policy.approval_likelihood === 'High'
+                    ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                    : policy.approval_likelihood === 'Medium'
+                      ? 'bg-amber-100 text-amber-700 border border-amber-200'
+                      : 'bg-rose-100 text-rose-700 border border-rose-200'
+                  }
+                `}
+              >
+                {policy.approval_likelihood} Approval
+              </span>
+            )}
+            <span
+              className="
+                px-3 py-1 rounded-full text-[11px] font-semibold
+                bg-primary-light/20 dark:bg-primary-dark/20
+                border border-primary-light/40 dark:border-primary-dark/40
+                text-primary-light dark:text-primary-dark
+              "
+            >
+              Match Score: <span className="font-bold">{score}%</span>
+            </span>
+          </div>
+
+          <div className="w-24 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary-light dark:bg-primary-dark transition-all duration-1000"
+              style={{ width: `${score}%` }}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Premium + Coverage */}
@@ -147,7 +131,7 @@ const RecommendationCard = ({
           <h3 className="text-xl font-bold text-emerald-600 dark:text-emerald-300">
             रु. {fmt(effectivePremium)}
             {isClient && (
-              <span className="block text-[10px] opacity-60">personalized</span>
+              <span className="block text-[10px] opacity-60">personalized quote</span>
             )}
           </h3>
         </div>
@@ -168,10 +152,10 @@ const RecommendationCard = ({
         </div>
       </div>
 
-      {/* Why Recommended */}
+      {/* Enhanced Matching Reasons */}
       <div className="mt-6">
-        <h3 className="font-semibold mb-2 text-text-light dark:text-text-dark">
-          Why this policy suits you
+        <h3 className="font-semibold mb-3 text-text-light dark:text-text-dark text-sm">
+          Why this fits your profile
         </h3>
 
         <div
@@ -182,32 +166,22 @@ const RecommendationCard = ({
         "
         >
           <ul className="space-y-3 text-sm">
-            <li className="flex gap-2 items-start">
-              {fitsBudget ? <Green /> : <Red />}
-              {budgetText}
-            </li>
-
-            <li className="flex gap-2 items-start">
-              {user?.is_smoker && !policy.supports_smokers ? <Red /> : <Green />}
-              {policy.supports_smokers
-                ? "Supports smokers."
-                : user?.is_smoker
-                ? "Not suitable for smokers."
-                : "Optimized for non-smokers."}
-            </li>
-
-            {userConditions.length > 0 && (
-              <li className="flex gap-2 items-start">
-                {matches.length > 0 ? <Green /> : <Red />}
-                {matches.length > 0
-                  ? "Covers your pre-existing conditions."
-                  : "May not cover your pre-existing conditions."}
+            {reasons.length > 0 ? (
+              reasons.map((reason, idx) => (
+                <li key={idx} className="flex gap-2 items-center">
+                  <Green />
+                  <span className="text-text-light/80 dark:text-text-dark/80">{reason}</span>
+                </li>
+              ))
+            ) : (
+              <li className="flex gap-2 items-center text-muted-light">
+                No specific highlights available.
               </li>
             )}
-
-            <li className="flex gap-2 items-start">
-              {policy.company_rating >= 3.5 ? <Green /> : <Red />}
-              Company rating: {policy.company_rating}/5
+            <li className="flex gap-2 items-center border-t border-border-light dark:border-border-dark pt-2 mt-2">
+              <span className="text-[11px] opacity-60 italic">
+                Analysis based on your age, smoker status, and health history.
+              </span>
             </li>
           </ul>
         </div>
@@ -218,7 +192,15 @@ const RecommendationCard = ({
         <div className="flex gap-3">
           {isOwned ? (
             <button
-              onClick={() => navigate(`/client/payment?request=${ownedRequestId}`)}
+              onClick={() => {
+                if (renewalBlocked) {
+                  if (kycStatus && kycStatus !== "approved")
+                    return navigate("/client/kyc");
+                  navigate(`/client/buy?policy=${policy.id}`);
+                  return;
+                }
+                navigate(`/client/payment?request=${ownedRequest?.id}`);
+              }}
               className="
                 px-5 py-2.5 rounded-xl text-sm font-semibold text-white
                 bg-primary-light hover:brightness-110
@@ -226,7 +208,7 @@ const RecommendationCard = ({
                 transition
               "
             >
-              Renew Now
+              {renewalBlocked ? "Buy Again" : "Renew Now"}
             </button>
           ) : (
             <button
@@ -252,10 +234,9 @@ const RecommendationCard = ({
             onClick={handleCompareClick}
             disabled={compareDisabled}
             className={`px-5 py-2.5 rounded-xl text-sm font-semibold border transition
-              ${
-                isAdded
-                  ? "bg-primary-light text-white border-primary-light"
-                  : "bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark"
+              ${isAdded
+                ? "bg-primary-light text-white border-primary-light"
+                : "bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark"
               }
               ${compareDisabled ? "opacity-50 cursor-not-allowed" : ""}
             `}
