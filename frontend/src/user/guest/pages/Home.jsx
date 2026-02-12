@@ -273,7 +273,7 @@ const Home = () => {
             to="/policies"
             className="text-sm text-primary-light dark:text-primary-dark font-medium hover:underline"
           >
-            View all policies
+            View All
           </Link>
         </div>
 
