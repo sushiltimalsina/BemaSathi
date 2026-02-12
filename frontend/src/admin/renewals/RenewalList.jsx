@@ -149,6 +149,15 @@ const RenewalList = () => {
   const lastReminderAt = (renewal) =>
     renewal.renewal_grace_last_sent_at || renewal.renewal_reminder_sent_at || null;
 
+  const graceDays = (renewal) =>
+    Number(
+      renewal?.renewal_grace_days ??
+        renewal?.grace_days ??
+        renewal?.grace_period_days ??
+        renewal?.gracePeriodDays ??
+        7
+    );
+
   const canSendReminder = (renewal) => {
     const remaining = daysLeft(renewal.next_renewal_date);
     const pastDue = daysPastDue(renewal.next_renewal_date);
@@ -166,8 +175,10 @@ const RenewalList = () => {
 
     if (renewal.renewal_status === "due") {
       return (
-        [4, 6].includes(pastDue) &&
-        sentCount < 3 &&
+        pastDue !== "-" &&
+        pastDue >= 0 &&
+        pastDue <= graceDays(renewal) &&
+        sentCount < 2 &&
         !isSameDay(lastSent, new Date())
       );
     }

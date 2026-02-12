@@ -6,20 +6,15 @@ import {
   ExclamationTriangleIcon,
   ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
+import { getRenewalDate, isGraceExpired, isRenewable } from "../../utils/renewal";
 
 const RenewalCard = ({ request }) => {
   const navigate = useNavigate();
 
   const cycle = request.billing_cycle?.replace("_", " ");
-  const renewalDate =
-    request.next_renewal_date ||
-    request.nextRenewalDate ||
-    request.renewal_date ||
-    request.renewalDate ||
-    null;
+  const renewalDate = getRenewalDate(request);
   const amount = request.cycle_amount;
   const status = request.renewal_status;
-  const isRenewable = status === "active" || status === "due";
   const formatDate = (value) => {
     if (!value) return "Not set";
     const dt = new Date(
@@ -53,6 +48,9 @@ const RenewalCard = ({ request }) => {
     return Math.ceil(diff);
   };
 
+  const graceExpired = isGraceExpired(request);
+  const canRenew = isRenewable(request);
+
   const daysLeftLabel = () => {
     const remaining = daysLeft();
     if (remaining === null) return "-";
@@ -68,6 +66,12 @@ const RenewalCard = ({ request }) => {
     navigate(`/client/payment?request=${request.id}`);
   };
 
+  const handleBuyAgain = () => {
+    const policyId = request.policy_id || request.policy?.id;
+    if (!policyId) return;
+    navigate(`/client/buy?policy=${policyId}`);
+  };
+
   const handleDetails = () => {
     if (!request.policy_id) return;
     navigate(
@@ -77,13 +81,14 @@ const RenewalCard = ({ request }) => {
   };
 
   // STATUS BADGE COLORS
+  const effectiveStatus = graceExpired ? "expired" : status;
   const statusClass = {
     active:
       "bg-green-500/20 text-green-600 dark:text-green-300 border-green-500/30",
     due: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300 border-yellow-500/30",
     expired:
       "bg-red-500/20 text-red-600 dark:text-red-300 border-red-500/30",
-  }[status] || "bg-gray-500/20 text-gray-500 dark:text-gray-300";
+  }[effectiveStatus] || "bg-gray-500/20 text-gray-500 dark:text-gray-300";
 
   // URGENCY COLOR
   const urgentColor =
@@ -115,7 +120,7 @@ const RenewalCard = ({ request }) => {
             ${statusClass}
           `}
         >
-          {status?.toUpperCase()}
+          {(effectiveStatus || "-").toUpperCase()}
         </span>
       </div>
 
@@ -167,17 +172,15 @@ const RenewalCard = ({ request }) => {
       {/* ACTIONS */}
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
         <button
-          onClick={handleRenew}
-          disabled={!isRenewable}
+          onClick={canRenew ? handleRenew : handleBuyAgain}
           className="
             w-full py-3 rounded-xl font-semibold text-white
             bg-primary-light dark:bg-primary-dark
             hover:bg-primary-light/90 dark:hover:bg-primary-dark/90
             transition
-            disabled:opacity-50 disabled:cursor-not-allowed
           "
         >
-          Renew Now
+          {canRenew ? "Renew Now" : "Buy Again"}
         </button>
 
         <button
@@ -200,6 +203,11 @@ const RenewalCard = ({ request }) => {
       {status === "expired" && (
         <p className="mt-4 text-red-500 text-sm font-semibold text-center">
           Policy expired - renewal unavailable.
+        </p>
+      )}
+      {status !== "expired" && graceExpired && (
+        <p className="mt-4 text-red-500 text-sm font-semibold text-center">
+          Grace period ended - renewal unavailable. Please apply again for a new policy or contact our support team if reinstatement is possible.
         </p>
       )}
 

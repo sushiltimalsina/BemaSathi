@@ -68,20 +68,20 @@ class ProcessRenewals extends Command
             $br->save();
         }
 
-        // 1b) Send up to 2 grace reminders while status is DUE
+        // 1b) Send up to 2 grace reminders while status is DUE (any day within grace)
         $graceList = BuyRequest::where('renewal_status', 'due')
             ->whereNotNull('next_renewal_date')
             ->get();
 
         foreach ($graceList as $br) {
             $sentCount = (int) ($br->renewal_grace_reminders_sent ?? 0);
-            if ($sentCount >= 1) {
+            if ($sentCount >= 2) {
                 continue;
             }
 
             $dueDate = Carbon::parse($br->next_renewal_date, $timezone)->startOfDay();
             $daysPastDue = $dueDate->diffInDays($today, false);
-            if ($daysPastDue !== 2 || $daysPastDue > $graceDays) {
+            if ($daysPastDue < 0 || $daysPastDue > $graceDays) {
                 continue;
             }
             $user = $br->user;

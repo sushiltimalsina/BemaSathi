@@ -98,13 +98,8 @@ class AdminRenewalController extends Controller
                     'message' => 'Grace period has ended for this renewal.',
                 ], 422);
             }
-            if (!in_array($daysPastDue, [4, 6], true)) {
-                return response()->json([
-                    'message' => 'Manual re-reminder is allowed on day 4 and 6 of the grace period.',
-                ], 422);
-            }
             $sentCount = (int) ($buyRequest->renewal_grace_reminders_sent ?? 0);
-            if ($sentCount >= 3) {
+            if ($sentCount >= 2) {
                 return response()->json([
                     'message' => 'Maximum grace reminders already sent.',
                 ], 409);
