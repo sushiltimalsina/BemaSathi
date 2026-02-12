@@ -10,6 +10,7 @@ import {
   StarIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
+import { isRenewable } from "../../utils/renewal";
 
 // ---------------------------
 // AGE / PREMIUM HELPERS
@@ -53,6 +54,7 @@ const GuestPolicies = () => {
   const [selectedType, setSelectedType] = useState("all");
   const [sortBy, setSortBy] = useState("recommended");
   const [ownedMap, setOwnedMap] = useState({});
+  const [kycStatus, setKycStatus] = useState("not_submitted");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const filterOptions = ["all", "health", "term-life", "whole-life"];
 
@@ -136,7 +138,7 @@ const GuestPolicies = () => {
         const map = {};
         (res.data || []).forEach((req) => {
           if (req.policy_id) {
-            map[String(req.policy_id)] = req.id;
+            map[String(req.policy_id)] = req;
           }
         });
         setOwnedMap(map);
@@ -147,6 +149,22 @@ const GuestPolicies = () => {
     };
 
     fetchOwned();
+  }, [isClient]);
+
+  useEffect(() => {
+    const fetchKyc = async () => {
+      if (!isClient) return;
+      try {
+        const res = await API.get("/kyc/me");
+        const list = res.data?.data || [];
+        const latest = Array.isArray(list) ? list[0] : list;
+        setKycStatus(latest?.status || "not_submitted");
+      } catch (err) {
+        console.error("KYC fetch failed:", err);
+        setKycStatus("not_submitted");
+      }
+    };
+    fetchKyc();
   }, [isClient]);
 
   // Apply filters + sorting whenever policies / sortBy / selectedType change
@@ -459,14 +477,26 @@ const GuestPolicies = () => {
                                 return;
                               }
                               if (ownedRequest) {
-                                navigate(`/client/payment?request=${ownedRequest}`);
+                                if (!isRenewable(ownedRequest)) {
+                                  if (kycStatus !== "approved") {
+                                    navigate(`/client/kyc?policy=${policy.id}`);
+                                    return;
+                                  }
+                                  navigate(`/client/buy?policy=${policy.id}`);
+                                  return;
+                                }
+                                navigate(`/client/payment?request=${ownedRequest.id}`);
                                 return;
                               }
                               navigate(`/client/buy?policy=${policy.id}`);
                             }}
                             className="w-full text-sm font-semibold rounded-lg py-2 bg-primary-light text-white hover:bg-primary-dark"
                           >
-                          {ownedMap[String(policy.id)] ? "Renew Now" : "Buy Now"}
+                          {ownedMap[String(policy.id)]
+                            ? isRenewable(ownedMap[String(policy.id)])
+                              ? "Renew Now"
+                              : "Buy Again"
+                            : "Buy Now"}
                           </button>
 
                           {!isClient ? (

@@ -10,6 +10,7 @@ import {
   BookmarkSlashIcon,
   ArrowsRightLeftIcon,
 } from "@heroicons/react/24/outline";
+import { isRenewable } from "../../utils/renewal";
 
 const SavedPolicies = () => {
   const navigate = useNavigate();
@@ -89,7 +90,7 @@ const SavedPolicies = () => {
         const map = {};
         (res.data || []).forEach((req) => {
           if (req.policy_id) {
-            map[String(req.policy_id)] = req.id;
+            map[String(req.policy_id)] = req;
           }
         });
         setOwnedMap(map);
@@ -254,14 +255,23 @@ const SavedPolicies = () => {
 
                     const ownedRequest = ownedMap[String(p.id)];
                     if (ownedRequest) {
-                      navigate(`/client/payment?request=${ownedRequest}`);
+                      if (!isRenewable(ownedRequest)) {
+                        if (!ensureKycApproved()) return;
+                        navigate(`/client/buy?policy=${p.id}`);
+                        return;
+                      }
+                      navigate(`/client/payment?request=${ownedRequest.id}`);
                       return;
                     }
                     navigate(`/client/buy?policy=${p.id}`);
                   }}
                   className="px-4 py-2 rounded-lg font-semibold bg-primary-light text-white hover:bg-primary-dark"
                 >
-                  {ownedMap[String(p.id)] ? "Renew Now" : "Buy Now"}
+                  {ownedMap[String(p.id)]
+                    ? isRenewable(ownedMap[String(p.id)])
+                      ? "Renew Now"
+                      : "Buy Again"
+                    : "Buy Now"}
                 </button>
 
                 <button

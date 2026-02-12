@@ -13,6 +13,7 @@ import {
   BookmarkIcon,
   BookmarkSlashIcon,
 } from "@heroicons/react/24/outline";
+import { isRenewable } from "../../utils/renewal";
 
 const PolicyDetails = () => {
   const { id } = useParams();
@@ -23,6 +24,7 @@ const PolicyDetails = () => {
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
   const [kycStatus, setKycStatus] = useState(null);
+  const [ownedRequest, setOwnedRequest] = useState(null);
 
   const token = sessionStorage.getItem("client_token");
   const isClient = !!token;
@@ -32,7 +34,8 @@ const PolicyDetails = () => {
   );
   const ownedFlag =
     Boolean(location.state?.owned) || query.get("owned") === "1";
-  const isOwned = ownedFlag || Boolean(ownedRequestId);
+  const isOwned = ownedFlag || Boolean(ownedRequestId) || Boolean(ownedRequest);
+  const renewalBlocked = ownedRequest && !isRenewable(ownedRequest);
 
   useEffect(() => {
     fetchPolicy();
@@ -56,15 +59,17 @@ const PolicyDetails = () => {
 
   // If user is logged in but no owned request passed, check if they already bought this policy.
   useEffect(() => {
-    if (!isClient || ownedRequestId) return;
+    if (!isClient) return;
 
     const checkOwned = async () => {
       try {
         const res = await API.get("/my-requests");
-        const match = (res.data || []).find(
-          (r) => String(r.policy_id) === String(id)
-        );
+        const list = res.data || [];
+        const match =
+          list.find((r) => String(r.id) === String(ownedRequestId)) ||
+          list.find((r) => String(r.policy_id) === String(id));
         if (match) {
+          setOwnedRequest(match);
           setOwnedRequestId(match.id);
         }
       } catch (err) {
@@ -131,6 +136,14 @@ const PolicyDetails = () => {
   const handleRenewClick = () => {
     if (!isClient) {
       navigate("/login");
+      return;
+    }
+    if (renewalBlocked) {
+      if (kycStatus && kycStatus !== "approved") {
+        navigate(`/client/kyc?policy=${policy.id}`);
+        return;
+      }
+      navigate(`/client/buy?policy=${policy.id}`);
       return;
     }
     navigate(`/client/payment?request=${ownedRequestId}`);
@@ -378,7 +391,7 @@ const PolicyDetails = () => {
               hover:opacity-90 transition
             "
           >
-            Renew Now
+            {renewalBlocked ? "Buy Again" : "Renew Now"}
           </button>
         )}
       </div>
