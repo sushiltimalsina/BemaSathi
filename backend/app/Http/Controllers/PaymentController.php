@@ -110,6 +110,11 @@ class PaymentController extends Controller
             if ($buyRequest->user_id !== $request->user()?->id) {
                 return response()->json(['message' => 'Forbidden'], 403);
             }
+            if ($this->isRenewalAttempt($buyRequest) && $this->isRenewalBlocked($buyRequest)) {
+                return response()->json([
+                    'message' => 'Renewal is no longer available. Please buy a new policy.',
+                ], 422);
+            }
 
             $cycle = $cycle ?? $buyRequest->billing_cycle;
             $amount = $this->resolveAmount($buyRequest, $cycle);
@@ -286,6 +291,11 @@ class PaymentController extends Controller
 
             if ($buyRequest->user_id !== $request->user()?->id) {
                 return response()->json(['message' => 'Forbidden'], 403);
+            }
+            if ($this->isRenewalAttempt($buyRequest) && $this->isRenewalBlocked($buyRequest)) {
+                return response()->json([
+                    'message' => 'Renewal is no longer available. Please buy a new policy.',
+                ], 422);
             }
 
             $cycle = $cycle ?? $buyRequest->billing_cycle;
@@ -799,5 +809,32 @@ class PaymentController extends Controller
             'next_renewal_date' => $next->toDateString(),
             'renewal_status' => 'active',
         ]);
+    }
+
+    private function isRenewalAttempt(BuyRequest $buyRequest): bool
+    {
+        return Payment::where('buy_request_id', $buyRequest->id)
+            ->where('is_verified', true)
+            ->exists();
+    }
+
+    private function isRenewalBlocked(BuyRequest $buyRequest): bool
+    {
+        $status = strtolower((string) $buyRequest->renewal_status);
+        if ($status === 'expired') {
+            return true;
+        }
+
+        if (!$buyRequest->next_renewal_date) {
+            return false;
+        }
+
+        $timezone = config('app.timezone', 'Asia/Kathmandu');
+        $graceDays = (int) env('RENEWAL_GRACE_DAYS', 7);
+        $dueDate = Carbon::parse($buyRequest->next_renewal_date, $timezone)->startOfDay();
+        $graceEnd = $dueDate->copy()->addDays($graceDays);
+        $today = Carbon::now($timezone)->startOfDay();
+
+        return $today->greaterThan($graceEnd);
     }
 }

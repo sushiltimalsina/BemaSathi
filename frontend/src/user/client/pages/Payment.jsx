@@ -6,6 +6,7 @@ import {
   BanknotesIcon,
   ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
+import { isRenewable, isGraceExpired } from "../../utils/renewal";
 
 const PaymentPage = () => {
   const navigate = useNavigate();
@@ -29,6 +30,14 @@ const PaymentPage = () => {
 
   const fmt = (n) =>
     Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
+  const renewalBlocked = buyRequest ? !isRenewable(buyRequest) : false;
+  const graceExpired = buyRequest ? isGraceExpired(buyRequest) : false;
+
+  useEffect(() => {
+    if (!renewalBlocked) return;
+    if (!policy?.id) return;
+    navigate(`/client/buy?policy=${policy.id}`, { replace: true });
+  }, [renewalBlocked, policy?.id, navigate]);
 
   const computeCycleAmount = (br) => {
     if (!br) return 0;
@@ -145,6 +154,7 @@ const PaymentPage = () => {
   };
 
   const handlePayment = async () => {
+    if (renewalBlocked) return;
     setPaying(true);
     setError("");
     setSuccessMsg("");
@@ -172,6 +182,7 @@ const PaymentPage = () => {
   };
 
   const handleKhaltiPayment = async () => {
+    if (renewalBlocked) return;
     setPaying(true);
     setError("");
     setSuccessMsg("");
@@ -263,19 +274,26 @@ const PaymentPage = () => {
           {error}
         </p>
       )}
+      {renewalBlocked && (
+        <p className="text-red-500 dark:text-red-400 mb-3 font-medium">
+          {graceExpired
+            ? "Grace period ended. Renewal is no longer available."
+            : "Renewal is not available for this policy."}
+        </p>
+      )}
 
       {/* PAY BUTTON */}
       <div className="grid gap-3 sm:grid-cols-2">
         <button
           type="button"
-          disabled={paying}
+          disabled={paying || renewalBlocked}
           onClick={handlePayment}
           className={`
             relative group w-full py-3 px-5 rounded-2xl font-semibold overflow-hidden
             flex items-center justify-center gap-3
             transition-all duration-300 active:scale-95
 
-            ${paying
+            ${paying || renewalBlocked
               ? "cursor-not-allowed opacity-60"
               : "cursor-pointer"
             }
@@ -318,14 +336,14 @@ const PaymentPage = () => {
         {/* ==================== Khalti Ultra Premium Button ==================== */}
         <button
           type="button"
-          disabled={paying}
+          disabled={paying || renewalBlocked}
           onClick={handleKhaltiPayment}
           className={`
             relative group w-full py-3 px-5 rounded-2xl font-semibold overflow-hidden
             flex items-center justify-center gap-3
             transition-all duration-300 active:scale-95
 
-            ${paying
+            ${paying || renewalBlocked
               ? "cursor-not-allowed opacity-60"
               : "cursor-pointer"
             }
