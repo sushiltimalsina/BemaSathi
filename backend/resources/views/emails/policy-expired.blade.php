@@ -29,8 +29,11 @@
           </tr>
         </table>
         <p style="margin:0; font-size:14px; line-height:1.6;">
-          If you want to renew, you can start a renewal request here:
-          <a href="{{ $renewalUrl }}" style="color:#0f62fe;">Renew Policy</a>
+          Your renewal window has closed. You can start a new policy purchase here:
+          <a href="{{ $buyUrl }}" style="color:#0f62fe;">Buy Policy Again</a>
+        </p>
+        <p style="margin:10px 0 0; font-size:13px; line-height:1.6;">
+          Need help? <a href="{{ $supportUrl }}" style="color:#0f62fe;">Contact support</a>
         </p>
       </td>
     </tr>

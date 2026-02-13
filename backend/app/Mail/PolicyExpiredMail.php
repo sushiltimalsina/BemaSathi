@@ -36,8 +36,10 @@ class PolicyExpiredMail extends Mailable
             '/'
         );
 
-        $renewPath = "/client/payment?request={$this->buyRequest->id}";
-        $renewalUrl = $frontend . '/login?redirect=' . rawurlencode($renewPath);
+        $policyId = $this->buyRequest->policy_id ?? $this->buyRequest->policy?->id;
+        $buyPath = $policyId ? "/client/buy?policy={$policyId}" : "/client/policies";
+        $buyUrl = $frontend . '/login?redirect=' . rawurlencode($buyPath);
+        $supportUrl = $frontend . '/login?redirect=' . rawurlencode('/client/support');
 
         return $this->subject('Policy Expired')
             ->view('emails.policy-expired')
@@ -46,7 +48,8 @@ class PolicyExpiredMail extends Mailable
                 'policyName' => $policyName,
                 'companyName' => $companyName,
                 'expiryDateText' => $expiryDateText,
-                'renewalUrl' => $renewalUrl,
+                'buyUrl' => $buyUrl,
+                'supportUrl' => $supportUrl,
             ]);
     }
 }
