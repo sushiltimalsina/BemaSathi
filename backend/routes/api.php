@@ -18,6 +18,8 @@ use App\Http\Controllers\Admin\AdminRenewalController;
 use App\Http\Controllers\Admin\AdminNotificationController;
 use App\Http\Controllers\Admin\AdminReportController;
 use App\Http\Controllers\Admin\AdminAuditController;
+use App\Http\Controllers\SocialAuthController;
+use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\Admin\AdminSettingsController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AdminSupportController;
@@ -46,6 +48,7 @@ use App\Http\Controllers\KycController;
 // User Authentication
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login',    [AuthController::class, 'login']);
+Route::post('/auth/google/callback', [SocialAuthController::class, 'handleGoogleCallback']);
 Route::post('/password/forgot', [PasswordResetController::class, 'forgot']);
 Route::post('/password/verify', [PasswordResetController::class, 'verify']);
 Route::post('/password/reset',  [PasswordResetController::class, 'reset']);
@@ -144,6 +147,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Agent inquiries (Client)
     Route::post('/agent-inquiries', [AgentInquiryController::class, 'store']);
+
+    // Profile Completion (PolicyBazaar-style)
+    Route::put('/user/profile', [\App\Http\Controllers\UserProfileController::class, 'update']);
+    Route::get('/user/profile/check', [\App\Http\Controllers\UserProfileController::class, 'checkCompletion']);
 
 
 

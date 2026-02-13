@@ -58,6 +58,7 @@ import MyPolicies from "./user/client/pages/MyPolicies";
 import MyTickets from "./user/client/pages/MyTickets";
 import NewTicket from "./user/client/pages/NewTicket";
 import SupportChat from "./user/client/pages/SupportChat";
+import ProfileCompletion from "./user/client/components/ProfileCompletion";
 
 
 
@@ -251,6 +252,16 @@ const AppRoutes = () => {
           <ProtectedClientRoute>
             <ClientLayout>
               <ClientBuy />
+            </ClientLayout>
+          </ProtectedClientRoute>
+        }
+      />
+      <Route
+        path="/client/profile/complete"
+        element={
+          <ProtectedClientRoute>
+            <ClientLayout>
+              <ProfileCompletion />
             </ClientLayout>
           </ProtectedClientRoute>
         }

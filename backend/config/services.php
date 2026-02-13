@@ -47,4 +47,10 @@ return [
         'base_url'   => env('KHALTI_BASE_URL', 'https://a.khalti.com/api/v2'),
     ],
 
+    'google' => [
+        'client_id'     => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect'      => env('GOOGLE_REDIRECT_URL'),
+    ],
+
 ];

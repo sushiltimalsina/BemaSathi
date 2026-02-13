@@ -8,6 +8,9 @@ import { ToastProvider } from "./admin/context/ToastContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { CompareProvider } from "./context/CompareContext";
 import AuthTabSync from "./context/AuthTabSync";
+import { GoogleOAuthProvider } from "@react-oauth/google";
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 // Global components
 import Navbar from "./components/Navbar";
@@ -81,11 +84,13 @@ const AppFrame = () => {
 
 function App() {
   return (
-    <CompareProvider>
-      <ThemeProvider>
-        <AppFrame />
-      </ThemeProvider>
-    </CompareProvider>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <CompareProvider>
+        <ThemeProvider>
+          <AppFrame />
+        </ThemeProvider>
+      </CompareProvider>
+    </GoogleOAuthProvider>
   );
 }
 
