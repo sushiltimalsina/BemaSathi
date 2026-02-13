@@ -39,6 +39,7 @@ import FAQ from "./FAQ";
 import UserLogin from "./auth/Login";
 import UserRegister from "./auth/Register";
 import ResetPassword from "./auth/ResetPassword";
+import VerifyEmail from "./auth/VerifyEmail";
 
 /* -------- Client Pages -------- */
 import ClientDashboard from "./user/client/pages/Dashboard";
@@ -83,6 +84,7 @@ const AppRoutes = () => {
       <Route path="/login" element={<UserLogin />} />
       <Route path="/register" element={<UserRegister />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
 
       {/* ----- CLIENT ROUTES ----- */}
       <Route
