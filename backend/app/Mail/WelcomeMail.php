@@ -19,10 +19,11 @@ class WelcomeMail extends Mailable
     {
         $frontend = rtrim(config('app.frontend_url', config('app.url')), '/');
 
-        return $this->subject('Welcome to BeemaSathi')
+        return $this->subject('Welcome to BeemaSathi - Verify Your Email')
             ->view('emails.welcome')
             ->with([
                 'name' => $this->user->name,
+                'verifyUrl' => $frontend . '/verify-email?id=' . $this->user->id . '&hash=' . sha1($this->user->getEmailForVerification()),
                 'kycUrl' => $frontend . '/client/kyc',
                 'profileUrl' => $frontend . '/client/profile',
                 'policiesUrl' => $frontend . '/client/policies',

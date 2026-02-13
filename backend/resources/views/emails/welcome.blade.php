@@ -12,8 +12,13 @@
       <td style="background:#ffffff; padding:28px 30px;">
         <p style="margin:0 0 12px; font-size:16px;">Hi <strong>{{ $name ?? 'there' }}</strong>,</p>
         <p style="margin:0 0 16px; font-size:14px; line-height:1.6;">
-          Welcome to BeemaSathi. Your account is ready and you can now complete your profile and KYC
-          to unlock policy purchases.
+          Welcome to BeemaSathi! To get started and access your dashboard, please verify your email address by clicking the button below.
+        </p>
+        <div style="text-align:center; margin:24px 0;">
+          <a href="{{ $verifyUrl }}" style="background:#0f62fe; color:#ffffff; padding:12px 30px; text-decoration:none; border-radius:8px; font-weight:bold; display:inline-block;">Verify Email Address</a>
+        </div>
+        <p style="margin:0 0 16px; font-size:13px; color:#6b7280; line-height:1.6;">
+          Once verified, you can complete your profile and KYC to unlock policy purchases.
         </p>
         <p style="margin:0 0 8px; font-size:14px; font-weight:bold;">Next steps</p>
         <ul style="margin:0 0 16px 18px; padding:0; font-size:14px; line-height:1.6;">

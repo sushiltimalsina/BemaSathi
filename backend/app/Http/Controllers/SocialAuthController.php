@@ -22,17 +22,33 @@ class SocialAuthController extends Controller
             $socialUser = Socialite::driver('google')->stateless()->userFromToken($request->token);
             \Log::info('Google User Retrieved', ['email' => $socialUser->getEmail()]);
 
-            $user = User::updateOrCreate([
-                'email' => $socialUser->getEmail(),
-            ], [
-                'name' => $socialUser->getName(),
-                'google_id' => $socialUser->getId(),
-                'avatar' => $socialUser->getAvatar(),
-                'password' => bcrypt(Str::random(24)), // Random password for social users
-            ]);
+            $user = User::where('email', $socialUser->getEmail())->first();
+            $isNew = !$user;
 
-            // Determine if the user needs to complete their profile (DOB and Coverage Type are required)
-            $needsOnboarding = empty($user->dob) || empty($user->coverage_type);
+            if ($isNew) {
+                $user = User::create([
+                    'email' => $socialUser->getEmail(),
+                    'name' => $socialUser->getName(),
+                    'google_id' => $socialUser->getId(),
+                    'avatar' => $socialUser->getAvatar(),
+                    'password' => bcrypt(Str::random(24)),
+                ]);
+                
+                // Send verification email for new Google registrations
+                try {
+                    \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\WelcomeMail($user));
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to send welcome email to Google user: ' . $e->getMessage());
+                }
+            } else {
+                $user->update([
+                    'google_id' => $socialUser->getId(),
+                    'avatar' => $socialUser->getAvatar(),
+                ]);
+            }
+
+            // Determine if the user needs to complete their profile
+            $needsOnboarding = $isNew || empty($user->dob) || empty($user->coverage_type);
 
             \Log::info('Google Login Result', [
                 'email' => $user->email,

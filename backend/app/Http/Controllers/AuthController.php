@@ -69,8 +69,8 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'message' => 'Registration successful',
-            'token'   => $token,
+            'message' => 'Registration successful! Please check your email to verify your account.',
+            'requires_verification' => true,
             'user'    => $user
         ]);
     }
@@ -94,6 +94,13 @@ class AuthController extends Controller
 
         if (!Hash::check($credentials['password'], $user->password)) {
             return response()->json(['message' => 'Invalid password'], 401);
+        }
+
+        if (!$user->hasVerifiedEmail()) {
+            return response()->json([
+                'message' => 'Please verify your email address before logging in.',
+                'unverified' => true
+            ], 403);
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -192,6 +199,48 @@ public function updateProfile(Request $request)
 }
 
 
+
+    public function verifyEmail(Request $request, $id, $hash)
+    {
+        $user = User::findOrFail($id);
+
+        if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+            return response()->json(['message' => 'Invalid verification link.'], 403);
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return response()->json(['message' => 'Email already verified.']);
+        }
+
+        if ($user->markEmailAsVerified()) {
+            event(new \Illuminate\Auth\Events\Verified($user));
+        }
+
+        return response()->json(['message' => 'Email verified successfully! You can now login.']);
+    }
+
+    public function resendVerification(Request $request)
+    {
+        $data = $request->validate(['email' => 'required|email']);
+        $user = User::where('email', $data['email'])->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'User not found.'], 404);
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return response()->json(['message' => 'Email already verified.']);
+        }
+
+        try {
+            dispatch(function () use ($user) {
+                Mail::to($user->email)->send(new WelcomeMail($user));
+            })->afterResponse();
+            return response()->json(['message' => 'Verification email resent.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to resend email.'], 500);
+        }
+    }
 
     /**
      * Logout user
