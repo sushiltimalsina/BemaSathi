@@ -1,27 +1,40 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import API from "../api/api";
-import { UserPlusIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import { UserPlusIcon, EyeIcon, EyeSlashIcon, EnvelopeIcon } from "@heroicons/react/24/outline";
 import { broadcastAuthUpdate } from "../utils/authBroadcast";
 import { useGoogleLogin } from "@react-oauth/google";
+
+const BUDGET_RANGES = ["< 5k/yr", "5k-10k", "10k-20k", "20k-50k", "50k+"];
+const MEDICAL_CONDITIONS = [
+  { id: "diabetes", label: "Diabetes" },
+  { id: "heart", label: "Heart Issues" },
+  { id: "hypertension", label: "Hypertension" },
+  { id: "asthma", label: "Asthma" },
+];
 
 const Register = () => {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
     name: "",
-    phone: "",
     email: "",
+    phone: "",
+    address: "",
     password: "",
     confirm_password: "",
     dob: "",
     coverage_type: "individual",
     family_members: 1,
+    is_smoker: false,
+    budget_range: "10k-20k",
+    pre_existing_conditions: [],
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isRegistered, setIsRegistered] = useState(false);
   const [socialUser, setSocialUser] = useState(null); // Stores Google Data
   const [emailError, setEmailError] = useState("");
   const [phoneError, setPhoneError] = useState("");
@@ -40,13 +53,13 @@ const Register = () => {
   const validatePhone = (value) => {
     if (!value) return "";
     const ok = /^9[0-9]{9}$/.test(value);
-    return ok ? "" : "Enter a valid 10-digit phone number starting with 9.";
+    return ok ? "" : "Phone must be 10 digits starting with 9.";
   };
 
   const passwordRules = (value) => {
-    if (!value || value.length < 8) return "Password must be at least 8 characters.";
+    if (!value) return "";
+    if (value.length < 8) return "Password must be at least 8 chars.";
     if (!/[A-Z]/.test(value)) return "Password must include an uppercase letter.";
-    if (!/[a-z]/.test(value)) return "Password must include a lowercase letter.";
     if (!/[0-9]/.test(value)) return "Password must include a number.";
     if (!/[^A-Za-z0-9]/.test(value)) return "Password must include a symbol.";
     return "";
@@ -64,6 +77,8 @@ const Register = () => {
   };
 
   const validateAge = (dob) => {
+    if (!dob) return "Date of Birth is required.";
+    if (new Date(dob) >= new Date()) return "Date of Birth cannot be today or in the future.";
     return ""; // No longer blocking registration for under 18
   };
 
@@ -84,7 +99,7 @@ const Register = () => {
             ...user,
             avatar: user.avatar || `https://ui-avatars.com/api/?name=${user.name}`,
           });
-          // VERY IMPORTANT: Sync form with social data so validation passes
+          // Update form for validation consistency in Step 2
           setForm(prev => ({
             ...prev,
             name: user.name,
@@ -95,7 +110,6 @@ const Register = () => {
           sessionStorage.setItem("client_token", token);
           sessionStorage.setItem("client_user", JSON.stringify(user));
           broadcastAuthUpdate("client", token, JSON.stringify(user));
-          setSuccess("Welcome back!");
           navigate("/client/dashboard");
         }
       } catch (err) {
@@ -125,29 +139,31 @@ const Register = () => {
         setLoading(false);
         return;
       }
-      const phoneMsg = validatePhone(form.phone);
-      setPhoneError(phoneMsg);
-      if (phoneMsg) {
-        setLoading(false);
-        return;
-      }
 
-      const emailMsg = validateEmail(form.email);
-      setEmailError(emailMsg);
-      if (emailMsg) {
-        setLoading(false);
-        return;
-      }
+      if (!socialUser) {
+        const phoneMsg = validatePhone(form.phone);
+        setPhoneError(phoneMsg);
+        if (phoneMsg) {
+          setLoading(false);
+          return;
+        }
 
-      const ok = validatePasswords(form);
-      if (!ok) {
-        setLoading(false);
-        return;
+        const emailMsg = validateEmail(form.email);
+        setEmailError(emailMsg);
+        if (emailMsg) {
+          setLoading(false);
+          return;
+        }
+
+        const ok = validatePasswords(form);
+        if (!ok) {
+          setLoading(false);
+          return;
+        }
       }
 
       const payload = {
         ...form,
-        is_smoker: false, // Default for lite reg
         health_score: 100, // Best case for starting price
       };
 
@@ -158,6 +174,15 @@ const Register = () => {
         res = await API.put("/update-profile", payload, {
           headers: { Authorization: `Bearer ${tempToken}` }
         });
+
+        // After profile completion, if unverified, show the "Check Email" screen
+        if (!res.data.user.email_verified_at) {
+          setIsRegistered(true);
+          setSuccess("Profile updated! Please check your email to verify and access your dashboard.");
+          setLoading(false);
+          return;
+        }
+
         // On success, the temp token becomes the real token
         res.data.token = tempToken;
       } else {
@@ -165,7 +190,10 @@ const Register = () => {
         res = await API.post("/register", payload);
       }
 
-      if (res.data.token) {
+      if (res.data.requires_verification) {
+        setSuccess(res.data.message || "Registration successful! Please check your email to verify your account.");
+        setIsRegistered(true);
+      } else if (res.data.token) {
         sessionStorage.setItem("client_token", res.data.token);
         sessionStorage.removeItem("temp_client_token");
         const userToStore = res.data.user || (socialUser ? { ...socialUser, ...form } : null);
@@ -210,6 +238,19 @@ const Register = () => {
     setLoading(false);
   };
 
+  const handleResendVerification = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      await API.post("/email/resend", { email: form.email });
+      setSuccess("Verification email resent! Please check your inbox.");
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to resend email.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div
       className="
@@ -244,7 +285,31 @@ const Register = () => {
         )}
 
         <div className="space-y-4">
-          {!socialUser ? (
+          {isRegistered ? (
+            <div className="text-center animate-in fade-in zoom-in duration-500 py-4">
+              <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <EnvelopeIcon className="w-8 h-8 text-green-600" />
+              </div>
+              <h2 className="text-xl font-bold mb-2">Check your email!</h2>
+              <p className="text-xs opacity-70 leading-relaxed mb-6">
+                We've sent a verification link to <strong>{form.email}</strong>.
+                Please click the link in the email to activate your account.
+              </p>
+              <Link
+                to="/login"
+                className="w-full inline-block py-3 rounded-xl bg-primary-light dark:bg-primary-dark text-white font-bold text-sm shadow-lg hover:opacity-90 active:scale-95 transition-all text-center"
+              >
+                Go to Login
+              </Link>
+              <button
+                onClick={handleResendVerification}
+                disabled={loading}
+                className="w-full mt-4 text-[10px] opacity-40 hover:opacity-100 transition-opacity font-bold uppercase tracking-widest disabled:opacity-20"
+              >
+                {loading ? "Resending..." : "Didn't get the email? Resend"}
+              </button>
+            </div>
+          ) : !socialUser ? (
             <>
               {/* SOCIAL LOGIN */}
               <button
@@ -257,16 +322,16 @@ const Register = () => {
                   <span className="animate-spin h-5 w-5 border-2 border-green-500 border-t-transparent rounded-full"></span>
                 ) : (
                   <>
-                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5 group-hover:scale-110 transition-transform" alt="Google" />
-                    Continue with Google
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="Google" />
+                    <span className="opacity-70 group-hover:opacity-100 italic transition-opacity">Continue with Google</span>
                   </>
                 )}
               </button>
 
-              <div className="flex items-center gap-3 py-2">
-                <div className="h-[1px] flex-1 bg-border-light dark:bg-border-dark"></div>
-                <span className="text-[10px] uppercase opacity-40 font-bold">Or with Email</span>
-                <div className="h-[1px] flex-1 bg-border-light dark:bg-border-dark"></div>
+              <div className="flex items-center gap-3 py-2 opacity-20">
+                <div className="h-[1px] flex-1 bg-current"></div>
+                <span className="text-[10px] font-black uppercase tracking-widest">OR</span>
+                <div className="h-[1px] flex-1 bg-current"></div>
               </div>
 
               <form onSubmit={handleRegister} className="space-y-4">
@@ -360,14 +425,17 @@ const Register = () => {
                 )}
 
                 {/* LIVE QUOTE PREVIEW */}
-                {form.dob && (
+                {form.dob && !error && (
                   <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 animate-in slide-in-from-top-2 duration-300">
                     <div className="flex items-baseline gap-1">
                       <span className="text-sm opacity-60">Plans start at</span>
                       <span className="text-xl font-black text-green-700 dark:text-green-400">
                         Rs. {
                           (() => {
-                            const age = new Date().getFullYear() - new Date(form.dob).getFullYear();
+                            const bDay = new Date(form.dob);
+                            const now = new Date();
+                            if (bDay >= now) return "0";
+                            const age = now.getFullYear() - bDay.getFullYear();
                             const base = form.coverage_type === 'family' ? 9500 : 4200;
                             const mod = age > 30 ? 1 + (age - 30) * 0.04 : 1;
                             return Math.round(base * mod).toLocaleString();
@@ -405,28 +473,104 @@ const Register = () => {
               </p>
 
               <form onSubmit={handleRegister} className="space-y-5">
-                <div>
-                  <label className="text-xs font-semibold opacity-70 mb-1 block">Your Date of Birth</label>
-                  <input
-                    type="date"
-                    value={form.dob}
-                    onChange={(e) => setForm({ ...form, dob: e.target.value })}
-                    className="w-full px-4 py-3 text-sm rounded-xl bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark focus:ring-2 focus:ring-green-500/30 transition-all font-medium"
-                    required
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1 block">Date of Birth</label>
+                    <input
+                      type="date"
+                      value={form.dob}
+                      onChange={(e) => setForm({ ...form, dob: e.target.value })}
+                      className="w-full px-3 py-2 text-sm rounded-lg bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark focus:ring-2 focus:ring-green-500/30 transition-all font-medium"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1 block">Phone Number</label>
+                    <input
+                      type="text"
+                      placeholder="98XXXXXXXX"
+                      value={form.phone}
+                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                      className="w-full px-3 py-2 text-sm rounded-lg bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark focus:ring-2 focus:ring-green-500/30 transition-all font-medium"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold opacity-70 mb-1 block">Primary Coverage Type</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1 block">Annual Budget Range</label>
+                  <div className="flex flex-wrap gap-2">
+                    {BUDGET_RANGES.map(br => (
+                      <button
+                        key={br}
+                        type="button"
+                        onClick={() => setForm({ ...form, budget_range: br })}
+                        className={`px-3 py-1.5 rounded-full text-[10px] font-bold border transition-all ${form.budget_range === br
+                          ? 'border-green-600 bg-green-600 text-white shadow-lg shadow-green-600/20'
+                          : 'border-border-light dark:border-border-dark hover:border-green-600/50'
+                          }`}
+                      >
+                        {br}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-2 block">Premium Factors</label>
+                  <div className="space-y-3 p-4 rounded-xl bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark selection:">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold">Do you smoke?</span>
+                      <button
+                        type="button"
+                        onClick={() => setForm({ ...form, is_smoker: !form.is_smoker })}
+                        className={`w-12 h-6 rounded-full relative transition-colors ${form.is_smoker ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-700'}`}
+                      >
+                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${form.is_smoker ? 'left-7' : 'left-1'}`} />
+                      </button>
+                    </div>
+
+                    <div className="pt-2 border-t border-border-light dark:border-border-dark">
+                      <span className="text-[10px] opacity-40 italic block mb-2">Select any existing medical conditions:</span>
+                      <div className="flex flex-wrap gap-2">
+                        {MEDICAL_CONDITIONS.map(cond => {
+                          const isSelected = form.pre_existing_conditions.includes(cond.id);
+                          return (
+                            <button
+                              key={cond.id}
+                              type="button"
+                              onClick={() => {
+                                const next = isSelected
+                                  ? form.pre_existing_conditions.filter(c => c !== cond.id)
+                                  : [...form.pre_existing_conditions, cond.id];
+                                setForm({ ...form, pre_existing_conditions: next });
+                              }}
+                              className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-tighter border transition-all ${isSelected
+                                ? 'border-red-500 bg-red-500/10 text-red-600'
+                                : 'border-border-light dark:border-border-dark opacity-50'
+                                }`}
+                            >
+                              {cond.label}
+                            </button>
+                          );
+                        })}
+                        {form.pre_existing_conditions.length === 0 && <span className="text-[9px] opacity-30 italic">None selected (Healthy)</span>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1 block">Coverage Type</label>
                   <div className="grid grid-cols-2 gap-3">
                     {['individual', 'family'].map(t => (
                       <button
                         key={t}
                         type="button"
                         onClick={() => setForm({ ...form, coverage_type: t })}
-                        className={`py-3 px-2 rounded-xl border text-xs font-bold transition-all ${form.coverage_type === t
+                        className={`py-2 px-2 rounded-xl border text-[10px] font-bold transition-all ${form.coverage_type === t
                           ? 'border-green-500 bg-green-500/10 text-green-700 dark:text-green-400'
-                          : 'border-border-light dark:border-border-dark opacity-60 hover:opacity-100'
+                          : 'border-border-light dark:border-border-dark opacity-60'
                           }`}
                       >
                         {t === 'individual' ? '🧍 Individual' : '👨‍👩‍👧 Family'}
@@ -435,40 +579,18 @@ const Register = () => {
                   </div>
                 </div>
 
-                {/* FAMILY MEMBERS COUNT (SOCIAL) */}
                 {form.coverage_type === "family" && (
                   <div className="animate-in slide-in-from-top-2 duration-300">
-                    <label className="text-xs font-semibold opacity-70 mb-1 block">Number of Family Members <span className="text-[9px] opacity-50">(including yourself)</span></label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1 block">Family Members Count</label>
                     <input
                       type="number"
                       min="2"
                       max="10"
                       value={form.family_members}
                       onChange={(e) => setForm({ ...form, family_members: e.target.value })}
-                      className="w-full px-4 py-3 text-sm rounded-xl bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark focus:ring-2 focus:ring-green-500/30 transition-all font-medium"
+                      className="w-full px-3 py-2 text-sm rounded-lg bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark focus:ring-2 focus:ring-green-500/30 transition-all font-medium"
                       required
                     />
-                    {familyMembersError && <p className="text-[10px] text-red-500 mt-1">{familyMembersError}</p>}
-                  </div>
-                )}
-
-                {/* LIVE QUOTE PREVIEW */}
-                {form.dob && (
-                  <div className="p-5 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-600 text-white shadow-xl shadow-green-600/20 transform hover:scale-[1.02] transition-all">
-                    <p className="text-[9px] font-black uppercase tracking-widest opacity-80">Calculated Instant Rate</p>
-                    <div className="flex items-baseline gap-1 mt-1">
-                      <span className="text-3xl font-black">
-                        Rs. {
-                          (() => {
-                            const age = new Date().getFullYear() - new Date(form.dob).getFullYear();
-                            const base = form.coverage_type === 'family' ? 9500 : 4200;
-                            const mod = age > 30 ? 1 + (age - 30) * 0.04 : 1;
-                            return Math.round(base * mod).toLocaleString();
-                          })()
-                        }
-                      </span>
-                      <span className="text-xs opacity-80">/year*</span>
-                    </div>
                   </div>
                 )}
 
@@ -478,7 +600,7 @@ const Register = () => {
                   className={`w-full py-4 rounded-xl text-white font-black text-sm shadow-xl active:scale-95 transition-all ${loading ? "bg-green-400/50" : "bg-green-600 hover:bg-green-700 shadow-green-600/20"
                     }`}
                 >
-                  {loading ? "Processing..." : "Register"}
+                  {loading ? "Completing Profile..." : "Register"}
                 </button>
 
                 <button
@@ -493,15 +615,16 @@ const Register = () => {
         </div>
 
         {/* FOOTER */}
-        <p className="text-center text-xs opacity-70 mt-5">
-          Already have an account?{" "}
-          <Link
-            to="/login"
-            className="text-green-600 dark:text-green-400 hover:underline"
-          >
-            Login
-          </Link>
-        </p>
+        {!socialUser && !isRegistered && (
+          <div className="mt-8 pt-6 border-t border-border-light dark:border-border-dark text-center">
+            <p className="text-xs opacity-50">
+              Already have an account?{" "}
+              <Link to="/login" className="text-green-600 dark:text-green-400 font-bold hover:underline">
+                Login here
+              </Link>
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

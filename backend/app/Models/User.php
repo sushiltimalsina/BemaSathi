@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -11,7 +11,7 @@ use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
 use Illuminate\Auth\Passwords\CanResetPassword;
 use App\Models\KycDocument;
 
-class User extends Authenticatable implements CanResetPasswordContract
+class User extends Authenticatable implements MustVerifyEmail, CanResetPasswordContract
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasApiTokens, CanResetPassword;
@@ -34,6 +34,11 @@ class User extends Authenticatable implements CanResetPasswordContract
     'family_member_details',
     'pre_existing_conditions',
     'password',
+    'weight_kg',
+    'height_cm',
+    'occupation_class',
+    'google_id',
+    'avatar',
 ];
 
 

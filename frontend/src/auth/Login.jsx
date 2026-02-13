@@ -1,20 +1,40 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import API from "../api/api";
-import { LockClosedIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import { LockClosedIcon, EyeIcon, EyeSlashIcon, EnvelopeIcon } from "@heroicons/react/24/outline";
 import { broadcastAuthUpdate } from "../utils/authBroadcast";
 import { useGoogleLogin } from "@react-oauth/google";
+
+const validateAge = (dob) => {
+  if (!dob) return "Date of Birth is required.";
+  if (new Date(dob) >= new Date()) return "Date of Birth cannot be today or in the future.";
+  return ""; // No longer blocking registration for under 18
+};
+const BUDGET_RANGES = ["< 5k/yr", "5k-10k", "10k-20k", "20k-50k", "50k+"];
+const MEDICAL_CONDITIONS = [
+  { id: "diabetes", label: "Diabetes" },
+  { id: "heart", label: "Heart Issues" },
+  { id: "hypertension", label: "Hypertension" },
+  { id: "asthma", label: "Asthma" },
+];
 
 const Login = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
+    name: "",
     email: "",
     password: "",
     dob: "",
+    phone: "",
+    address: "",
     coverage_type: "individual",
     family_members: 2,
+    is_smoker: false,
+    health_score: 100,
+    budget_range: "10k-20k",
+    pre_existing_conditions: [],
   });
 
   const [loading, setLoading] = useState(false);
@@ -24,6 +44,7 @@ const Login = () => {
   const [passwordError, setPasswordError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [socialUser, setSocialUser] = useState(null);
+  const [isRegistered, setIsRegistered] = useState(false);
 
   // Build redirect target from query (?redirect=...)
   const redirectPath = useMemo(() => {
@@ -80,6 +101,13 @@ const Login = () => {
           }));
           sessionStorage.setItem("temp_client_token", token);
         } else {
+          // Check verification status even for existing social users
+          if (!user.email_verified_at) {
+            setIsRegistered(true);
+            setForm(prev => ({ ...prev, email: user.email }));
+            return;
+          }
+
           sessionStorage.setItem("client_token", token);
           sessionStorage.setItem("client_user", JSON.stringify(user));
           broadcastAuthUpdate("client", token, JSON.stringify(user));
@@ -117,7 +145,34 @@ const Login = () => {
         navigate(redirectPath, { replace: true });
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed.");
+      if (err.response?.data?.unverified) {
+        setError(
+          <div className="flex flex-col gap-2">
+            <span>{err.response.data.message}</span>
+            <button
+              onClick={handleResendVerification}
+              className="text-primary-light dark:text-primary-dark font-bold hover:underline"
+            >
+              Resend verification email?
+            </button>
+          </div>
+        );
+      } else {
+        setError(err.response?.data?.message || "Login failed.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setLoading(true);
+    try {
+      await API.post("/email/resend", { email: form.email });
+      setSuccess("Verification email resent! Please check your inbox.");
+      setError("");
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to resend email.");
     } finally {
       setLoading(false);
     }
@@ -128,11 +183,31 @@ const Login = () => {
     setLoading(true);
     setError("");
 
+    const ageErr = validateAge(form.dob);
+    if (ageErr) {
+      setError(ageErr);
+      setLoading(false);
+      return;
+    }
+
+    if (form.phone && !/^9[0-9]{9}$/.test(form.phone)) {
+      setError("Phone must be 10 digits starting with 9.");
+      setLoading(false);
+      return;
+    }
+
     try {
       const tempToken = sessionStorage.getItem("temp_client_token");
       const res = await API.put("/update-profile", { ...form }, {
         headers: { Authorization: `Bearer ${tempToken}` }
       });
+
+      // After profile completion, if unverified, show the "Check Email" screen
+      if (!res.data.user.email_verified_at) {
+        setIsRegistered(true);
+        // We still have the email in form.email
+        return;
+      }
 
       sessionStorage.setItem("client_token", tempToken);
       sessionStorage.removeItem("temp_client_token");
@@ -140,7 +215,12 @@ const Login = () => {
       broadcastAuthUpdate("client", tempToken, JSON.stringify(res.data.user));
       navigate(redirectPath, { replace: true });
     } catch (err) {
-      setError("Failed to update profile.");
+      const fieldErrors = err.response?.data?.errors || {};
+      const msg =
+        err.response?.data?.message ||
+        Object.values(fieldErrors).flat()[0] ||
+        "Failed to update profile.";
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -158,10 +238,39 @@ const Login = () => {
         </div>
 
         {success && <p className="text-green-600 text-sm text-center mb-3">{success}</p>}
-        {error && <p className="text-red-500 text-sm text-center mb-3">{error}</p>}
+        {error && !isRegistered && <p className="text-red-500 text-sm text-center mb-3">{error}</p>}
 
         <div className="space-y-4">
-          {!socialUser ? (
+          {isRegistered ? (
+            <div className="text-center animate-in fade-in zoom-in duration-500 py-4">
+              <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <EnvelopeIcon className="w-8 h-8 text-green-600" />
+              </div>
+              <h2 className="text-xl font-bold mb-2">Check your email!</h2>
+              <p className="text-xs opacity-70 leading-relaxed mb-6">
+                We've sent a verification link to <strong>{form.email}</strong>.
+                Please click the link in the email to activate your account.
+              </p>
+              <button
+                onClick={() => {
+                  setIsRegistered(false);
+                  setSocialUser(null);
+                  setSuccess("");
+                  setError("");
+                }}
+                className="w-full inline-block py-3 rounded-xl bg-primary-light dark:bg-primary-dark text-white font-bold text-sm shadow-lg hover:opacity-90 active:scale-95 transition-all text-center"
+              >
+                Back to Login
+              </button>
+              <button
+                onClick={handleResendVerification}
+                disabled={loading}
+                className="w-full mt-4 text-[10px] opacity-40 hover:opacity-100 transition-opacity font-bold uppercase tracking-widest disabled:opacity-20"
+              >
+                {loading ? "Resending..." : "Didn't get the email? Resend"}
+              </button>
+            </div>
+          ) : !socialUser ? (
             <>
               {/* GOOGLE BUTTON */}
               <button
@@ -248,28 +357,104 @@ const Login = () => {
               </p>
 
               <form onSubmit={handleSocialRegister} className="space-y-5">
-                <div>
-                  <label className="text-xs font-semibold opacity-70 mb-1 block">Date of Birth</label>
-                  <input
-                    type="date"
-                    value={form.dob}
-                    onChange={(e) => setForm({ ...form, dob: e.target.value })}
-                    className="w-full px-4 py-3 text-sm rounded-xl bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark focus:ring-2 focus:ring-green-500/30 transition-all font-medium"
-                    required
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1 block">Date of Birth</label>
+                    <input
+                      type="date"
+                      value={form.dob}
+                      onChange={(e) => setForm({ ...form, dob: e.target.value })}
+                      className="w-full px-3 py-2 text-sm rounded-lg bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark focus:ring-2 focus:ring-green-500/30 transition-all font-medium"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1 block">Phone Number</label>
+                    <input
+                      type="text"
+                      placeholder="98XXXXXXXX"
+                      value={form.phone}
+                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                      className="w-full px-3 py-2 text-sm rounded-lg bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark focus:ring-2 focus:ring-green-500/30 transition-all font-medium"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold opacity-70 mb-1 block">Primary Coverage Type</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1 block">Annual Budget Range</label>
+                  <div className="flex flex-wrap gap-2">
+                    {BUDGET_RANGES.map(br => (
+                      <button
+                        key={br}
+                        type="button"
+                        onClick={() => setForm({ ...form, budget_range: br })}
+                        className={`px-3 py-1.5 rounded-full text-[10px] font-bold border transition-all ${form.budget_range === br
+                          ? 'border-green-600 bg-green-600 text-white shadow-lg shadow-green-600/20'
+                          : 'border-border-light dark:border-border-dark hover:border-green-600/50'
+                          }`}
+                      >
+                        {br}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-2 block">Premium Factors</label>
+                  <div className="space-y-3 p-4 rounded-xl bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark selection:">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold">Do you smoke?</span>
+                      <button
+                        type="button"
+                        onClick={() => setForm({ ...form, is_smoker: !form.is_smoker })}
+                        className={`w-12 h-6 rounded-full relative transition-colors ${form.is_smoker ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-700'}`}
+                      >
+                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${form.is_smoker ? 'left-7' : 'left-1'}`} />
+                      </button>
+                    </div>
+
+                    <div className="pt-2 border-t border-border-light dark:border-border-dark">
+                      <span className="text-[10px] opacity-40 italic block mb-2">Select any existing medical conditions:</span>
+                      <div className="flex flex-wrap gap-2">
+                        {MEDICAL_CONDITIONS.map(cond => {
+                          const isSelected = form.pre_existing_conditions.includes(cond.id);
+                          return (
+                            <button
+                              key={cond.id}
+                              type="button"
+                              onClick={() => {
+                                const next = isSelected
+                                  ? form.pre_existing_conditions.filter(c => c !== cond.id)
+                                  : [...form.pre_existing_conditions, cond.id];
+                                setForm({ ...form, pre_existing_conditions: next });
+                              }}
+                              className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-tighter border transition-all ${isSelected
+                                ? 'border-red-500 bg-red-500/10 text-red-600'
+                                : 'border-border-light dark:border-border-dark opacity-50'
+                                }`}
+                            >
+                              {cond.label}
+                            </button>
+                          );
+                        })}
+                        {form.pre_existing_conditions.length === 0 && <span className="text-[9px] opacity-30 italic">None selected (Healthy)</span>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1 block">Coverage Type</label>
                   <div className="grid grid-cols-2 gap-3">
                     {['individual', 'family'].map(t => (
                       <button
                         key={t}
                         type="button"
                         onClick={() => setForm({ ...form, coverage_type: t })}
-                        className={`py-3 px-2 rounded-xl border text-xs font-bold transition-all ${form.coverage_type === t
+                        className={`py-2 px-2 rounded-xl border text-[10px] font-bold transition-all ${form.coverage_type === t
                           ? 'border-green-500 bg-green-500/10 text-green-700 dark:text-green-400'
-                          : 'border-border-light dark:border-border-dark opacity-60 hover:opacity-100'
+                          : 'border-border-light dark:border-border-dark opacity-60'
                           }`}
                       >
                         {t === 'individual' ? '🧍 Individual' : '👨‍👩‍👧 Family'}
@@ -280,14 +465,14 @@ const Login = () => {
 
                 {form.coverage_type === "family" && (
                   <div className="animate-in slide-in-from-top-2 duration-300">
-                    <label className="text-xs font-semibold opacity-70 mb-1 block">Number of Family Members <span className="text-[9px] opacity-50">(including yourself)</span></label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1 block">Family Members Count</label>
                     <input
                       type="number"
                       min="2"
                       max="10"
                       value={form.family_members}
                       onChange={(e) => setForm({ ...form, family_members: e.target.value })}
-                      className="w-full px-4 py-3 text-sm rounded-xl bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark focus:ring-2 focus:ring-green-500/30 transition-all font-medium"
+                      className="w-full px-3 py-2 text-sm rounded-lg bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark focus:ring-2 focus:ring-green-500/30 transition-all font-medium"
                       required
                     />
                   </div>
