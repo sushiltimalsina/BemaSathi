@@ -153,10 +153,10 @@ public function updateProfile(Request $request)
         ?? $user->family_member_details
         ?? [];
 
-    if ($coverageType === 'family') {
+    if ($coverageType === 'family' && !empty($validated['family_member_details'])) {
         if (count($familyDetails) !== $familyCount) {
             return response()->json([
-                'message' => 'Please provide details for all family members.',
+                'message' => 'The number of family member details provided does not match the family members count.',
             ], 422);
         }
         $selfName = $validated['name'];
@@ -167,7 +167,7 @@ public function updateProfile(Request $request)
             'relation' => 'Self',
             'dob' => $selfDob,
         ];
-    } else {
+    } elseif ($coverageType === 'individual') {
         $familyDetails = [];
     }
 
