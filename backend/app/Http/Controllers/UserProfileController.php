@@ -19,6 +19,15 @@ class UserProfileController extends Controller
         }
 
         $validated = $request->validate([
+            'phone' => 'nullable|string|max:30',
+            'address' => 'nullable|string|max:255',
+            'dob' => 'nullable|date|before:today',
+            'is_smoker' => 'nullable|boolean',
+            'budget_range' => 'nullable|string',
+            'coverage_type' => 'nullable|in:individual,family',
+            'family_members' => 'nullable|integer|min:1|max:20',
+            'pre_existing_conditions' => 'nullable|array',
+            'pre_existing_conditions.*' => 'in:diabetes,heart,hypertension,asthma',
             'weight_kg' => 'nullable|numeric|min:20|max:300',
             'height_cm' => 'nullable|integer|min:50|max:250',
             'occupation_class' => 'nullable|in:class_1,class_2,class_3',
