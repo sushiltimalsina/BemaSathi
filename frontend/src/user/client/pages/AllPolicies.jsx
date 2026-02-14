@@ -12,6 +12,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { isRenewable } from "../../utils/renewal";
 
+
 const AllPolicies = () => {
   const [policies, setPolicies] = useState([]);
   const [filtered, setFiltered] = useState([]);
@@ -20,6 +21,7 @@ const AllPolicies = () => {
   const [ownedMap, setOwnedMap] = useState({});
   const [kycStatus, setKycStatus] = useState("loading");
   const [kycAllowEdit, setKycAllowEdit] = useState(false);
+  const [profileComplete, setProfileComplete] = useState(false);
   const { compare, addToCompare, removeFromCompare } = useCompare();
 
   const location = useLocation();
@@ -74,6 +76,7 @@ const AllPolicies = () => {
       fetchSaved();
       fetchOwned();
       fetchKycStatus();
+      fetchProfileCompletion();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClient]);
@@ -186,13 +189,17 @@ const AllPolicies = () => {
     }
   };
 
-  const ensureKycApproved = () => {
-    if (kycStatus === "approved" && !kycAllowEdit) {
-      return true;
+  const fetchProfileCompletion = async () => {
+    try {
+      const res = await API.get("/user/profile/check");
+      setProfileComplete(!!res.data.is_complete);
+    } catch (err) {
+      console.error("Profile check failed", err);
+      setProfileComplete(false);
     }
-    navigate("/client/kyc");
-    return false;
   };
+
+
 
   const applyFilters = () => {
     let temp = [...policies];
@@ -294,19 +301,18 @@ const AllPolicies = () => {
             <button
               key={type}
               onClick={() => setTypeFilter(type)}
-              className={`px-4 py-2 rounded-full border transition font-semibold ${
-                typeFilter === type
-                  ? "bg-primary-light text-white border-primary-light"
-                  : "bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark"
-              }`}
+              className={`px-4 py-2 rounded-full border transition font-semibold ${typeFilter === type
+                ? "bg-primary-light text-white border-primary-light"
+                : "bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark"
+                }`}
             >
               {type === "all"
                 ? "All"
                 : type === "health"
-                ? "Health"
-                : type === "term-life"
-                ? "Term Life"
-                : "Whole Life"}
+                  ? "Health"
+                  : type === "term-life"
+                    ? "Term Life"
+                    : "Whole Life"}
             </button>
           ))}
         </div>
@@ -381,7 +387,7 @@ const AllPolicies = () => {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-text-light dark:text-text-dark opacity-80">
-                    Personalized Premium:
+                    {profileComplete ? "Personalized Premium:" : "Premium Starts From:"}
                   </span>
                   <span className="font-semibold text-green-600 dark:text-green-400">
                     Rs. {fmt(effectivePremium(p))}
@@ -415,12 +421,31 @@ const AllPolicies = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => {
-                      if (!ensureKycApproved()) return;
+                      if (!isClient) {
+                        navigate("/login");
+                        return;
+                      }
+
+                      // 1. Profile Completion Check
+                      if (!profileComplete) {
+                        return navigate("/client/profile", {
+                          state: {
+                            msg: "Please complete your profile details (Phone, Address, Height, Weight) before purchasing a policy.",
+                            returnTo: `/client/buy?policy=${p.id}`
+                          }
+                        });
+                      }
+
+                      // 2. KYC Verification Check
+                      if (kycStatus !== "approved") {
+                        return navigate(`/client/kyc?policy=${p.id}`, {
+                          state: { msg: "KYC verification is required to proceed with this purchase." }
+                        });
+                      }
 
                       const ownedRequest = ownedMap[String(p.id)];
                       if (ownedRequest) {
                         if (!isRenewable(ownedRequest)) {
-                          if (!ensureKycApproved()) return;
                           navigate(`/client/buy?policy=${p.id}`);
                           return;
                         }
@@ -440,11 +465,10 @@ const AllPolicies = () => {
 
                   <button
                     onClick={() => toggleSelect(p)}
-                    className={`w-full flex items-center justify-center gap-2 text-sm font-semibold rounded-lg py-2 transition ${
-                      compare.some((policy) => String(policy.id) === String(p.id))
-                        ? "bg-primary-light text-white border border-primary-light shadow-sm dark:bg-primary-dark dark:border-primary-dark"
-                        : "bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark border border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark"
-                    }`}
+                    className={`w-full flex items-center justify-center gap-2 text-sm font-semibold rounded-lg py-2 transition ${compare.some((policy) => String(policy.id) === String(p.id))
+                      ? "bg-primary-light text-white border border-primary-light shadow-sm dark:bg-primary-dark dark:border-primary-dark"
+                      : "bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark border border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark"
+                      }`}
                   >
                     <ArrowsRightLeftIcon className="w-4 h-4" />
                     {compare.some((policy) => String(policy.id) === String(p.id))
@@ -480,11 +504,10 @@ const AllPolicies = () => {
             return (
               <button
                 key={num}
-                className={`px-3 py-1 rounded border ${
-                  page === num
-                    ? "bg-primary-light text-white border-primary-light"
-                    : "border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark"
-                }`}
+                className={`px-3 py-1 rounded border ${page === num
+                  ? "bg-primary-light text-white border-primary-light"
+                  : "border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark"
+                  }`}
                 onClick={() => setPage(num)}
               >
                 {num}

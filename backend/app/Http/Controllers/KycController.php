@@ -58,6 +58,12 @@ class KycController extends Controller
             'full_name' => ['nullable', 'string', 'min:2', 'max:255', 'regex:/^[A-Za-z\\s]+$/'],
             'dob' => 'nullable|date',
             'address' => 'nullable|string|min:5|max:255',
+            'province' => 'nullable|string',
+            'district' => 'nullable|string',
+            'municipality_type' => 'nullable|string',
+            'municipality_name' => 'nullable|string',
+            'ward_number' => 'nullable|string',
+            'street_address' => 'nullable|string',
             'phone' => 'nullable|string|max:50',
             'family_members' => 'nullable',
         ];
@@ -132,6 +138,12 @@ class KycController extends Controller
             'full_name' => $request->full_name ?? $user->name,
             'dob' => $request->dob ?? $user->dob,
             'address' => $request->address ?? $user->address,
+            'province' => $request->province ?? $user->province,
+            'district' => $request->district ?? $user->district,
+            'municipality_type' => $request->municipality_type ?? $user->municipality_type,
+            'municipality_name' => $request->municipality_name ?? $user->municipality_name,
+            'ward_number' => $request->ward_number ?? $user->ward_number,
+            'street_address' => $request->street_address ?? $user->street_address,
             'phone' => $request->phone ?? $user->phone,
             'document_type' => $request->document_type,
             'document_number' => $request->document_number,
@@ -158,6 +170,35 @@ class KycController extends Controller
         ];
         if ($request->filled('dob')) {
             $userUpdates['dob'] = $payload['dob'] ?? $user->dob;
+        }
+        
+        // Sync structured address
+        $userUpdates['province'] = $payload['province'];
+        $userUpdates['district'] = $payload['district'];
+        $userUpdates['municipality_type'] = $payload['municipality_type'];
+        $userUpdates['municipality_name'] = $payload['municipality_name'];
+        $userUpdates['ward_number'] = $payload['ward_number'];
+        $userUpdates['street_address'] = $payload['street_address'];
+        
+        // Auto-calculate Region Type
+        $muniType = $payload['municipality_type'];
+        $regionType = 'urban';
+        if ($muniType === 'rural_municipality') {
+            $regionType = 'rural';
+        } elseif ($muniType === 'municipality') {
+            $regionType = 'semi_urban';
+        }
+        $userUpdates['region_type'] = $regionType;
+        
+        // Sync generic address for backward compat
+        if ($payload['province'] || $payload['district'] || $payload['municipality_name']) {
+             $fullAddressItems = array_filter([
+                $payload['street_address'] ?? null,
+                ($payload['municipality_name'] ?? '') . ($payload['ward_number'] ? '-' . $payload['ward_number'] : ''),
+                $payload['district'] ?? null,
+                $payload['province'] ?? null
+            ]);
+            $userUpdates['address'] = implode(', ', $fullAddressItems);
         }
         if (is_array($familyMembers)) {
             $userUpdates['family_member_details'] = $familyMembers;

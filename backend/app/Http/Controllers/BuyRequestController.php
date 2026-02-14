@@ -11,6 +11,8 @@ use Illuminate\Support\Carbon;
 
 class BuyRequestController extends Controller
 {
+    use \App\Traits\SyncsPolicyStatus;
+
     public function __construct(private PremiumCalculator $calculator) {}
 
     public function store(Request $request)
@@ -53,7 +55,15 @@ class BuyRequestController extends Controller
             $profile['health_score'],
             $profile['coverage_type'],
             $profile['budget_range'],
-            $profile['family_members']
+            $profile['family_members'],
+            [
+                'region_type' => $profile['region_type'],
+                'city' => $profile['city'],
+                'weight' => $profile['weight'],
+                'height' => $profile['height'],
+                'occupation_class' => $profile['occupation_class'],
+                'conditions' => $profile['conditions']
+            ]
         );
 
         $basePremium = $quote['calculated_total'];
@@ -103,6 +113,10 @@ class BuyRequestController extends Controller
     {
         $user = $request->user();
 
+        if ($user) {
+            $this->syncPolicyStatuses($user->id);
+        }
+
         $requests = BuyRequest::with('policy')
             ->where('user_id', $user?->id)
             ->whereHas('payments', function ($query) {
@@ -144,7 +158,8 @@ class BuyRequestController extends Controller
     {
         $kyc = $user->kycDocuments()->where('status', 'approved')->latest()->first();
 
-        $dob = $user->dob ?? $kyc?->dob;
+        // ✅ PRIORITIZE VERIFIED KYC DOB OVER PROFILE DOB
+        $dob = $kyc?->dob ?? $user->dob;
         $age = ($dob ? Carbon::parse($dob)->age : 30);
 
         return [
@@ -153,7 +168,15 @@ class BuyRequestController extends Controller
             'health_score' => $user->health_score ?? 70,
             'coverage_type' => $user->coverage_type ?? 'individual',
             'budget_range' => $user->budget_range,
-            'family_members' => $user->family_members ?? 1
+            'family_members' => $user->family_members ?? 1,
+            'region_type' => $user->region_type ?? 'urban',
+            'city' => $user->municipality_name ?? $user->address,
+            'weight' => $user->weight_kg,
+            'height' => $user->height_cm,
+            'occupation_class' => $user->occupation_class ?? 'class_1',
+            'conditions' => is_array($user->pre_existing_conditions)
+                ? $user->pre_existing_conditions
+                : json_decode($user->pre_existing_conditions ?? '[]', true)
         ];
     }
     public function preview(Request $request)
@@ -175,7 +198,15 @@ class BuyRequestController extends Controller
         $profile['health_score'],
         $profile['coverage_type'],
         $profile['budget_range'],
-        $profile['family_members']
+        $profile['family_members'],
+        [
+            'region_type' => $profile['region_type'],
+            'city' => $profile['city'],
+            'weight' => $profile['weight'],
+            'height' => $profile['height'],
+            'occupation_class' => $profile['occupation_class'],
+            'conditions' => $profile['conditions']
+        ]
     );
 
     $basePremium = $quote['calculated_total'];

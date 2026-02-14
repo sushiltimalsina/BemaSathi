@@ -68,11 +68,7 @@ const KycPage = () => {
     "Son",
     "Daughter",
     "Father",
-    "Mother",
-    "Brother",
-    "Sister",
-    "Grandfather",
-    "Grandmother",
+    "Mother"
   ];
 
   const currentOrigin = typeof window !== "undefined" ? window.location.origin : "";
@@ -133,8 +129,19 @@ const KycPage = () => {
 
   // Load user + KYC
   useEffect(() => {
-    const load = async () => {
+    const load = async (attempt = 1) => {
       try {
+        const token = sessionStorage.getItem("client_token") || localStorage.getItem("token");
+        if (!token) {
+          if (attempt < 3) {
+            setTimeout(() => load(attempt + 1), 1000);
+            return;
+          }
+          setError("Auth token missing. Please log in.");
+          setKycLoaded(true);
+          return;
+        }
+
         const u = await API.get("/me");
         setUser(u.data);
 
@@ -208,13 +215,19 @@ const KycPage = () => {
           });
         }
       } catch (err) {
-        setError("Unable to load KYC details.");
-        setKycList([]);
+        console.log(err);
+        if (attempt < 3 && (!err.response || err.response.status === 401)) {
+          setTimeout(() => load(attempt + 1), 1500);
+          return;
+        }
+        setError("Failed to load user or KYC data.");
       } finally {
         setKycLoaded(true);
       }
     };
+
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -426,10 +439,10 @@ const KycPage = () => {
       const members = familyMembers.map((m, idx) =>
         idx === 0
           ? {
-              name: profile.full_name || "",
-              relation: "Self",
-              dob: profile.dob || "",
-            }
+            name: profile.full_name || "",
+            relation: "Self",
+            dob: profile.dob || "",
+          }
           : m
       );
       const required = Math.max(0, Number(familyCount || 0));
@@ -471,10 +484,10 @@ const KycPage = () => {
         const members = familyMembers.map((m, idx) =>
           idx === 0
             ? {
-                name: profile.full_name || "",
-                relation: "Self",
-                dob: profile.dob || "",
-              }
+              name: profile.full_name || "",
+              relation: "Self",
+              dob: profile.dob || "",
+            }
             : m
         );
         fd.append("family_members", JSON.stringify(members));
@@ -522,13 +535,12 @@ const KycPage = () => {
       {/* VERIFIED BANNER */}
       {kycLoaded && (isPending || isApproved) && (
         <div
-          className={`mb-4 p-4 rounded-xl border flex items-center gap-3 ${
-            canEditApproved || isPending
-              ? "bg-amber-300 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700"
-              : isApproved
+          className={`mb-4 p-4 rounded-xl border flex items-center gap-3 ${canEditApproved || isPending
+            ? "bg-amber-300 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700"
+            : isApproved
               ? "bg-green-300 dark:bg-green-900/20 border-green-300 dark:border-green-700"
               : "bg-amber-300 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700"
-          }`}
+            }`}
         >
           {canEditApproved ? (
             <svg
@@ -553,30 +565,28 @@ const KycPage = () => {
           )}
           <div>
             <p
-              className={`text-sm font-semibold ${
-                isApproved ? "text-green-800 dark:text-green-800" : "text-amber-800 dark:text-amber-100"
-              }`}
+              className={`text-sm font-semibold ${isApproved ? "text-green-800 dark:text-green-800" : "text-amber-800 dark:text-amber-100"
+                }`}
             >
               {canEditApproved
                 ? "Reapproval Needed"
                 : isApproved
-                ? "KYC Verified"
-                : "KYC Submitted - Pending Review"}
+                  ? "KYC Verified"
+                  : "KYC Submitted - Pending Review"}
             </p>
             <p
-              className={`text-xs ${
-                canEditApproved
-                  ? "text-amber-700/80 dark:text-amber-200/80"
-                  : isApproved
+              className={`text-xs ${canEditApproved
+                ? "text-amber-700/80 dark:text-amber-200/80"
+                : isApproved
                   ? "text-green-700/80 dark:text-green-800/80"
                   : "text-amber-700/80 dark:text-amber-200/80"
-              }`}
+                }`}
             >
               {canEditApproved
                 ? "Admin granted edit access. Please update and resubmit."
                 : isApproved
-                ? "You can view details but cannot edit them."
-                : "Your KYC was submitted and is awaiting approval."}
+                  ? "You can view details but cannot edit them."
+                  : "Your KYC was submitted and is awaiting approval."}
             </p>
             {isApproved && !canEditApproved && (
               <button
@@ -632,25 +642,24 @@ const KycPage = () => {
             <h2 className="text-lg font-semibold">KYC Status</h2>
             <span
               className={`px-3 py-1 text-xs rounded-full font-medium border
-                ${
-                  !kycLoaded
-                    ? "bg-hover-light dark:bg-hover-dark text-text-light dark:text-text-dark border-border-light dark:border-border-dark"
-                    : !latestKyc || latestKyc.status === "not_submitted"
+                ${!kycLoaded
+                  ? "bg-hover-light dark:bg-hover-dark text-text-light dark:text-text-dark border-border-light dark:border-border-dark"
+                  : !latestKyc || latestKyc.status === "not_submitted"
                     ? "bg-hover-light dark:bg-hover-dark text-text-light dark:text-text-dark border-border-light dark:border-border-dark"
                     : latestKyc.status === "pending"
-                    ? "bg-yellow-100 dark:bg-yellow-600 text-yellow-800 dark:text-yellow-100 border-yellow-300 dark:border-yellow-700"
-                    : latestKyc.status === "approved" && allowEdit
-                    ? "bg-yellow-100 dark:bg-yellow-600 text-yellow-800 dark:text-yellow-100 border-yellow-300 dark:border-yellow-700"
-                    : latestKyc.status === "approved"
-                    ? "bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-100 border-green-300 dark:border-green-700"
-                    : "bg-red-100 dark:bg-red-700 text-red-700 dark:text-red-200 border-red-300 dark:border-red-800"
+                      ? "bg-yellow-100 dark:bg-yellow-600 text-yellow-800 dark:text-yellow-100 border-yellow-300 dark:border-yellow-700"
+                      : latestKyc.status === "approved" && allowEdit
+                        ? "bg-yellow-100 dark:bg-yellow-600 text-yellow-800 dark:text-yellow-100 border-yellow-300 dark:border-yellow-700"
+                        : latestKyc.status === "approved"
+                          ? "bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-100 border-green-300 dark:border-green-700"
+                          : "bg-red-100 dark:bg-red-700 text-red-700 dark:text-red-200 border-red-300 dark:border-red-800"
                 }`}
             >
               {!kycLoaded
                 ? "Loading..."
                 : latestKyc?.status === "approved" && allowEdit
-                ? "Approved (Edit Enabled)"
-                : latestKyc?.status || "Not Submitted"}
+                  ? "Approved (Edit Enabled)"
+                  : latestKyc?.status || "Not Submitted"}
             </span>
           </div>
           {latestKyc?.status === "rejected" && latestKyc?.remarks && (
@@ -659,25 +668,25 @@ const KycPage = () => {
             </div>
           )}
         </div>
-                {/* IMPORTANT NOTICE WHEN NOT SUBMITTED */}
+        {/* IMPORTANT NOTICE WHEN NOT SUBMITTED */}
         {kycLoaded && (kycStatus === "not_submitted" || kycStatus === "rejected") && (
           <div className="rounded-md border-l-4 border-red-200 bg-white p-3 shadow-sm 
                           dark:border-red-200 dark:bg-red-900/30">
             <div className="flex items-start gap-2">
               <span className="text-red-700 dark:text-red-200 text-lg">⚠️</span>
               <p className="text-xs leading-relaxed text-red-800 dark:text-red-900">
-                <strong>Important Notice:</strong> Please ensure all information provided is accurate. 
+                <strong>Important Notice:</strong> Please ensure all information provided is accurate.
                 Submitting false or incorrect details may result in claim rejection or loss of policy benefits.
               </p>
               <br></br>
             </div>
           </div>
-          
+
 
         )}
         {/* FORM */}
         <form
-        
+
           onSubmit={handleSubmit}
           className="p-6 rounded-xl shadow bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark space-y-8"
         >
@@ -687,7 +696,7 @@ const KycPage = () => {
             </div>
           )}
 
-          
+
           {/* USER INFO */}
           <div>
             <br></br>
@@ -759,67 +768,67 @@ const KycPage = () => {
                 {familyMembers.map((member, idx) => {
                   const isSelf = idx === 0;
                   return (
-                  <div
-                    key={idx}
-                    className="grid md:grid-cols-3 gap-3 p-4 rounded-lg border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark"
-                  >
-                    <div>
-                      <label className="text-xs font-semibold">Full Name</label>
-                      <input
-                        className={inputClass}
-                        value={isSelf ? profile.full_name : member.name}
-                        disabled={isLocked || isSelf}
-                        onChange={(e) => {
-                          const next = [...familyMembers];
-                          next[idx] = { ...next[idx], name: e.target.value };
-                          setFamilyMembers(next);
-                        }}
-                      />
-                    </div>
+                    <div
+                      key={idx}
+                      className="grid md:grid-cols-3 gap-3 p-4 rounded-lg border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark"
+                    >
+                      <div>
+                        <label className="text-xs font-semibold">Full Name</label>
+                        <input
+                          className={inputClass}
+                          value={isSelf ? profile.full_name : member.name}
+                          disabled={isLocked || isSelf}
+                          onChange={(e) => {
+                            const next = [...familyMembers];
+                            next[idx] = { ...next[idx], name: e.target.value };
+                            setFamilyMembers(next);
+                          }}
+                        />
+                      </div>
 
-                    <div>
-                      <label className="text-xs font-semibold">Relation</label>
-                      <select
-                        className={inputClass}
-                        value={isSelf ? "Self" : member.relation}
-                        disabled={isLocked || isSelf}
-                        onChange={(e) => {
-                          const next = [...familyMembers];
-                          next[idx] = { ...next[idx], relation: e.target.value };
-                          setFamilyMembers(next);
-                        }}
-                      >
-                        {isSelf ? (
-                          <option value="Self">Self</option>
-                        ) : (
-                          <>
-                            <option value="">Select relation</option>
-                            {relationOptions.map((option) => (
-                              <option key={option} value={option}>
-                                {option}
-                              </option>
-                            ))}
-                          </>
-                        )}
-                      </select>
-                    </div>
+                      <div>
+                        <label className="text-xs font-semibold">Relation</label>
+                        <select
+                          className={inputClass}
+                          value={isSelf ? "Self" : member.relation}
+                          disabled={isLocked || isSelf}
+                          onChange={(e) => {
+                            const next = [...familyMembers];
+                            next[idx] = { ...next[idx], relation: e.target.value };
+                            setFamilyMembers(next);
+                          }}
+                        >
+                          {isSelf ? (
+                            <option value="Self">Self</option>
+                          ) : (
+                            <>
+                              <option value="">Select relation</option>
+                              {relationOptions.map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                            </>
+                          )}
+                        </select>
+                      </div>
 
-                    <div>
-                      <label className="text-xs font-semibold">Date of Birth</label>
-                      <input
-                        type="date"
-                        className={inputClass}
-                        value={isSelf ? profile.dob : member.dob}
-                        disabled={isLocked || isSelf}
-                        onChange={(e) => {
-                          const next = [...familyMembers];
-                          next[idx] = { ...next[idx], dob: e.target.value };
-                          setFamilyMembers(next);
-                        }}
-                      />
+                      <div>
+                        <label className="text-xs font-semibold">Date of Birth</label>
+                        <input
+                          type="date"
+                          className={inputClass}
+                          value={isSelf ? profile.dob : member.dob}
+                          disabled={isLocked || isSelf}
+                          onChange={(e) => {
+                            const next = [...familyMembers];
+                            next[idx] = { ...next[idx], dob: e.target.value };
+                            setFamilyMembers(next);
+                          }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                );
+                  );
                 })}
               </div>
             </div>

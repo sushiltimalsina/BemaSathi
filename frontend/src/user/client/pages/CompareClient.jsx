@@ -22,6 +22,7 @@ const CompareClient = () => {
   const [typeMismatch, setTypeMismatch] = useState(false);
   const [ownedMap, setOwnedMap] = useState({});
   const [kycStatus, setKycStatus] = useState("not_submitted");
+  const [profileComplete, setProfileComplete] = useState(false);
   const { clearCompare } = useCompare();
 
   const navigate = useNavigate();
@@ -109,7 +110,17 @@ const CompareClient = () => {
       }
     };
     fetchKyc();
+    fetchProfileCompletion();
   }, []);
+
+  const fetchProfileCompletion = async () => {
+    try {
+      const res = await API.get("/user/profile/check");
+      setProfileComplete(!!res.data.is_complete);
+    } catch {
+      setProfileComplete(false);
+    }
+  };
 
   const fetchUser = async () => {
     try {
@@ -175,13 +186,13 @@ const CompareClient = () => {
     : [];
   const covered1 = policy1
     ? userConditions.filter((c) =>
-        (policy1.covered_conditions || []).includes(c)
-      ).length
+      (policy1.covered_conditions || []).includes(c)
+    ).length
     : 0;
   const covered2 = policy2
     ? userConditions.filter((c) =>
-        (policy2.covered_conditions || []).includes(c)
-      ).length
+      (policy2.covered_conditions || []).includes(c)
+    ).length
     : 0;
   const totalConditions = userConditions.length;
 
@@ -483,6 +494,7 @@ const CompareClient = () => {
             metrics={metrics1}
             ownedRequest={ownedMap?.[policy1?.id]}
             kycStatus={kycStatus}
+            profileComplete={profileComplete}
           />
           <PolicyCard
             policy={policy2}
@@ -493,6 +505,7 @@ const CompareClient = () => {
             metrics={metrics2}
             ownedRequest={ownedMap?.[policy2?.id]}
             kycStatus={kycStatus}
+            profileComplete={profileComplete}
           />
         </div>
       </div>
@@ -509,6 +522,7 @@ const PolicyCard = ({
   metrics,
   ownedRequest,
   kycStatus,
+  profileComplete,
 }) => {
   const navigate = useNavigate();
   if (!policy) return null;
@@ -516,10 +530,10 @@ const PolicyCard = ({
   const renewalBlocked = owned && !isRenewable(ownedRequest);
   const detailTo = owned
     ? {
-        pathname: `/policy/${policy.id}`,
-        search: `?owned=1&buyRequest=${ownedRequest?.id}`,
-        state: { owned: true, buyRequestId: ownedRequest?.id },
-      }
+      pathname: `/policy/${policy.id}`,
+      search: `?owned=1&buyRequest=${ownedRequest?.id}`,
+      state: { owned: true, buyRequestId: ownedRequest?.id },
+    }
     : { pathname: `/policy/${policy.id}` };
 
   return (
@@ -554,7 +568,7 @@ const PolicyCard = ({
 
         <div className="space-y-3 text-sm mt-3">
           <ComparisonRow
-            label="Adjusted Premium"
+            label={profileComplete ? "Adjusted Premium" : "Premium Starts From"}
             value={formatRs(adjusted)}
             better={metrics.premiumBetter}
             equal={metrics.premiumEqual}
@@ -659,7 +673,7 @@ const PolicyCard = ({
           </button>
         ) : (
           <Link
-          to={`/client/buy?policy=${policy.id}`}
+            to={`/client/buy?policy=${policy.id}`}
             className="
               px-4 py-2 rounded-lg text-sm font-semibold
               bg-primary-light text-white hover:opacity-90 shadow
@@ -669,7 +683,7 @@ const PolicyCard = ({
           </Link>
         )}
       </div>
-    </div>
+    </div >
   );
 };
 

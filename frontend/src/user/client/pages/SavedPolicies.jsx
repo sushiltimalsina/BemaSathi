@@ -26,6 +26,7 @@ const SavedPolicies = () => {
   const [kycStatus, setKycStatus] = useState("loading");
   const [kycAllowEdit, setKycAllowEdit] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [profileComplete, setProfileComplete] = useState(false);
   const [user, setUser] = useState(null);
   const { compare, addToCompare, removeFromCompare } = useCompare();
   const fmt = (n) =>
@@ -46,7 +47,17 @@ const SavedPolicies = () => {
       }
     };
     loadUser();
+    loadProfileCompletion();
   }, [isClient, ready, navigate, token]);
+
+  const loadProfileCompletion = async () => {
+    try {
+      const res = await API.get("/user/profile/check");
+      setProfileComplete(!!res.data.is_complete);
+    } catch {
+      setProfileComplete(false);
+    }
+  };
 
   // Fetch saved policies
   useEffect(() => {
@@ -222,7 +233,9 @@ const SavedPolicies = () => {
             {/* DETAILS */}
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-slate-500">Premium</span>
+                <span className="text-slate-500">
+                  {profileComplete ? "Premium" : "Premium Starts From"}
+                </span>
                 <span className="font-semibold text-green-600 dark:text-green-400 flex items-center gap-1">
                   Rs. {fmt(p.adjusted)}
                 </span>
@@ -276,13 +289,12 @@ const SavedPolicies = () => {
 
                 <button
                   onClick={() => toggle(p)}
-                  className={`w-full flex items-center justify-center gap-2 text-sm font-semibold rounded-lg py-2 transition ${
-                    compare.some(
-                      (policy) => String(policy.id) === String(p.id)
-                    )
-                      ? "bg-primary-light text-white border border-primary-light shadow-sm dark:bg-primary-dark dark:border-primary-dark"
-                      : "bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark border border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark"
-                  }`}
+                  className={`w-full flex items-center justify-center gap-2 text-sm font-semibold rounded-lg py-2 transition ${compare.some(
+                    (policy) => String(policy.id) === String(p.id)
+                  )
+                    ? "bg-primary-light text-white border border-primary-light shadow-sm dark:bg-primary-dark dark:border-primary-dark"
+                    : "bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark border border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark"
+                    }`}
                 >
                   <ArrowsRightLeftIcon className="w-4 h-4" />
                   {compare.some(
@@ -301,10 +313,11 @@ const SavedPolicies = () => {
               </button>
             </div>
           </div>
-        ))}
-      </div>
+        ))
+        }
+      </div >
       <CompareBar />
-    </div>
+    </div >
   );
 };
 

@@ -25,6 +25,7 @@ const PolicyDetails = () => {
   const [saved, setSaved] = useState(false);
   const [kycStatus, setKycStatus] = useState(null);
   const [ownedRequest, setOwnedRequest] = useState(null);
+  const [profileComplete, setProfileComplete] = useState(false);
 
   const token = sessionStorage.getItem("client_token");
   const isClient = !!token;
@@ -55,7 +56,18 @@ const PolicyDetails = () => {
     };
 
     loadKyc();
+    loadProfileCompletion();
   }, [isClient]);
+
+  const loadProfileCompletion = async () => {
+    if (!isClient) return;
+    try {
+      const res = await API.get("/user/profile/check");
+      setProfileComplete(!!res.data.is_complete);
+    } catch {
+      setProfileComplete(false);
+    }
+  };
 
   // If user is logged in but no owned request passed, check if they already bought this policy.
   useEffect(() => {
@@ -139,10 +151,23 @@ const PolicyDetails = () => {
       return;
     }
     if (renewalBlocked) {
-      if (kycStatus && kycStatus !== "approved") {
-        navigate(`/client/kyc?policy=${policy.id}`);
-        return;
+      // 1. Profile Completion Check
+      if (!profileComplete) {
+        return navigate("/client/profile", {
+          state: {
+            msg: "Please complete your profile details before purchasing a policy again.",
+            returnTo: `/client/buy?policy=${policy.id}`
+          }
+        });
       }
+
+      // 2. KYC Verification Check
+      if (kycStatus !== "approved") {
+        return navigate(`/client/kyc?policy=${policy.id}`, {
+          state: { msg: "Please verify your KYC before purchasing again." }
+        });
+      }
+
       navigate(`/client/buy?policy=${policy.id}`);
       return;
     }
@@ -154,10 +179,25 @@ const PolicyDetails = () => {
       navigate("/login");
       return;
     }
-    if (kycStatus && kycStatus !== "approved") {
-      navigate(`/client/kyc?policy=${policy.id}`);
-      return;
+
+    // 1. Profile Completion Check
+    if (!profileComplete) {
+      return navigate("/client/profile", {
+        state: {
+          msg: "Please complete your profile details before purchasing a policy.",
+          returnTo: `/client/buy?policy=${policy.id}`
+        }
+      });
     }
+
+    // 2. KYC Verification Check
+    if (kycStatus !== "approved") {
+      return navigate(`/client/kyc?policy=${policy.id}`, {
+        state: { msg: "Your identity verification (KYC) is required to proceed with this purchase." }
+      });
+    }
+
+    // 3. Both Complete -> Buy Page
     navigate(`/client/buy?policy=${policy.id}`);
   };
 
@@ -235,16 +275,21 @@ const PolicyDetails = () => {
             shadow-sm 
             w-full md:w-60
           ">
-            
+
             {/* PREMIUM */}
             <div className="mb-4">
-              <p className="text-xs opacity-70">Premium</p>
+              <p className="text-xs opacity-70">
+                {isClient && profileComplete ? "Your Premium" : "Premium"}
+              </p>
 
               {isClient ? (
-                <p className="text-lg font-semibold text-success-light dark:text-success-dark flex items-center gap-1">
-                  Rs. {fmt(clientPremium)}
-                  <span className="block text-[10px] opacity-60 ml-1">
-                    (personalized)
+                <p className="text-lg font-semibold text-success-light dark:text-success-dark flex flex-col">
+                  <span>
+                    {profileComplete ? "Rs. " : "Starts from Rs. "}
+                    {fmt(clientPremium)}
+                  </span>
+                  <span className="block text-[10px] opacity-60">
+                    {profileComplete ? "(personalized quotes)" : "(complete profile for personalized price)"}
                   </span>
                 </p>
               ) : (

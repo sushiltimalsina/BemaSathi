@@ -55,6 +55,10 @@ class RecommendationController extends Controller
                     $profile['family_members'],
                     [
                         'city' => $profile['city'], 
+                        'region_type' => $profile['region_type'],
+                        'weight' => $profile['weight'],
+                        'height' => $profile['height'],
+                        'occupation_class' => $profile['occupation_class'],
                         'is_existing_customer' => $isExistingCustomer,
                         'conditions' => $profile['conditions'],
                         'family_ages' => $profile['family_ages'] // Pass detailed ages
@@ -288,15 +292,12 @@ class RecommendationController extends Controller
     {
         $kyc = $user->kycDocuments()->where('status', 'approved')->latest()->first();
 
-        $dob = $user->dob ?? $kyc?->dob;
+        $dob = $kyc?->dob ?? $user->dob;
         $age = ($dob ? Carbon::parse($dob)->age : 30);
 
-        // Resolve City from Address
-        $address = strtolower($user->address ?? '');
-        $city = 'default';
-        if (str_contains($address, 'kathmandu')) $city = 'Kathmandu';
-        elseif (str_contains($address, 'pokhara')) $city = 'Pokhara';
-        elseif (str_contains($address, 'lalitpur')) $city = 'Lalitpur';
+        // Resolve Geography from new structured address fields
+        $regionType = $user->region_type ?? 'urban';
+        $city = $user->municipality_name ?? $user->address ?? 'default';
 
         // Extract detailed family demographics
         $familyDetails = $user->family_member_details ?? [];
@@ -318,6 +319,7 @@ class RecommendationController extends Controller
         return [
             'age' => max(1, min(120, $age)),
             'city' => $city,
+            'region_type' => $regionType,
             'is_smoker' => (bool)$user->is_smoker,
             'health_score' => $user->health_score ?? 70,
             'coverage_type' => $user->coverage_type ?? 'individual',

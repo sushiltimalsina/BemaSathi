@@ -67,10 +67,10 @@ const BuyRequest = () => {
     const raw = emailRef.current?.value ?? "";
     const email = raw.trim();
 
-   if (!email) {
-  setEmailError("Email is required.");
-  return false;
-}
+    if (!email) {
+      setEmailError("Email is required.");
+      return false;
+    }
 
 
     if (!isValidEmail(email)) {
@@ -92,9 +92,8 @@ const BuyRequest = () => {
     <div className="flex justify-between">
       <span className="opacity-70">{label}</span>
       <span
-        className={`font-semibold ${
-          highlight ? "text-primary-light dark:text-primary-dark" : ""
-        }`}
+        className={`font-semibold ${highlight ? "text-primary-light dark:text-primary-dark" : ""
+          }`}
       >
         {value}
       </span>
@@ -166,13 +165,33 @@ const BuyRequest = () => {
     loadDefaults();
   }, []);
 
-  // Fetch user + KYC
+  // Fetch user + KYC + Health Declaration
   useEffect(() => {
     const loadUser = async () => {
       if (!isClient) return;
       try {
         const me = await API.get("/me");
         const user = me.data;
+
+        // ✅ MANDATORY PROFILE COMPLETION CHECK
+        const isProfileComplete =
+          user.dob &&
+          user.phone &&
+          user.address &&
+          user.weight_kg &&
+          user.height_cm;
+
+        if (!isProfileComplete) {
+          // Redirect to profile page with a message
+          navigate("/client/profile", {
+            state: {
+              msg: "Please complete your profile details (DOB, Phone, Address, Height, Weight) before purchasing a policy.",
+              returnTo: `/client/buy?policy=${policyId}`
+            },
+            replace: true
+          });
+          return;
+        }
 
         const k = await API.get("/kyc/me");
         const list = k.data?.data || [];
@@ -182,11 +201,22 @@ const BuyRequest = () => {
         setKycStatus(latestStatus);
 
         if (latestStatus === "approved" && latest?.allow_edit) {
-          navigate("/client/kyc", { replace: true });
+          navigate(`/client/kyc?policy=${policyId}`, { replace: true });
           return;
         }
         if (latestStatus === "rejected" || latestStatus === "not_submitted") {
-          navigate("/client/kyc", { replace: true });
+          navigate(`/client/kyc?policy=${policyId}`, { replace: true });
+          return;
+        }
+
+        // ✅ CHECK HEALTH DECLARATION BEFORE PAYMENT
+        const healthDeclaration = sessionStorage.getItem("healthDeclaration");
+        if (!healthDeclaration) {
+          // Redirect to health declaration page with return path
+          navigate("/client/health-declaration", {
+            state: { returnTo: `/client/buy?policy=${policyId}` },
+            replace: true
+          });
           return;
         }
 
@@ -209,7 +239,7 @@ const BuyRequest = () => {
 
     loadUser();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isClient]);
+  }, [isClient, policyId]);
 
   // Preview premium when billing cycle changes
   useEffect(() => {

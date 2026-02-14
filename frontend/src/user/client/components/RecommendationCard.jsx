@@ -24,6 +24,7 @@ const RecommendationCard = ({
   user,
   kycStatus: kycStatusProp,
   ownedRequest,
+  profileComplete,
 }) => {
   const navigate = useNavigate();
   const { compare, addToCompare, removeFromCompare } = useCompare();
@@ -125,13 +126,16 @@ const RecommendationCard = ({
         "
         >
           <p className="text-xs font-semibold uppercase text-emerald-600 dark:text-emerald-300">
-            Premium
+            {profileComplete ? "Your Premium" : "Premium Starts From"}
           </p>
 
           <h3 className="text-xl font-bold text-emerald-600 dark:text-emerald-300">
             रु. {fmt(effectivePremium)}
-            {isClient && (
+            {isClient && profileComplete && (
               <span className="block text-[10px] opacity-60">personalized quote</span>
+            )}
+            {isClient && !profileComplete && (
+              <span className="block text-[10px] opacity-60 italic text-amber-600 dark:text-amber-400">Complete profile for precision price</span>
             )}
           </h3>
         </div>
@@ -180,7 +184,10 @@ const RecommendationCard = ({
             )}
             <li className="flex gap-2 items-center border-t border-border-light dark:border-border-dark pt-2 mt-2">
               <span className="text-[11px] opacity-60 italic">
-                Analysis based on your age, smoker status, and health history.
+                {profileComplete
+                  ? "Personalized analysis based on your full health and lifestyle profile."
+                  : "Basic match based on limited profile details. Complete your profile for better precision."
+                }
               </span>
             </li>
           </ul>
@@ -194,8 +201,23 @@ const RecommendationCard = ({
             <button
               onClick={() => {
                 if (renewalBlocked) {
-                  if (kycStatus && kycStatus !== "approved")
-                    return navigate("/client/kyc");
+                  // 1. Profile Completion Check
+                  if (!profileComplete) {
+                    return navigate("/client/profile", {
+                      state: {
+                        msg: "Please complete your profile details before purchasing a policy again.",
+                        returnTo: `/client/buy?policy=${policy.id}`
+                      }
+                    });
+                  }
+
+                  // 2. KYC Verification Check
+                  if (kycStatus !== "approved") {
+                    return navigate(`/client/kyc?policy=${policy.id}`, {
+                      state: { msg: "Please verify your KYC before purchasing again." }
+                    });
+                  }
+
                   navigate(`/client/buy?policy=${policy.id}`);
                   return;
                 }
@@ -214,9 +236,27 @@ const RecommendationCard = ({
             <button
               onClick={() => {
                 if (!isClient) return navigate("/login");
-                if (kycStatus && kycStatus !== "approved")
-                  return navigate("/client/kyc");
 
+                // 1. Profile Completion Check
+                if (!profileComplete) {
+                  return navigate("/client/profile", {
+                    state: {
+                      msg: "Please complete your profile details (Phone, Address, Height, Weight) before purchasing a policy.",
+                      returnTo: `/client/buy?policy=${policy.id}`
+                    }
+                  });
+                }
+
+                // 2. KYC Verification Check
+                if (kycStatus !== "approved") {
+                  return navigate(`/client/kyc?policy=${policy.id}`, {
+                    state: {
+                      msg: "Your identity verification (KYC) is required to proceed with this purchase."
+                    }
+                  });
+                }
+
+                // 3. Both Complete -> Buy Request Page
                 navigate(`/client/buy?policy=${policy.id}`);
               }}
               className="
