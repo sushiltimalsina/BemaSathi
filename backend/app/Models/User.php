@@ -37,6 +37,13 @@ class User extends Authenticatable implements MustVerifyEmail, CanResetPasswordC
     'weight_kg',
     'height_cm',
     'occupation_class',
+    'province',
+    'district',
+    'municipality_type',
+    'municipality_name',
+    'ward_number',
+    'street_address',
+    'region_type',
     'google_id',
     'avatar',
 ];

@@ -14,14 +14,17 @@ const API = axios.create({
 
 // Attach client auth token (if present) to every request.
 API.interceptors.request.use((config) => {
-  const token = sessionStorage.getItem("client_token");
+  // Check both sessionStorage and localStorage for token
+  const token = sessionStorage.getItem("client_token") || localStorage.getItem("token");
+
   if (!token) {
-    localStorage.removeItem("client_token");
-    localStorage.removeItem("client_user");
+    // Optional: Only log if needed, no need to clean every time
   }
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
   return config;
 });
 

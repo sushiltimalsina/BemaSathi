@@ -18,7 +18,7 @@ class AdminUserController extends Controller
     public function index()
     {
         $users = User::with('kycDocuments')
-            ->select('id', 'name', 'email', 'phone', 'created_at')
+            ->select('id', 'name', 'email', 'phone', 'province', 'district', 'municipality_name', 'region_type', 'created_at')
             ->get()
             ->map(function ($user) {
                 $latestKyc = $user->kycDocuments()->latest()->first();
@@ -27,6 +27,10 @@ class AdminUserController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'phone' => $user->phone,
+                    'province' => $user->province,
+                    'district' => $user->district,
+                    'municipality' => $user->municipality_name,
+                    'region_type' => $user->region_type,
                     'created_at' => $user->created_at,
                     'kyc_status' => $latestKyc?->status ?? 'not_submitted',
                     'allow_edit' => (bool) ($latestKyc?->allow_edit ?? false),
