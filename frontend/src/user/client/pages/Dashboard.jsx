@@ -12,9 +12,12 @@ const INSURANCE_TYPES = [
 ];
 
 const ClientDashboard = () => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    const cached = sessionStorage.getItem("client_user");
+    return cached ? JSON.parse(cached) : null;
+  });
   const [recommended, setRecommended] = useState([]);
-  const [loadingUser, setLoadingUser] = useState(true);
+  const [loadingUser, setLoadingUser] = useState(!sessionStorage.getItem("client_user"));
   const [loadingPolicies, setLoadingPolicies] = useState(false);
   const [error, setError] = useState("");
   const [recError, setRecError] = useState("");
@@ -22,26 +25,54 @@ const ClientDashboard = () => {
   const [kycStatus, setKycStatus] = useState("not_submitted");
   const [allowEdit, setAllowEdit] = useState(false);
   const [ownedMap, setOwnedMap] = useState({});
+  const [profileComplete, setProfileComplete] = useState(false);
 
   const navigate = useNavigate();
   const { compare } = useCompare();
 
-  const fetchUser = async () => {
-    const token = sessionStorage.getItem("client_token");
-    if (!token) {
-      setError("Please log in to view your dashboard.");
-      setLoadingUser(false);
-      return;
-    }
-
+  const fetchUser = async (attempt = 1) => {
     try {
-      const res = await API.get("/me", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // Check both sessionStorage and localStorage for token
+      let token = sessionStorage.getItem("client_token") || localStorage.getItem("token");
+
+      if (!token) {
+        if (attempt < 3) {
+          setTimeout(() => fetchUser(attempt + 1), 200);
+          return;
+        }
+        setError("Please log in to view your dashboard.");
+        setLoadingUser(false);
+        return;
+      }
+
+      // If we already have the user in state from cache, we can still fetch in background to sync
+      // but we don't need to block UI.
+      const res = await API.get("/me");
       setUser(res.data);
-    } catch {
-      setError("Failed to fetch user details.");
-    } finally {
+      sessionStorage.setItem("client_user", JSON.stringify(res.data));
+      setError("");
+      setLoadingUser(false);
+    } catch (err) {
+      console.error("Failed to fetch user details:", err);
+
+      // Retry logic for network errors or 401/403
+      if (attempt < 3 && (err.response?.status === 401 || !err.response)) {
+        setTimeout(() => fetchUser(attempt + 1), 500);
+        return;
+      }
+
+      // If all retries failed
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        setError("Session expired. Please log in again.");
+        setTimeout(() => {
+          localStorage.removeItem("token");
+          sessionStorage.removeItem("client_token");
+          sessionStorage.removeItem("client_user");
+          window.location.href = "/login";
+        }, 1500);
+      } else {
+        setError("Failed to load dashboard. Please refresh the page.");
+      }
       setLoadingUser(false);
     }
   };
@@ -72,49 +103,42 @@ const ClientDashboard = () => {
 
   useEffect(() => {
     fetchUser();
+
+    // Parallelize secondary data fetching
+    const loadSecondaryData = async () => {
+      try {
+        const [requestsRes, profileRes, kycRes] = await Promise.all([
+          API.get("/my-requests"),
+          API.get("/user/profile/check"),
+          API.get("/kyc/me")
+        ]);
+
+        // Process My Requests
+        const map = {};
+        (requestsRes.data || []).forEach((r) => {
+          if (r.policy_id) map[r.policy_id] = r;
+        });
+        setOwnedMap(map);
+
+        // Process Profile
+        setProfileComplete(!!profileRes.data.is_complete);
+
+        // Process KYC
+        const kycData = kycRes.data?.data;
+        const latest = Array.isArray(kycData) ? kycData[0] : kycData;
+        setKycStatus(latest?.status || "not_submitted");
+        setAllowEdit(Boolean(latest?.allow_edit));
+      } catch (err) {
+        console.log("Error loading dashboard details:", err);
+      }
+    };
+
+    loadSecondaryData();
   }, []);
 
   useEffect(() => {
     if (user) fetchRecommendations(type);
   }, [user, type]);
-
-  useEffect(() => {
-    const loadOwned = async () => {
-      try {
-        const res = await API.get("/my-requests", {
-          headers: { Authorization: `Bearer ${sessionStorage.getItem("client_token")}` },
-        });
-        const map = {};
-        (res.data || []).forEach((r) => {
-          if (r.policy_id) map[r.policy_id] = r;
-        });
-        setOwnedMap(map);
-      } catch {
-        setOwnedMap({});
-      }
-    };
-
-    loadOwned();
-  }, []);
-
-  useEffect(() => {
-    const loadKyc = async () => {
-      try {
-        const res = await API.get("/kyc/me", {
-          headers: { Authorization: `Bearer ${sessionStorage.getItem("client_token")}` },
-        });
-        const data = res.data?.data;
-        const latest = Array.isArray(data) ? data[0] : data;
-        const status = latest?.status;
-        setKycStatus(status || "not_submitted");
-        setAllowEdit(Boolean(latest?.allow_edit));
-      } catch {
-        setKycStatus("not_submitted");
-        setAllowEdit(false);
-      }
-    };
-    loadKyc();
-  }, []);
 
   useEffect(() => {
     const handleProfileUpdated = (event) => {
@@ -124,6 +148,11 @@ const ClientDashboard = () => {
       } else {
         fetchUser();
       }
+
+      // Re-check profile completion on update
+      API.get("/user/profile/check").then(res => {
+        setProfileComplete(!!res.data.is_complete);
+      }).catch(() => { });
     };
 
     window.addEventListener("profile:updated", handleProfileUpdated);
@@ -305,6 +334,7 @@ const ClientDashboard = () => {
                   user={user}
                   kycStatus={kycStatus}
                   ownedRequest={ownedMap?.[policy.id]}
+                  profileComplete={profileComplete}
                 />
               ))}
             </div>

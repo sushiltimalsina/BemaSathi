@@ -1,17 +1,11 @@
 <?php
 
 return [
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    'paths' => ['*'],
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => array_values(array_unique(array_filter(array_map('trim', array_merge(
-        explode(',', (string) env('CORS_ALLOWED_ORIGINS', '')),
-        [
-            (string) env('APP_FRONTEND_URL', ''),
-            (string) env('ADMIN_FRONTEND_URL', ''),
-        ]
-    ))))),
+    'allowed_origins' => ['*'],
 
     'allowed_origins_patterns' => [],
 
