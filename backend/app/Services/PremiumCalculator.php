@@ -22,37 +22,58 @@ class PremiumCalculator
     {
         $basePremium   = (float) ($policy->premium_amt ?? 0);
         
-        // 1. Actuarial Age Gradient (Continuous Math instead of Brackets)
+        // 1. Actuarial Age Gradient
         $age           = $this->normalizeAge($age, $extraContext);
-        $ageFactor     = $this->calculateAgeSlope($age);
+        $ageFactor     = $this->calculateAgeSlope(
+            $age, 
+            (float)($policy->age_factor_step ?? 0.025),
+            (float)($policy->age_0_2_factor ?? 1.10),
+            (float)($policy->age_3_17_factor ?? 0.80),
+            (float)($policy->age_18_24_factor ?? 1.00),
+            (float)($policy->age_25_plus_base_factor ?? 1.00)
+        );
         
         // 2. Lifestyle & Health Multiplexing
-        $smokerFactor  = $isSmoker ? 1.35 : 1.00; // Increased smoker risk to 35%
+        $smokerFactor  = $isSmoker ? (float)($policy->smoker_factor ?? 1.35) : 1.00;
         $healthFactor  = $this->healthFactor($healthScore);
         
         // 3. Structural Factors
-        $coverageFactor = $this->coverageFactor($coverageType, $familyMembers);
+        $coverageFactor = $this->coverageFactor(
+            $coverageType, 
+            $familyMembers, 
+            (float)($policy->family_base_factor ?? 1.20),
+            (float)($policy->family_member_step ?? 0.08)
+        );
         
-        // 4. Disease Loading [NEW]
-        // Each chronic condition adds a 15% loading factor (Compounding Risk)
+        // 4. Disease Loading
         $conditions = $extraContext['conditions'] ?? [];
-        $diseaseLoading = 1.0 + (count($conditions) * 0.15);
+        $condFactor = (float)($policy->condition_factor ?? 0.15);
+        $diseaseLoading = 1.0 + (count($conditions) * $condFactor);
 
         // 5. Regional & Loyalty Logic
-        $regionalLoading = $this->getRegionalLoading($extraContext['city'] ?? 'default');
-        $loyaltyDiscount = ($extraContext['is_existing_customer'] ?? false) ? 0.95 : 1.00;
+        // Prioritize explicit region type (urban/semi_urban/rural), fallback to city
+        $regionOrCity = $extraContext['region_type'] ?? $extraContext['city'] ?? 'default';
+        $regionalLoading = $this->getRegionalLoading($regionOrCity, $policy);
+        
+        $loyaltyFactor = (float)($policy->loyalty_discount_factor ?? 0.95);
+        $loyaltyDiscount = ($extraContext['is_existing_customer'] ?? false) ? $loyaltyFactor : 1.00;
 
-        // 6. Advanced Actuarial Risk: BMI & Occupation [MASTER LEVEL]
-        $bmiFactor = $this->calculateBMIContext($extraContext['weight'] ?? null, $extraContext['height'] ?? null);
+        // 6. Advanced Actuarial Risk: BMI & Occupation
+        $bmiFactor = $this->calculateBMIContext(
+            $extraContext['weight'] ?? null, 
+            $extraContext['height'] ?? null,
+            $policy
+        );
+        
         $occFactor = match($extraContext['occupation_class'] ?? 'class_1') {
-            'class_2' => 1.15, // Field Sales / Drivers
-            'class_3' => 1.30, // Manual Labor / Construction
-            default   => 1.00  // Office / Desk Job
+            'class_2' => (float)($policy->occ_class_2_factor ?? 1.15),
+            'class_3' => (float)($policy->occ_class_3_factor ?? 1.30),
+            default   => 1.00 
         };
 
         // The Grand Formula
         $calculated = round(
-            $basePremium * $ageFactor * $smokerFactor * $healthFactor * $coverageFactor * $diseaseLoading * $regionalLoading * $loyaltyDiscount * $bmiFactor * $occFactor,
+            $basePremium * $ageFactor * $smokerFactor * $healthFactor * $coverageFactor * $diseaseLoading * $regionalLoading * $loyaltyDiscount * $bmiFactor * $occFactor * ($policy->premium_factor ?? 1.0),
             2
         );
 
@@ -73,40 +94,33 @@ class PremiumCalculator
 
     private function normalizeAge(?int $age, array $extraContext = []): int
     {
-        // Actuarial Standard: In family plans, risk is based on the ELDEST member.
         if (!empty($extraContext['family_ages']) && is_array($extraContext['family_ages'])) {
             $maxAge = max($extraContext['family_ages']);
             $age = $maxAge > 0 ? $maxAge : $age;
         }
 
         if (!$age || $age < 1 || $age > 120) {
-            return 30; // statistical median
+            return 30;
         }
         return $age;
     }
 
-    /**
-     * Calculates age risk using a linear-exponential hybrid slope.
-     * Professionals avoid "cliff" pricing (where turning 30 suddenly costs 20% more).
-     */
-    private function calculateAgeSlope(int $age): float
+    private function calculateAgeSlope(
+        int $age, 
+        float $step = 0.025,
+        float $factor0_2 = 1.10,
+        float $factor3_17 = 0.80,
+        float $factor18_24 = 1.00,
+        float $factor25PlusBase = 1.00
+    ): float
     {
-        // Actuarial 'U-Curve' Logic:
-        // 1. Infants (0-2): Higher risk due to fragile health/vaccinations.
-        if ($age <= 2) return 1.10;
-
-        // 2. Children/Teens (3-17): The "Golden Age" of health (lowest risk).
-        if ($age < 18) return 0.80;
-
-        // 3. Adults (18+): Linear risk accumulation
-        // Base risk starts at 1.0 for age 18.
-        // Every year after 25 adds a 2.5% risk increment.
-        if ($age < 25) return 1.0;
+        if ($age <= 2) return $factor0_2;
+        if ($age < 18) return $factor3_17;
+        if ($age < 25) return $factor18_24;
         
-        $incrementalRisk = ($age - 25) * 0.025;
-        $totalRisk = 1.0 + $incrementalRisk;
+        $incrementalRisk = ($age - 25) * $step;
+        $totalRisk = $factor25PlusBase + $incrementalRisk;
 
-        // Cap risk factor at 2.5x for very old applicants
         return min($totalRisk, 2.50);
     }
 
@@ -115,47 +129,57 @@ class PremiumCalculator
         if ($score === null) return 1.05;
         $score = max(1, min(100, $score));
 
-        // Using a parabolic curve for health (optimal is 100)
-        if ($score >= 90) return 0.85; // Athlete/Excellent
-        if ($score >= 75) return 0.95; // Fit
-        if ($score >= 50) return 1.10; // Average
-        return 1.40; // High Risk
+        if ($score >= 90) return 0.85;
+        if ($score >= 75) return 0.95;
+        if ($score >= 50) return 1.10;
+        return 1.40;
     }
 
-    private function getRegionalLoading(string $city): float
+    private function getRegionalLoading(?string $location, Policy $policy): float
     {
-        $loadingMap = [
-            'Kathmandu' => 1.10, // Higher medical costs in capital
-            'Lalitpur' => 1.05,
-            'Pokhara' => 1.05,
-            'default' => 1.00
+        $normalized = strtolower($location ?? 'default');
+        
+        // Match specific categories first
+        if ($normalized === 'urban') {
+            return (float)($policy->region_urban_factor ?? 1.10);
+        }
+        if (in_array($normalized, ['semi_urban', 'semi-urban', 'semiurban'])) {
+            return (float)($policy->region_semi_urban_factor ?? 1.05);
+        }
+        if ($normalized === 'rural') {
+            return (float)($policy->region_rural_factor ?? 1.00);
+        }
+
+        // City-to-Category Mapping
+        $cityMap = [
+            'kathmandu' => (float)($policy->region_urban_factor ?? 1.10),
+            'lalitpur'  => (float)($policy->region_semi_urban_factor ?? 1.05),
+            'pokhara'   => (float)($policy->region_semi_urban_factor ?? 1.05),
+            'default'   => 1.00
         ];
 
-        return $loadingMap[$city] ?? 1.00;
+        return $cityMap[$normalized] ?? 1.00;
     }
 
-    private function coverageFactor(?string $coverage, ?int $familyMembers): float
+    private function coverageFactor(?string $coverage, ?int $familyMembers, float $base = 1.20, float $step = 0.08): float
     {
         if ($coverage !== 'family') return 1.00;
-
         $members = max(2, min(10, $familyMembers ?? 2));
-        // Incremental cost per family member decreases (Economy of scale)
-        return 1.20 + (($members - 2) * 0.08);
+        return $base + (($members - 2) * $step);
     }
 
-    private function calculateBMIContext(?float $weight, ?int $heightCm): float
+    private function calculateBMIContext(?float $weight, ?int $heightCm, Policy $policy): float
     {
         if (!$weight || !$heightCm) return 1.0;
 
-        // BMI = weight (kg) / height (m)^2
         $heightM = $heightCm / 100;
         $bmi = $weight / ($heightM * $heightM);
 
         return match(true) {
-            $bmi < 18.5 => 1.00, // Underweight (Neutral)
-            $bmi <= 24.9 => 1.00, // Normal (Standard)
-            $bmi <= 29.9 => 1.10, // Overweight (10% Loading)
-            default      => 1.25  // Obese (25% Loading)
+            $bmi < 18.5 => 1.00,
+            $bmi <= 24.9 => 1.00,
+            $bmi <= 29.9 => (float)($policy->bmi_overweight_factor ?? 1.10),
+            default      => (float)($policy->bmi_obese_factor ?? 1.25)
         };
     }
 }
