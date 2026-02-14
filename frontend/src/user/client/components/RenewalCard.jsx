@@ -5,6 +5,7 @@ import {
   ArrowPathIcon,
   ExclamationTriangleIcon,
   ShieldCheckIcon,
+  UserIcon,
 } from "@heroicons/react/24/outline";
 import { getRenewalDate, isGraceExpired, isRenewable } from "../../utils/renewal";
 
@@ -168,6 +169,43 @@ const RenewalCard = ({ request }) => {
           <span className={urgentColor}>{daysLeftLabel()}</span>
         </div>
       </div>
+
+      {/* AGENT CONTACT SECTION */}
+      {request.policy?.agents && request.policy.agents.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-border-light dark:border-border-dark">
+          <p className="text-xs font-semibold text-text-light/70 dark:text-text-dark/70 mb-3 flex items-center gap-2">
+            <UserIcon className="w-4 h-4" />
+            Need Help? Contact Your Agent:
+          </p>
+          <div className="space-y-3">
+            {request.policy.agents.slice(0, 2).map((agent) => (
+              <div key={agent.id} className="bg-background-light/50 dark:bg-background-dark/50 p-3 rounded-lg">
+                <p className="font-semibold text-sm">{agent.name}</p>
+                {agent.phone && (
+                  <p className="text-xs text-text-light/60 dark:text-text-dark/60 mt-1">
+                    📞 {agent.phone}
+                  </p>
+                )}
+                {agent.email && (
+                  <p className="text-xs text-text-light/60 dark:text-text-dark/60">
+                    ✉️ {agent.email}
+                  </p>
+                )}
+                {agent.company?.name && (
+                  <p className="text-xs text-text-light/50 dark:text-text-dark/50 mt-1">
+                    {agent.company.name}
+                  </p>
+                )}
+              </div>
+            ))}
+            {request.policy.agents.length > 2 && (
+              <p className="text-xs text-primary-light dark:text-primary-dark font-medium">
+                +{request.policy.agents.length - 2} more agent{request.policy.agents.length - 2 !== 1 ? 's' : ''}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ACTIONS */}
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">

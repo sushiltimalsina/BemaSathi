@@ -36,7 +36,8 @@ const AgentDetails = () => {
       return;
     }
     if (!isClient) {
-      navigate("/login?redirect=agent");
+      const redirect = encodeURIComponent(location.pathname + location.search);
+      navigate(`/login?redirect=${redirect}`);
     }
   }, [isClient, ready, navigate]);
 
@@ -79,7 +80,7 @@ const AgentDetails = () => {
           resolvedAgentId = policyRes.data?.agent_id;
 
           if (!resolvedAgentId) {
-            throw new Error("No agent assigned to this policy.");
+            throw new Error("No agent has been assigned to this policy yet. Please contact support.");
           }
         }
 
@@ -92,24 +93,8 @@ const AgentDetails = () => {
         setAgent(res.data);
       } catch (err) {
         console.error("Agent fetch error:", err);
-
-        // fallback to first available agent if assigned one fails
-        try {
-          const listRes = await API.get("/agents");
-          const fallback = Array.isArray(listRes.data) ? listRes.data[0] : null;
-
-          if (fallback) {
-            setAgent(fallback);
-            setError("Assigned agent unavailable. Showing nearest agent.");
-          } else {
-            setError("Agent not found.");
-            setAgent(null);
-          }
-        } catch (fallbackErr) {
-          console.error("Fallback failed:", fallbackErr);
-          setError("Agent information unavailable.");
-          setAgent(null);
-        }
+        setError(err.message || "Agent information unavailable.");
+        setAgent(null);
       }
 
       setLoading(false);
@@ -159,7 +144,7 @@ const AgentDetails = () => {
 
   if (!agent) {
     return (
-      <p className="text-center mt-20 text-red-500 dark:text-red-400 font-medium">
+      <p className="text-center mt-20 text-red-500 dark:text-red-400 font-medium px-4">
         {error || "Agent not found."}
       </p>
     );
@@ -231,10 +216,8 @@ const AgentDetails = () => {
           </p>
         </div>
       </div>
-
-      </div>
+    </div>
   );
 };
 
 export default AgentDetails;
-

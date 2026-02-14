@@ -8,6 +8,7 @@ import {
   XCircleIcon,
   FunnelIcon,
   PlusIcon,
+  UsersIcon,
 } from "@heroicons/react/24/outline";
 import { useAdminToast } from "../ui/AdminToast";
 import { useAdminConfirm } from "../ui/AdminConfirm";
@@ -59,6 +60,7 @@ const PolicyList = () => {
       const matchSearch =
         p.policy_name?.toLowerCase().includes(q) ||
         p.company_name?.toLowerCase().includes(q) ||
+        p.agent?.name?.toLowerCase().includes(q) ||
         p.insurance_type?.toLowerCase().includes(q);
 
       return matchStatus && matchType && matchSearch;
@@ -188,7 +190,7 @@ const PolicyList = () => {
             <tr>
               <th className="px-4 py-3 text-left">Policy</th>
               <th className="px-4 py-3 text-left">Company</th>
-              <th className="px-4 py-3 text-left">Type</th>
+              <th className="px-4 py-3 text-left">Agent</th>
               <th className="px-4 py-3 text-left">Base Premium</th>
               <th className="px-4 py-3 text-left">Coverage</th>
               <th className="px-4 py-3 text-left">Status</th>
@@ -216,8 +218,22 @@ const PolicyList = () => {
                   </div>
                 </td>
 
-                <td className="px-4 py-3 capitalize">
-                  {p.insurance_type}
+                <td className="px-4 py-3 align-middle">
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <UsersIcon className="w-4 h-4 opacity-70" />
+                    {p.agents && p.agents.length > 0 ? (
+                      <div className="flex items-center gap-1">
+                        <span>{p.agents[0]?.name}</span>
+                        {p.agents.length > 1 && (
+                          <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-primary-light/20 text-primary-light rounded">
+                            +{p.agents.length - 1}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="opacity-50">Unassigned</span>
+                    )}
+                  </div>
                 </td>
 
                 <td className="px-4 py-3 font-semibold">
@@ -249,11 +265,10 @@ const PolicyList = () => {
 
                   <button
                     onClick={() => toggleStatus(p)}
-                    className={`text-xs font-semibold px-3 py-1 rounded-lg transition ${
-                      p.is_active
-                        ? "bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
-                        : "bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600"
-                    }`}
+                    className={`text-xs font-semibold px-3 py-1 rounded-lg transition ${p.is_active
+                      ? "bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
+                      : "bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600"
+                      }`}
                   >
                     {p.is_active ? "Disable" : "Enable"}
                   </button>

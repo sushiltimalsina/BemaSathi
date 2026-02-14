@@ -24,6 +24,11 @@ class Agent extends Model
         'is_active' => 'boolean',
     ];
 
+    public function policies()
+    {
+        return $this->belongsToMany(Policy::class, 'policy_agent');
+    }
+
     public function company()
     {
         return $this->belongsTo(Company::class);

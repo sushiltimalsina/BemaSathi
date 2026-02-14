@@ -17,6 +17,8 @@ const PolicyForm = () => {
   const [error, setError] = useState("");
   const [companies, setCompanies] = useState([]);
   const [companiesLoading, setCompaniesLoading] = useState(true);
+  const [agents, setAgents] = useState([]);
+  const [agentsLoading, setAgentsLoading] = useState(true);
   const [policies, setPolicies] = useState([]);
 
   const [form, setForm] = useState({
@@ -33,11 +35,31 @@ const PolicyForm = () => {
     supports_smokers: false,
     covered_conditions: "",
     exclusions: "",
+    agents: [], // Changed from agent_id to agents array
     is_active: true,
+    premium_factor: 1.0,
+    age_factor_step: 0.025,
+    smoker_factor: 1.35,
+    condition_factor: 0.15,
+    family_base_factor: 1.20,
+    family_member_step: 0.08,
+    age_0_2_factor: 1.10,
+    age_3_17_factor: 0.80,
+    age_18_24_factor: 1.00,
+    age_25_plus_base_factor: 1.00,
+    region_urban_factor: 1.10,
+    region_semi_urban_factor: 1.05,
+    region_rural_factor: 1.00,
+    loyalty_discount_factor: 0.95,
+    bmi_overweight_factor: 1.10,
+    bmi_obese_factor: 1.25,
+    occ_class_2_factor: 1.15,
+    occ_class_3_factor: 1.30,
   });
 
   useEffect(() => {
     loadCompanies();
+    loadAgents();
     loadPolicies();
     if (isEdit) loadPolicy();
   }, [id]);
@@ -50,6 +72,16 @@ const PolicyForm = () => {
       setError("Unable to load companies.");
     }
     setCompaniesLoading(false);
+  };
+
+  const loadAgents = async () => {
+    try {
+      const res = await API.get("/admin/agents");
+      setAgents(res.data || []);
+    } catch (e) {
+      setError("Unable to load agents.");
+    }
+    setAgentsLoading(false);
   };
 
   const loadPolicy = async () => {
@@ -66,6 +98,9 @@ const PolicyForm = () => {
         exclusions: Array.isArray(data.exclusions)
           ? data.exclusions.join(", ")
           : data.exclusions || "",
+        agents: Array.isArray(data.agents)
+          ? data.agents.map(a => a.id)
+          : (data.agent_id ? [data.agent_id] : []), // Support both new and old format
       });
     } catch (e) {
       setError("Unable to load policy.");
@@ -84,6 +119,17 @@ const PolicyForm = () => {
 
   const updateField = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const toggleAgent = (agentId) => {
+    setForm((prev) => {
+      const agents = prev.agents || [];
+      if (agents.includes(agentId)) {
+        return { ...prev, agents: agents.filter(id => id !== agentId) };
+      } else {
+        return { ...prev, agents: [...agents, agentId] };
+      }
+    });
   };
 
   const save = async () => {
@@ -106,6 +152,12 @@ const PolicyForm = () => {
         return;
       }
 
+      if (!form.agents || form.agents.length === 0) {
+        setError("Please assign at least one agent to this policy.");
+        setSaving(false);
+        return;
+      }
+
       const payload = {
         ...form,
         supports_smokers: Boolean(form.supports_smokers),
@@ -120,6 +172,7 @@ const PolicyForm = () => {
         waiting_period_days: form.waiting_period_days === "" ? null : form.waiting_period_days,
         copay_percent: form.copay_percent === "" ? null : form.copay_percent,
         claim_settlement_ratio: form.claim_settlement_ratio === "" ? null : form.claim_settlement_ratio,
+        agents: form.agents, // Send agents array
       };
 
       if (isEdit) {
@@ -223,6 +276,56 @@ const PolicyForm = () => {
           required
         />
 
+        {/* AGENTS - Multi-Select */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">Assigned Agents</label>
+            <button
+              type="button"
+              onClick={() => navigate("/admin/agents/create")}
+              className="text-xs font-semibold text-primary-light hover:underline"
+            >
+              + Add Agent
+            </button>
+          </div>
+
+          {agentsLoading ? (
+            <div className="text-sm opacity-60">Loading agents...</div>
+          ) : agents.length === 0 ? (
+            <div className="text-sm opacity-60">No agents available. Please create an agent first.</div>
+          ) : (
+            <div className="border border-border-light dark:border-border-dark rounded-lg p-4 space-y-2 max-h-60 overflow-y-auto">
+              {agents.map((agent) => (
+                <div key={agent.id} className="flex items-center gap-3">
+                  <input
+                    id={`agent-${agent.id}`}
+                    type="checkbox"
+                    checked={form.agents?.includes(agent.id) || false}
+                    onChange={() => toggleAgent(agent.id)}
+                    className="w-4 h-4 rounded border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark accent-primary-light"
+                  />
+                  <label
+                    htmlFor={`agent-${agent.id}`}
+                    className="text-sm cursor-pointer flex-1"
+                  >
+                    {agent.name} {agent.company?.name && `(${agent.company.name})`}
+                  </label>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <p className="text-[10px] opacity-50 italic">
+            Users will be able to choose from these assigned agents when purchasing this policy.
+          </p>
+
+          {form.agents && form.agents.length > 0 && (
+            <div className="text-xs text-primary-light font-medium">
+              {form.agents.length} agent{form.agents.length !== 1 ? 's' : ''} selected
+            </div>
+          )}
+        </div>
+
         {/* PREMIUM */}
         <Input
           label="Premium Amount (Yearly)"
@@ -257,6 +360,161 @@ const PolicyForm = () => {
           onChange={(e) => updateField("company_rating", e.target.value)}
           required
         />
+
+        {/* PRICING FACTORS SECTION */}
+        <div className="pt-4 border-t border-border-light dark:border-border-dark space-y-6">
+          <h3 className="font-bold text-xl opacity-90 border-b pb-2">Pricing Adjustments</h3>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold text-sm opacity-70 italic">General Factors</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Global Multiplier (Base * Factor)"
+                type="number" step="0.01"
+                value={form.premium_factor}
+                onChange={(e) => updateField("premium_factor", e.target.value)}
+                placeholder="1.00"
+              />
+              <Input
+                label="Smoker Multiplier"
+                type="number" step="0.01"
+                value={form.smoker_factor}
+                onChange={(e) => updateField("smoker_factor", e.target.value)}
+                placeholder="1.35"
+              />
+              <Input
+                label="Per-Condition Loading Factor"
+                type="number" step="0.01"
+                value={form.condition_factor}
+                onChange={(e) => updateField("condition_factor", e.target.value)}
+                placeholder="0.15"
+              />
+              <Input
+                label="Family Base Multiplier"
+                type="number" step="0.01"
+                value={form.family_base_factor}
+                onChange={(e) => updateField("family_base_factor", e.target.value)}
+                placeholder="1.20"
+              />
+              <Input
+                label="Family Member Increment"
+                type="number" step="0.01"
+                value={form.family_member_step}
+                onChange={(e) => updateField("family_member_step", e.target.value)}
+                placeholder="0.08"
+              />
+              <Input
+                label="Loyalty Discount (Multiplier)"
+                type="number" step="0.01"
+                value={form.loyalty_discount_factor}
+                onChange={(e) => updateField("loyalty_discount_factor", e.target.value)}
+                placeholder="0.95"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4 pt-2">
+            <h4 className="font-semibold text-sm opacity-70 italic">Regional Factors</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Input
+                label="Urban Area Loading"
+                type="number" step="0.01"
+                value={form.region_urban_factor}
+                onChange={(e) => updateField("region_urban_factor", e.target.value)}
+                placeholder="1.10"
+              />
+              <Input
+                label="Semi-Urban Loading"
+                type="number" step="0.01"
+                value={form.region_semi_urban_factor}
+                onChange={(e) => updateField("region_semi_urban_factor", e.target.value)}
+                placeholder="1.05"
+              />
+              <Input
+                label="Rural Area Loading"
+                type="number" step="0.01"
+                value={form.region_rural_factor}
+                onChange={(e) => updateField("region_rural_factor", e.target.value)}
+                placeholder="1.00"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4 pt-2">
+            <h4 className="font-semibold text-sm opacity-70 italic">Health & Occupation Factors</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="BMI Overweight Loading"
+                type="number" step="0.01"
+                value={form.bmi_overweight_factor}
+                onChange={(e) => updateField("bmi_overweight_factor", e.target.value)}
+                placeholder="1.10"
+              />
+              <Input
+                label="BMI Obese Loading"
+                type="number" step="0.01"
+                value={form.bmi_obese_factor}
+                onChange={(e) => updateField("bmi_obese_factor", e.target.value)}
+                placeholder="1.25"
+              />
+              <Input
+                label="Occupation Class 2 (Field/Risk)"
+                type="number" step="0.01"
+                value={form.occ_class_2_factor}
+                onChange={(e) => updateField("occ_class_2_factor", e.target.value)}
+                placeholder="1.15"
+              />
+              <Input
+                label="Occupation Class 3 (Manual/High Risk)"
+                type="number" step="0.01"
+                value={form.occ_class_3_factor}
+                onChange={(e) => updateField("occ_class_3_factor", e.target.value)}
+                placeholder="1.30"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4 pt-2">
+            <h4 className="font-semibold text-sm opacity-70 italic">Age Group Factors</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Age 0-2 (Infant) Base Factor"
+                type="number" step="0.01"
+                value={form.age_0_2_factor}
+                onChange={(e) => updateField("age_0_2_factor", e.target.value)}
+                placeholder="1.10"
+              />
+              <Input
+                label="Age 3-17 (Child) Base Factor"
+                type="number" step="0.01"
+                value={form.age_3_17_factor}
+                onChange={(e) => updateField("age_3_17_factor", e.target.value)}
+                placeholder="0.80"
+              />
+              <Input
+                label="Age 18-24 (Adult) Base Factor"
+                type="number" step="0.01"
+                value={form.age_18_24_factor}
+                onChange={(e) => updateField("age_18_24_factor", e.target.value)}
+                placeholder="1.00"
+              />
+              <Input
+                label="Age 25+ Base Factor"
+                type="number" step="0.01"
+                value={form.age_25_plus_base_factor}
+                onChange={(e) => updateField("age_25_plus_base_factor", e.target.value)}
+                placeholder="1.00"
+              />
+              <Input
+                label="Age 25+ Yearly Increment (Per Year)"
+                type="number" step="0.001"
+                value={form.age_factor_step}
+                onChange={(e) => updateField("age_factor_step", e.target.value)}
+                placeholder="0.025"
+              />
+            </div>
+          </div>
+        </div>
 
         {/* WAITING PERIOD */}
         <Input
