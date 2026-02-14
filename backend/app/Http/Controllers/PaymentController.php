@@ -545,6 +545,14 @@ class PaymentController extends Controller
             'coverage_type' => $user?->coverage_type ?? 'individual',
             'budget_range' => $user?->budget_range,
             'family_members' => $user?->family_members ?? 1,
+            'region_type' => $user->region_type ?? 'urban',
+            'city' => $user->municipality_name ?? $user->address,
+            'weight' => $user->weight_kg,
+            'height' => $user->height_cm,
+            'occupation_class' => $user->occupation_class ?? 'class_1',
+            'conditions' => is_array($user->pre_existing_conditions)
+                ? $user->pre_existing_conditions
+                : json_decode($user->pre_existing_conditions ?? '[]', true)
         ];
     }
 
@@ -575,7 +583,15 @@ class PaymentController extends Controller
             $profile['health_score'],
             $profile['coverage_type'],
             $profile['budget_range'],
-            $profile['family_members']
+            $profile['family_members'],
+            [
+                'region_type' => $profile['region_type'], 
+                'city' => $profile['city'],
+                'weight' => $profile['weight'],
+                'height' => $profile['height'],
+                'occupation_class' => $profile['occupation_class'],
+                'conditions' => $profile['conditions']
+            ]
         );
 
         $basePremium = $quote['calculated_total'];
