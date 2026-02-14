@@ -59,7 +59,7 @@ import MyPolicies from "./user/client/pages/MyPolicies";
 import MyTickets from "./user/client/pages/MyTickets";
 import NewTicket from "./user/client/pages/NewTicket";
 import SupportChat from "./user/client/pages/SupportChat";
-import ProfileCompletion from "./user/client/components/ProfileCompletion";
+import HealthDeclaration from "./user/client/pages/HealthDeclaration";
 
 
 
@@ -259,11 +259,11 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/client/profile/complete"
+        path="/client/health-declaration"
         element={
           <ProtectedClientRoute>
             <ClientLayout>
-              <ProfileCompletion />
+              <HealthDeclaration />
             </ClientLayout>
           </ProtectedClientRoute>
         }

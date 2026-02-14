@@ -101,7 +101,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Authenticated user profile
     Route::get('/me',      [AuthController::class, 'me']);
-    Route::put('/update-profile', [AuthController::class, 'updateProfile']);
+    // Route::put('/update-profile', [AuthController::class, 'updateProfile']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Saved Policies (Client only)
