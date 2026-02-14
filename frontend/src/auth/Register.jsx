@@ -171,7 +171,7 @@ const Register = () => {
       if (socialUser) {
         // Step 2 for social user: Update their profile
         const tempToken = sessionStorage.getItem("temp_client_token");
-        res = await API.put("/update-profile", payload, {
+        res = await API.put("/user/profile", payload, {
           headers: { Authorization: `Bearer ${tempToken}` }
         });
 
@@ -472,108 +472,32 @@ const Register = () => {
                 Google account linked! Just two final details to generate your **Live Quote Matrix**.
               </p>
 
-              <form onSubmit={handleRegister} className="space-y-5">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1 block">Date of Birth</label>
-                    <input
-                      type="date"
-                      value={form.dob}
-                      onChange={(e) => setForm({ ...form, dob: e.target.value })}
-                      className="w-full px-3 py-2 text-sm rounded-lg bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark focus:ring-2 focus:ring-green-500/30 transition-all font-medium"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1 block">Phone Number</label>
-                    <input
-                      type="text"
-                      placeholder="98XXXXXXXX"
-                      value={form.phone}
-                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                      className="w-full px-3 py-2 text-sm rounded-lg bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark focus:ring-2 focus:ring-green-500/30 transition-all font-medium"
-                      required
-                    />
-                  </div>
+              <form onSubmit={handleRegister} className="space-y-6">
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-2 block ml-1">Date of Birth</label>
+                  <input
+                    type="date"
+                    value={form.dob}
+                    onChange={(e) => setForm({ ...form, dob: e.target.value })}
+                    className="w-full px-5 py-4 text-sm rounded-2xl bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark focus:ring-4 focus:ring-primary-light/10 focus:border-primary-light transition-all font-bold outline-none"
+                    required
+                  />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1 block">Annual Budget Range</label>
-                  <div className="flex flex-wrap gap-2">
-                    {BUDGET_RANGES.map(br => (
-                      <button
-                        key={br}
-                        type="button"
-                        onClick={() => setForm({ ...form, budget_range: br })}
-                        className={`px-3 py-1.5 rounded-full text-[10px] font-bold border transition-all ${form.budget_range === br
-                          ? 'border-green-600 bg-green-600 text-white shadow-lg shadow-green-600/20'
-                          : 'border-border-light dark:border-border-dark hover:border-green-600/50'
-                          }`}
-                      >
-                        {br}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-2 block">Premium Factors</label>
-                  <div className="space-y-3 p-4 rounded-xl bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark selection:">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold">Do you smoke?</span>
-                      <button
-                        type="button"
-                        onClick={() => setForm({ ...form, is_smoker: !form.is_smoker })}
-                        className={`w-12 h-6 rounded-full relative transition-colors ${form.is_smoker ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-700'}`}
-                      >
-                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${form.is_smoker ? 'left-7' : 'left-1'}`} />
-                      </button>
-                    </div>
-
-                    <div className="pt-2 border-t border-border-light dark:border-border-dark">
-                      <span className="text-[10px] opacity-40 italic block mb-2">Select any existing medical conditions:</span>
-                      <div className="flex flex-wrap gap-2">
-                        {MEDICAL_CONDITIONS.map(cond => {
-                          const isSelected = form.pre_existing_conditions.includes(cond.id);
-                          return (
-                            <button
-                              key={cond.id}
-                              type="button"
-                              onClick={() => {
-                                const next = isSelected
-                                  ? form.pre_existing_conditions.filter(c => c !== cond.id)
-                                  : [...form.pre_existing_conditions, cond.id];
-                                setForm({ ...form, pre_existing_conditions: next });
-                              }}
-                              className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-tighter border transition-all ${isSelected
-                                ? 'border-red-500 bg-red-500/10 text-red-600'
-                                : 'border-border-light dark:border-border-dark opacity-50'
-                                }`}
-                            >
-                              {cond.label}
-                            </button>
-                          );
-                        })}
-                        {form.pre_existing_conditions.length === 0 && <span className="text-[9px] opacity-30 italic">None selected (Healthy)</span>}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1 block">Coverage Type</label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <label className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-3 block ml-1">Coverage Type</label>
+                  <div className="grid grid-cols-2 gap-4">
                     {['individual', 'family'].map(t => (
                       <button
                         key={t}
                         type="button"
                         onClick={() => setForm({ ...form, coverage_type: t })}
-                        className={`py-2 px-2 rounded-xl border text-[10px] font-bold transition-all ${form.coverage_type === t
-                          ? 'border-green-500 bg-green-500/10 text-green-700 dark:text-green-400'
-                          : 'border-border-light dark:border-border-dark opacity-60'
+                        className={`py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${form.coverage_type === t
+                          ? 'border-primary-light bg-primary-light/10 text-primary-light shadow-inner'
+                          : 'border-border-light dark:border-border-dark opacity-50 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5'
                           }`}
                       >
-                        {t === 'individual' ? '🧍 Individual' : '👨‍👩‍👧 Family'}
+                        {t === 'individual' ? '🧍 Individual' : '👨‍👩‍👧‍👦 Family'}
                       </button>
                     ))}
                   </div>
@@ -581,14 +505,14 @@ const Register = () => {
 
                 {form.coverage_type === "family" && (
                   <div className="animate-in slide-in-from-top-2 duration-300">
-                    <label className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1 block">Family Members Count</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-2 block ml-1">Family Members Count</label>
                     <input
                       type="number"
                       min="2"
                       max="10"
                       value={form.family_members}
                       onChange={(e) => setForm({ ...form, family_members: e.target.value })}
-                      className="w-full px-3 py-2 text-sm rounded-lg bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark focus:ring-2 focus:ring-green-500/30 transition-all font-medium"
+                      className="w-full px-5 py-4 text-sm rounded-2xl bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark focus:ring-4 focus:ring-primary-light/10 focus:border-primary-light transition-all font-bold outline-none"
                       required
                     />
                   </div>
@@ -597,19 +521,17 @@ const Register = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className={`w-full py-4 rounded-xl text-white font-black text-sm shadow-xl active:scale-95 transition-all ${loading ? "bg-green-400/50" : "bg-green-600 hover:bg-green-700 shadow-green-600/20"
-                    }`}
+                  className="w-full py-5 rounded-2xl text-white font-black text-xs uppercase tracking-widest shadow-xl bg-primary-light hover:bg-primary-dark active:scale-95 transition-all disabled:opacity-50"
                 >
-                  {loading ? "Completing Profile..." : "Register"}
-                </button>
-
-                <button
-                  onClick={() => setSocialUser(null)}
-                  className="w-full text-[10px] opacity-40 hover:opacity-100 transition-opacity font-bold uppercase tracking-widest text-center"
-                >
-                  Use a different account
+                  {loading ? "Completing Profile..." : "Complete Profile"}
                 </button>
               </form>
+              <button
+                onClick={() => setSocialUser(null)}
+                className="w-full text-[10px] opacity-40 hover:opacity-100 transition-opacity font-bold uppercase tracking-widest text-center mt-4"
+              >
+                Use a different account
+              </button>
             </div>
           )}
         </div>
