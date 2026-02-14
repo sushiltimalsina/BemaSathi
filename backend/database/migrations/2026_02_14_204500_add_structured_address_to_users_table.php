@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('province')->nullable()->after('phone_number');
+            $table->string('province')->nullable()->after('phone');
             $table->string('district')->nullable()->after('province');
             $table->string('municipality_type')->nullable()->after('district'); // Metropolitan, Sub-Metropolitan, Municipality, Rural Municipality
             $table->string('municipality_name')->nullable()->after('municipality_type');
