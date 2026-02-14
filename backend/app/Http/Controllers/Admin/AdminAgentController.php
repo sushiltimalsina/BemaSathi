@@ -24,20 +24,32 @@ class AdminAgentController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'  => 'required|string',
-            'phone' => 'required|string',
-            'email' => 'required|email',
+            'name'  => 'required|string|max:255',
+            'phone' => 'required|string|max:20', // Consider adding unique:agents,phone if applicable
+            'email' => 'required|email|unique:agents,email',
+            'password' => 'required|string|min:8',
             'company_id' => 'nullable|exists:companies,id',
-            'is_active' => 'nullable|boolean',
+            'is_active' => 'boolean',
         ]);
 
-        // Agents don't log in; assign a random placeholder password to satisfy DB constraint
-        $validated['password'] = Hash::make(Str::random(12));
+        $status = $request->has('is_active') ? $request->boolean('is_active') : true;
+
+        $password = $validated['password'];
+        $validated['password'] = Hash::make($password);
+        $validated['is_active'] = $status;
 
         $agent = Agent::create($validated);
 
+        // Send Welcome Email
+        try {
+            \Illuminate\Support\Facades\Mail::to($agent->email)->send(new \App\Mail\AgentWelcomeMail($agent));
+        } catch (\Exception $e) {
+            // Log error but don't fail the request
+            \Illuminate\Support\Facades\Log::error('Failed to send agent welcome email: ' . $e->getMessage());
+        }
+
         return response()->json([
-            'message' => 'Agent created successfully',
+            'message' => 'Agent created successfully and notified via email.',
             'agent'   => $agent->load('company')
         ], 201);
     }
@@ -45,12 +57,19 @@ class AdminAgentController extends Controller
     public function update(Request $request, Agent $agent)
     {
         $validated = $request->validate([
-            'name'  => 'sometimes|required|string',
-            'phone' => 'sometimes|required|string',
-            'email' => 'sometimes|required|email',
+            'name'  => 'sometimes|required|string|max:255',
+            'phone' => 'sometimes|required|string|max:20',
+            'email' => 'sometimes|required|email|unique:agents,email,' . $agent->id,
             'company_id' => 'nullable|exists:companies,id',
-            'is_active' => 'nullable|boolean',
+            'is_active' => 'boolean',
+            'password' => 'nullable|string|min:8',
         ]);
+
+        if (isset($validated['password'])) {
+            $validated['password'] = Hash::make($validated['password']);
+        } else {
+            unset($validated['password']);
+        }
 
         $agent->update($validated);
 

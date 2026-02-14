@@ -83,6 +83,7 @@ class PaymentController extends Controller
             'policy_id' => 'nullable|exists:policies,id',
             'billing_cycle'  => 'nullable|in:monthly,quarterly,half_yearly,yearly',
             'email' => 'nullable|email',
+            'agent_id' => 'nullable|exists:agents,id', // User's selected agent
         ]);
 
         if (empty($data['buy_request_id']) && empty($data['policy_id'])) {
@@ -130,7 +131,8 @@ class PaymentController extends Controller
                 $request,
                 (int) $data['policy_id'],
                 $cycle,
-                $data['email'] ?? null
+                $data['email'] ?? null,
+                $data['agent_id'] ?? null // Pass selected agent
             );
             $cycle = $intent->billing_cycle;
             $amount = $intent->amount;
@@ -570,7 +572,8 @@ class PaymentController extends Controller
         Request $request,
         int $policyId,
         ?string $billingCycle,
-        ?string $email
+        ?string $email,
+        ?int $agentId = null // Add agent_id parameter
     ): PaymentIntent {
         $user = $request->user();
         $profile = $this->resolveProfile($user);
@@ -606,6 +609,7 @@ class PaymentController extends Controller
         $intent = PaymentIntent::create([
             'user_id' => $user?->id,
             'policy_id' => $policyId,
+            'agent_id' => $agentId, // Store selected agent
             'email' => $recipientEmail,
             'name' => $name,
             'phone' => $phone,
@@ -630,6 +634,7 @@ class PaymentController extends Controller
         $buyRequest = BuyRequest::create([
             'user_id' => $intent->user_id,
             'policy_id' => $intent->policy_id,
+            'agent_id' => $intent->agent_id, // Include selected agent
             'name' => $intent->name,
             'phone' => $intent->phone,
             'email' => $intent->email,

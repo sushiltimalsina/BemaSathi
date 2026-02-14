@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\Policy;
+use App\Mail\CompanyWelcomeMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Mail;
 
 class AdminCompanyController extends Controller
 {
@@ -34,6 +36,14 @@ class AdminCompanyController extends Controller
         ]);
 
         $company = Company::create($validated);
+
+        // Send welcome email to company
+        try {
+            Mail::to($company->email)->send(new CompanyWelcomeMail($company));
+        } catch (\Throwable $e) {
+            // Log error but don't fail the request
+            \Log::error('Failed to send company welcome email: ' . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Company created successfully',

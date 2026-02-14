@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Mail;
 
 class AdminRenewalController extends Controller
 {
+    use \App\Traits\SyncsPolicyStatus;
+
     private NotificationService $notifier;
 
     public function __construct(NotificationService $notifier)
@@ -21,6 +23,8 @@ class AdminRenewalController extends Controller
 
     public function index()
     {
+        $this->syncPolicyStatuses();
+
         $renewals = BuyRequest::with(['user', 'policy'])
             ->whereHas('payments', function ($query) {
                 $query->where('is_verified', true)

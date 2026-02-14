@@ -16,8 +16,11 @@ use Illuminate\Support\Facades\Schema;
 
 class AdminStatsController extends Controller
 {
+    use \App\Traits\SyncsPolicyStatus;
+
     public function stats()
     {
+        $this->syncPolicyStatuses();
         $today = Carbon::today();
 
         $dailyBuyRequests = BuyRequest::query()

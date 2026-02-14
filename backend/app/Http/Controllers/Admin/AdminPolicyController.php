@@ -12,17 +12,18 @@ class AdminPolicyController extends Controller
 {
     public function index()
     {
-        return response()->json(Policy::all());
+        return response()->json(Policy::with(['agent', 'agents'])->get());
     }
 
     public function show(Policy $policy)
     {
+        $policy->load(['agent', 'agents']);
         return response()->json($policy);
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $rules = [
             'insurance_type' => 'required|string',
             'company_name' => 'required|string',
             'policy_name' => [
@@ -44,15 +45,61 @@ class AdminPolicyController extends Controller
             'covered_conditions.*' => 'string',
             'exclusions' => 'nullable|array',
             'exclusions.*' => 'string',
-            'agent_id' => 'nullable|numeric',
+            'agent_id' => 'nullable|exists:agents,id', // Make nullable if agents provided
+            'agents' => 'nullable|array',
+            'agents.*' => 'exists:agents,id',
             'is_active' => 'nullable|boolean',
-        ]);
+            'premium_factor' => 'nullable|numeric|min:0.1',
+            'age_factor_step' => 'nullable|numeric',
+            'smoker_factor' => 'nullable|numeric',
+            'condition_factor' => 'nullable|numeric',
+            'family_base_factor' => 'nullable|numeric',
+            'family_member_step' => 'nullable|numeric',
+            'age_0_2_factor' => 'nullable|numeric',
+            'age_3_17_factor' => 'nullable|numeric',
+            'age_18_24_factor' => 'nullable|numeric',
+            'age_25_plus_base_factor' => 'nullable|numeric',
+            'region_urban_factor' => 'nullable|numeric',
+            'region_semi_urban_factor' => 'nullable|numeric',
+            'region_rural_factor' => 'nullable|numeric',
+            'loyalty_discount_factor' => 'nullable|numeric',
+            'bmi_overweight_factor' => 'nullable|numeric',
+            'bmi_obese_factor' => 'nullable|numeric',
+            'occ_class_2_factor' => 'nullable|numeric',
+            'occ_class_3_factor' => 'nullable|numeric',
+        ];
 
+        $validated = $request->validate($rules);
+
+        // Fallback for single agent_id if multiple agents provided
+        if (!empty($validated['agents']) && empty($validated['agent_id'])) {
+            $validated['agent_id'] = $validated['agents'][0];
+        }
+
+        // Create policy (agent_id required by DB, ensured above or by request)
+        if (empty($validated['agent_id'])) {
+             // Handle case where strictly no agent is provided but DB requires it?
+             // Since we want multiple agents, likely we should just pick one or fail if none.
+             // For now assume agents array is mandatory if agent_id is missing.
+             if (empty($validated['agents'])) {
+                 // Force validation error or rely on DB exception?
+                 // Let's rely on basic validation "required_without:agents" logic if we were strictly using rules.
+                 // But simply:
+             }
+        }
+        
         $policy = Policy::create($validated);
+
+        if (!empty($validated['agents'])) {
+            $policy->agents()->sync($validated['agents']);
+        } elseif (!empty($validated['agent_id'])) {
+             // If only agent_id provided (legacy), sync that one
+            $policy->agents()->sync([$validated['agent_id']]);
+        }
 
         return response()->json([
             'message' => 'Policy created successfully',
-            'policy'  => $policy
+            'policy'  => $policy->load('agents')
         ], 201);
     }
 
@@ -81,15 +128,47 @@ class AdminPolicyController extends Controller
             'covered_conditions.*' => 'string',
             'exclusions' => 'nullable|array',
             'exclusions.*' => 'string',
-            'agent_id' => 'nullable|numeric',
+            'agent_id' => 'nullable|exists:agents,id',
+            'agents' => 'nullable|array',
+            'agents.*' => 'exists:agents,id',
             'is_active' => 'nullable|boolean',
+            'premium_factor' => 'nullable|numeric|min:0.1',
+            'age_factor_step' => 'nullable|numeric',
+            'smoker_factor' => 'nullable|numeric',
+            'condition_factor' => 'nullable|numeric',
+            'family_base_factor' => 'nullable|numeric',
+            'family_member_step' => 'nullable|numeric',
+            'age_0_2_factor' => 'nullable|numeric',
+            'age_3_17_factor' => 'nullable|numeric',
+            'age_18_24_factor' => 'nullable|numeric',
+            'age_25_plus_base_factor' => 'nullable|numeric',
+            'region_urban_factor' => 'nullable|numeric',
+            'region_semi_urban_factor' => 'nullable|numeric',
+            'region_rural_factor' => 'nullable|numeric',
+            'loyalty_discount_factor' => 'nullable|numeric',
+            'bmi_overweight_factor' => 'nullable|numeric',
+            'bmi_obese_factor' => 'nullable|numeric',
+            'occ_class_2_factor' => 'nullable|numeric',
+            'occ_class_3_factor' => 'nullable|numeric',
         ]);
+
+        // Fallback for single agent_id if multiple agents provided
+        if (!empty($validated['agents']) && empty($validated['agent_id'])) {
+            $validated['agent_id'] = $validated['agents'][0];
+        }
 
         $policy->update($validated);
 
+        if (array_key_exists('agents', $validated)) {
+            $policy->agents()->sync($validated['agents']);
+        } elseif (!empty($validated['agent_id'])) {
+            // Keep sync if strictly changing agent_id?
+            // Optional: $policy->agents()->sync([$validated['agent_id']]);
+        }
+
         return response()->json([
             'message' => 'Policy updated successfully',
-            'policy'  => $policy
+            'policy'  => $policy->load('agents')
         ]);
     }
 

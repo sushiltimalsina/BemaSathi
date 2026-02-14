@@ -117,7 +117,7 @@ class BuyRequestController extends Controller
             $this->syncPolicyStatuses($user->id);
         }
 
-        $requests = BuyRequest::with('policy')
+        $requests = BuyRequest::with(['policy', 'policy.agents', 'policy.agents.company'])
             ->where('user_id', $user?->id)
             ->whereHas('payments', function ($query) {
                 $query->where('is_verified', true)
