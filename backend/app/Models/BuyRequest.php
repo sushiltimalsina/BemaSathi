@@ -12,6 +12,7 @@ class BuyRequest extends Model
     protected $fillable = [
         'user_id',
         'policy_id',
+        'agent_id', // Track which agent the user selected
         'name',
         'phone',
         'email',
@@ -42,6 +43,11 @@ class BuyRequest extends Model
     public function policy()
     {
         return $this->belongsTo(Policy::class);
+    }
+
+    public function agent()
+    {
+        return $this->belongsTo(Agent::class);
     }
 
     public function payments()

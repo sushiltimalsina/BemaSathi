@@ -10,6 +10,7 @@ class PaymentIntent extends Model
         'user_id',
         'policy_id',
         'buy_request_id',
+        'agent_id', // Track selected agent
         'email',
         'name',
         'phone',
@@ -42,6 +43,11 @@ class PaymentIntent extends Model
     public function policy()
     {
         return $this->belongsTo(Policy::class);
+    }
+
+    public function agent()
+    {
+        return $this->belongsTo(Agent::class);
     }
 
     public function buyRequest()

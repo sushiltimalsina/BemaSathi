@@ -49,29 +49,6 @@ class User extends Authenticatable implements MustVerifyEmail, CanResetPasswordC
 ];
 
 
-protected $casts = [
-    'pre_existing_conditions' => 'array',
-    'family_members' => 'integer',
-    'family_member_details' => 'array',
-    'is_smoker' => 'boolean',
-];
-
-
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
-   protected $hidden = [
-    'password',
-    'remember_token',
-    'api_token',
-    'created_at',
-    'updated_at',
-];
-
-
-
     /**
      * Get the attributes that should be cast.
      *
@@ -82,6 +59,10 @@ protected $casts = [
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'pre_existing_conditions' => 'array',
+            'family_members' => 'integer',
+            'family_member_details' => 'array',
+            'is_smoker' => 'boolean',
         ];
     }
 
