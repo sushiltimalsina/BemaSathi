@@ -279,6 +279,12 @@ class RecommendationController extends Controller
     private function parseBudgetRange(?string $range)
     {
         return match ($range) {
+            '< 5k/yr' => ['min' => 0, 'max' => 5000],
+            '5k-10k' => ['min' => 5000, 'max' => 10000],
+            '10k-20k' => ['min' => 10000, 'max' => 20000],
+            '20k-50k' => ['min' => 20000, 'max' => 50000],
+            '50k+' => ['min' => 50000, 'max' => INF],
+            // Compatibility for old/dummy data formats if any
             '<10000' => ['min' => 0, 'max' => 10000],
             '10000-20000' => ['min' => 10000, 'max' => 20000],
             '20000-30000' => ['min' => 20000, 'max' => 30000],
