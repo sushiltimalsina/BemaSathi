@@ -86,15 +86,15 @@ class RecommendationController extends Controller
 
         // Balanced Selection Strategy:
         // 1. The "Absolute Best Fit"
-        $bestFit = $sorted->first();
+        $topBest = $sorted->slice(0, 3); // Show Top 3 to see the shuffle better
 
-        // 2. The "Value Champion" (Highest coverage limit per unit of premium among top 5)
-        $valueChampion = $sorted->slice(1, 4)->map(function ($p) {
+        // 2. The "Value Champion" (Best bang for buck from the rest)
+        $valueChampion = $sorted->slice(3, 5)->map(function ($p) {
             $p->value_index = $p->coverage_limit / max($p->personalized_premium, 1);
             return $p;
         })->sortByDesc('value_index')->first();
 
-        $recommended = collect([$bestFit, $valueChampion])->unique('id')->values();
+        $recommended = $topBest->push($valueChampion)->filter()->unique('id')->values();
 
         return response()->json([
             'recommended' => $recommended
@@ -182,13 +182,17 @@ class RecommendationController extends Controller
             
             if ($premium <= $max && $premium >= $max * 0.6) {
                 $weightedScore += $wBudget;
-                $reasons[] = "Maximizes your coverage capacity";
+                $reasons[] = "Maximizes your budget capacity";
             } elseif ($premium < $max * 0.6) {
-                $weightedScore += ($wBudget * 0.7);
-                $reasons[] = "Cost-effective choice";
+                $weightedScore += ($wBudget * 0.8);
+                $reasons[] = "Highly affordable choice";
             } elseif ($premium <= $max * 1.15) {
                 $weightedScore += ($wBudget * 0.4);
-                $reasons[] = "Premium quality (slightly above budget)";
+                $reasons[] = "Premium choice (slightly above budget)";
+            } else {
+                // HARD PENALTY for being significantly over budget
+                $underwritingPenalty += 30; 
+                $reasons[] = "Significantly over your target budget";
             }
         } else {
             $weightedScore += $wBudget;
@@ -211,10 +215,17 @@ class RecommendationController extends Controller
         // Apply Underwriting Penalty
         $finalScore = max(0, $weightedScore - $underwritingPenalty);
 
-        // Contextual Bonuses
-        $policyName = strtolower($policy->policy_name);
+        // --- CONTEXTUAL BONUSES (Demonstration "Wow" Factors) ---
+        
+        // 1. Elite Health Bonus (Rewards healthy lifestyle)
+        if ($healthScore > 85 && empty($userCond)) {
+            $finalScore += 15;
+            $reasons[] = "Elite health profile discount applied";
+        }
+
+        // 2. Family Optimization
         if ($hasFamily && str_contains($policyName, 'family')) {
-            $finalScore += 5;
+            $finalScore += 10;
             $reasons[] = "Optimized for family protection";
         }
 
