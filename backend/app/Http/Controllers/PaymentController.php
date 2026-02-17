@@ -17,6 +17,7 @@ use App\Services\NotificationService;
 use App\Services\PremiumCalculator;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Carbon;
+use App\Http\Controllers\RecommendationFeedbackController;
 
 class PaymentController extends Controller
 {
@@ -209,6 +210,11 @@ class PaymentController extends Controller
             $this->updateRenewalAfterVerification($payment);
         } catch (QueryException $e) {
             // If status enum mismatches existing schema, keep flow moving and continue to redirect
+        }
+
+        // Track recommendation purchase
+        if ($payment->user_id && $payment->policy_id) {
+            RecommendationFeedbackController::trackPurchase($payment->user_id, $payment->policy_id);
         }
 
         // Mark BuyRequest as Completed (best effort)
@@ -436,6 +442,11 @@ class PaymentController extends Controller
             $this->updateRenewalAfterVerification($payment);
         } catch (QueryException $e) {
             // ignore
+        }
+
+        // Track recommendation purchase
+        if ($payment->user_id && $payment->policy_id) {
+            RecommendationFeedbackController::trackPurchase($payment->user_id, $payment->policy_id);
         }
 
         try {

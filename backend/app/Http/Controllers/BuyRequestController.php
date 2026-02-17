@@ -12,6 +12,7 @@ use Illuminate\Support\Carbon;
 class BuyRequestController extends Controller
 {
     use \App\Traits\SyncsPolicyStatus;
+    use \App\Traits\HandlesInsuranceQuotes;
 
     public function __construct(private PremiumCalculator $calculator) {}
 
@@ -45,28 +46,14 @@ class BuyRequestController extends Controller
         $data['name'] = $latestKyc?->full_name ?? $user->name;
         $data['phone'] = $latestKyc?->phone ?? $user->phone;
 
-        $profile = $this->resolveProfile($user);
+        $profile = $this->resolveStandardProfile($user);
         $policy = Policy::findOrFail($data['policy_id']);
 
-        $quote = $this->calculator->quote(
+        $basePremium = $this->getPersonalizedPremium(
+            $this->calculator,
             $policy,
-            $profile['age'],
-            $profile['is_smoker'],
-            $profile['health_score'],
-            $profile['coverage_type'],
-            $profile['budget_range'],
-            $profile['family_members'],
-            [
-                'region_type' => $profile['region_type'],
-                'city' => $profile['city'],
-                'weight' => $profile['weight'],
-                'height' => $profile['height'],
-                'occupation_class' => $profile['occupation_class'],
-                'conditions' => $profile['conditions']
-            ]
+            $profile
         );
-
-        $basePremium = $quote['calculated_total'];
         $interval = $data['billing_cycle'] ?? 'yearly';
         [$cycleAmount, $nextRenewal] = $this->calculateBillingInterval($interval, $basePremium);
 
@@ -154,31 +141,6 @@ class BuyRequestController extends Controller
     }
 
 
-    private function resolveProfile($user)
-    {
-        $kyc = $user->kycDocuments()->where('status', 'approved')->latest()->first();
-
-        // ✅ PRIORITIZE VERIFIED KYC DOB OVER PROFILE DOB
-        $dob = $kyc?->dob ?? $user->dob;
-        $age = ($dob ? Carbon::parse($dob)->age : 30);
-
-        return [
-            'age' => max(1, min(120, $age)),
-            'is_smoker' => (bool)$user->is_smoker,
-            'health_score' => $user->health_score ?? 70,
-            'coverage_type' => $user->coverage_type ?? 'individual',
-            'budget_range' => $user->budget_range,
-            'family_members' => $user->family_members ?? 1,
-            'region_type' => $user->region_type ?? 'urban',
-            'city' => $user->municipality_name ?? $user->address,
-            'weight' => $user->weight_kg,
-            'height' => $user->height_cm,
-            'occupation_class' => $user->occupation_class ?? 'class_1',
-            'conditions' => is_array($user->pre_existing_conditions)
-                ? $user->pre_existing_conditions
-                : json_decode($user->pre_existing_conditions ?? '[]', true)
-        ];
-    }
     public function preview(Request $request)
 {
     $user = auth()->user();
@@ -189,27 +151,13 @@ class BuyRequestController extends Controller
     ]);
 
     $policy = Policy::findOrFail($data['policy_id']);
-    $profile = $this->resolveProfile($user);
+    $profile = $this->resolveStandardProfile($user);
 
-    $quote = $this->calculator->quote(
+    $basePremium = $this->getPersonalizedPremium(
+        $this->calculator,
         $policy,
-        $profile['age'],
-        $profile['is_smoker'],
-        $profile['health_score'],
-        $profile['coverage_type'],
-        $profile['budget_range'],
-        $profile['family_members'],
-        [
-            'region_type' => $profile['region_type'],
-            'city' => $profile['city'],
-            'weight' => $profile['weight'],
-            'height' => $profile['height'],
-            'occupation_class' => $profile['occupation_class'],
-            'conditions' => $profile['conditions']
-        ]
+        $profile
     );
-
-    $basePremium = $quote['calculated_total'];
 
     [$cycleAmount, $nextRenewal] = $this->calculateBillingInterval(
         $data['billing_cycle'],

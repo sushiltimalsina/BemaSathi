@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Schema;
 
 class PolicyController extends Controller
 {
+    use \App\Traits\HandlesInsuranceQuotes;
+
     public function __construct(private PremiumCalculator $calculator) {}
 
     public function index(Request $request)
@@ -21,28 +23,16 @@ class PolicyController extends Controller
             })
             ->get();
 
-        $profile = $user ? $this->resolveProfile($user) : null;
+        $profile = $user ? $this->resolveStandardProfile($user) : null;
 
         $policies = $policies->map(function ($policy) use ($profile, $user) {
 
             if ($user && $profile) {
-                $policy->personalized_premium = $this->calculator->quote(
+                $policy->personalized_premium = $this->getPersonalizedPremium(
+                    $this->calculator,
                     $policy,
-                    $profile['age'],
-                    $profile['is_smoker'],
-                    $profile['health_score'],
-                    $profile['coverage_type'],
-                    $profile['budget_range'],
-                    $profile['family_members'],
-                    [
-                        'region_type' => $profile['region_type'], 
-                        'city' => $profile['city'],
-                        'weight' => $profile['weight'],
-                        'height' => $profile['height'],
-                        'occupation_class' => $profile['occupation_class'],
-                        'conditions' => $profile['conditions']
-                    ]
-                )['calculated_total'];
+                    $profile
+                );
             } else {
                 $policy->personalized_premium = $policy->premium_amt;
             }
@@ -63,26 +53,14 @@ class PolicyController extends Controller
         $policy = $policyQuery->findOrFail($id);
         $user = auth('sanctum')->user();
 
-        $profile = $user ? $this->resolveProfile($user) : null;
+        $profile = $user ? $this->resolveStandardProfile($user) : null;
 
-        if ($profile) {
-                $policy->personalized_premium = $this->calculator->quote(
+        if ($profile && $user) {
+                $policy->personalized_premium = $this->getPersonalizedPremium(
+                    $this->calculator,
                     $policy,
-                    $profile['age'],
-                    $profile['is_smoker'],
-                    $profile['health_score'],
-                    $profile['coverage_type'],
-                    $profile['budget_range'],
-                    $profile['family_members'],
-                    [
-                        'region_type' => $profile['region_type'], 
-                        'city' => $profile['city'],
-                        'weight' => $profile['weight'],
-                        'height' => $profile['height'],
-                        'occupation_class' => $profile['occupation_class'],
-                        'conditions' => $profile['conditions']
-                    ]
-                )['calculated_total'];
+                    $profile
+                );
         } else {
             $policy->personalized_premium = $policy->premium_amt;
         }
@@ -157,28 +135,4 @@ class PolicyController extends Controller
     }
 
 
-    private function resolveProfile($user)
-    {
-        $kyc = $user->kycDocuments()->where('status', 'approved')->latest()->first();
-
-        $dob = $user->dob ?? $kyc?->dob;
-        $age = ($dob ? Carbon::parse($dob)->age : 30);
-
-        return [
-            'age' => max(1, min(120, $age)),
-            'is_smoker' => (bool)$user->is_smoker,
-            'health_score' => $user->health_score ?? 70,
-            'coverage_type' => $user->coverage_type ?? 'individual',
-            'budget_range' => $user->budget_range,
-            'family_members' => $user->family_members ?? 1,
-            'region_type' => $user->region_type ?? 'urban',
-            'city' => $user->municipality_name ?? $user->address,
-            'weight' => $user->weight_kg,
-            'height' => $user->height_cm,
-            'occupation_class' => $user->occupation_class ?? 'class_1',
-            'conditions' => is_array($user->pre_existing_conditions)
-                ? $user->pre_existing_conditions
-                : json_decode($user->pre_existing_conditions ?? '[]', true)
-        ];
-    }
 }
