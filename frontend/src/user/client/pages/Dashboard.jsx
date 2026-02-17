@@ -30,6 +30,8 @@ const ClientDashboard = () => {
   const navigate = useNavigate();
   const { compare } = useCompare();
 
+  const [showMore, setShowMore] = useState(false);
+
   const fetchUser = async (attempt = 1) => {
     try {
       // Check both sessionStorage and localStorage for token
@@ -137,7 +139,10 @@ const ClientDashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (user) fetchRecommendations(type);
+    if (user) {
+      setShowMore(false);
+      fetchRecommendations(type);
+    }
   }, [user, type]);
 
   useEffect(() => {
@@ -327,7 +332,7 @@ const ClientDashboard = () => {
             <p className="opacity-70">{recError || "No policies found."}</p>
           ) : (
             <div className="space-y-6">
-              {recommended.map((policy) => (
+              {recommended.slice(0, showMore ? 5 : 3).map((policy) => (
                 <RecommendationCard
                   key={policy.id}
                   policy={policy}
@@ -337,6 +342,36 @@ const ClientDashboard = () => {
                   profileComplete={profileComplete}
                 />
               ))}
+
+              {/* ACTION BUTTONS */}
+              <div className="mt-12 flex flex-col sm:flex-row gap-6 items-center justify-center border-t border-border-light dark:border-border-dark pt-10">
+                {!showMore && recommended.length > 3 && (
+                  <button
+                    onClick={() => setShowMore(true)}
+                    className="
+                      px-8 py-3 rounded-xl 
+                      bg-primary-light dark:bg-primary-dark text-white 
+                      text-sm font-bold uppercase tracking-widest 
+                      shadow-lg shadow-primary-light/20 hover:opacity-90 active:scale-95 transition-all
+                    "
+                  >
+                    View More Recommendations
+                  </button>
+                )}
+
+                <button
+                  onClick={() => navigate("/client/policies")}
+                  className="
+                    px-8 py-3 rounded-xl 
+                    border border-primary-light dark:border-primary-dark 
+                    text-primary-light dark:text-primary-dark
+                    text-sm font-bold uppercase tracking-widest 
+                    hover:bg-primary-light/5 active:scale-95 transition-all
+                  "
+                >
+                  Explore All Policies
+                </button>
+              </div>
             </div>
           )}
         </div>
