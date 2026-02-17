@@ -38,6 +38,7 @@ use App\Http\Controllers\Admin\AdminClientController;
 use App\Http\Controllers\SavedPolicyController;
 use App\Http\Controllers\PremiumQuoteController;
 use App\Http\Controllers\KycController;
+use App\Http\Controllers\RecommendationFeedbackController;
 
 /*
 |--------------------------------------------------------------------------
@@ -112,6 +113,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Recommendations (Client only)
     Route::get('/recommendations', [PolicyController::class, 'recommend']);
     Route::get('/recommendations/personal', [RecommendationController::class, 'index']);
+    Route::post('/recommendations/feedback/click', [RecommendationFeedbackController::class, 'trackClick']);
+    Route::post('/recommendations/feedback/time', [RecommendationFeedbackController::class, 'trackTimeSpent']);
 
     // User: Comparison
     Route::post('/compare', [ComparisonController::class, 'compare']);
