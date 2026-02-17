@@ -55,9 +55,6 @@ class PremiumCalculator
         $regionOrCity = $extraContext['region_type'] ?? $extraContext['city'] ?? 'default';
         $regionalLoading = $this->getRegionalLoading($regionOrCity, $policy);
         
-        $loyaltyFactor = (float)($policy->loyalty_discount_factor ?? 0.95);
-        $loyaltyDiscount = ($extraContext['is_existing_customer'] ?? false) ? $loyaltyFactor : 1.00;
-
         // 6. Advanced Actuarial Risk: BMI & Occupation
         $bmiFactor = $this->calculateBMIContext(
             $extraContext['weight'] ?? null, 
@@ -73,7 +70,7 @@ class PremiumCalculator
 
         // The Grand Formula
         $calculated = round(
-            $basePremium * $ageFactor * $smokerFactor * $healthFactor * $coverageFactor * $diseaseLoading * $regionalLoading * $loyaltyDiscount * $bmiFactor * $occFactor * ($policy->premium_factor ?? 1.0),
+            $basePremium * $ageFactor * $smokerFactor * $healthFactor * $coverageFactor * $diseaseLoading * $regionalLoading * $bmiFactor * $occFactor * ($policy->premium_factor ?? 1.0),
             2
         );
 
@@ -87,7 +84,6 @@ class PremiumCalculator
             'disease_loading'  => $diseaseLoading,
             'bmi_loading'      => $bmiFactor,
             'occupation_load'  => $occFactor,
-            'loyalty_discount' => $loyaltyDiscount,
             'calculated_total' => $calculated,
         ];
     }
