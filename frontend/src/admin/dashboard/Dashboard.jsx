@@ -19,7 +19,7 @@ const Dashboard = () => {
 
   const load = async () => {
     try {
-      const res = await API.get("/admin/stats");
+      const res = await API.get("/htt/stats");
       setStats(res.data || null);
     } catch (e) {
       addToast({ type: "error", title: "Load failed", message: "Failed to load dashboard stats." });
@@ -49,28 +49,28 @@ const Dashboard = () => {
         value: formatNumber(stats.totals.users || 0),
         icon: UsersIcon,
         subtitle: "Registered clients",
-        onClick: () => navigate("/admin/users"),
+        onClick: () => navigate("/htt/users"),
       },
       {
         title: "Active Policies",
         value: formatNumber(stats.totals.activePolicies || 0),
         icon: ShieldCheckIcon,
         subtitle: "Currently active",
-        onClick: () => navigate("/admin/policies"),
+        onClick: () => navigate("/htt/policies"),
       },
       {
         title: "Renewals Due",
         value: formatNumber(stats.totals.renewalsDue || 0),
         icon: ArrowPathIcon,
         subtitle: "Next 7 days",
-        onClick: () => navigate("/admin/renewals"),
+        onClick: () => navigate("/htt/renewals"),
       },
       {
         title: "Total Payments",
         value: totalPayments,
         icon: BanknotesIcon,
         subtitle: "Successful revenue",
-        onClick: () => navigate("/admin/payments"),
+        onClick: () => navigate("/htt/payments"),
       },
     ];
   }, [stats, navigate, totalPayments]);
@@ -104,7 +104,7 @@ const Dashboard = () => {
             <h2 className="font-semibold">Recent Payments</h2>
             <button
               type="button"
-              onClick={() => navigate("/admin/payments")}
+              onClick={() => navigate("/htt/payments")}
               className="text-xs font-semibold text-primary-light hover:underline"
             >
               View all
@@ -139,7 +139,7 @@ const Dashboard = () => {
             <h2 className="font-semibold">Upcoming Renewals</h2>
             <button
               type="button"
-              onClick={() => navigate("/admin/renewals")}
+              onClick={() => navigate("/htt/renewals")}
               className="text-xs font-semibold text-primary-light hover:underline"
             >
               View all

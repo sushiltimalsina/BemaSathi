@@ -23,7 +23,7 @@ const AgentList = () => {
 
   const load = async () => {
     try {
-      const res = await API.get("/admin/agents");
+      const res = await API.get("/htt/agents");
       setAgents(res.data || []);
     } catch (e) {
       console.error(e);
@@ -55,7 +55,7 @@ const AgentList = () => {
 
   const toggleStatus = async (agent) => {
     try {
-      await API.post(`/admin/agents/${agent.id}/toggle`);
+      await API.post(`/htt/agents/${agent.id}/toggle`);
       load();
     } catch (e) {
       addToast({ type: "error", title: "Update failed", message: "Failed to update agent status." });
@@ -71,7 +71,7 @@ const AgentList = () => {
       return;
     }
     try {
-      await API.delete(`/admin/agents/${agent.id}`);
+      await API.delete(`/htt/agents/${agent.id}`);
       load();
       addToast({ type: "success", title: "Agent deleted", message: "Agent removed successfully." });
     } catch (e) {
@@ -94,7 +94,7 @@ const AgentList = () => {
         </div>
 
         <button
-          onClick={() => navigate("/admin/agents/create")}
+          onClick={() => navigate("/htt/agents/create")}
           className="
             flex items-center gap-2 px-4 py-2 rounded-lg
             bg-primary-light text-white hover:bg-primary-dark transition
@@ -181,7 +181,7 @@ const AgentList = () => {
                 {/* ACTIONS */}
                 <td className="px-4 py-3 flex gap-2">
                   <button
-                    onClick={() => navigate(`/admin/agents/${a.id}/edit`)}
+                    onClick={() => navigate(`/htt/agents/${a.id}/edit`)}
                     className="
                       text-xs font-semibold px-3 py-1 rounded-lg border
                       border-border-light dark:border-border-dark

@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import API from "../utils/adminApi";
 import {
-  UsersIcon,
   CheckCircleIcon,
   XCircleIcon,
   ExclamationTriangleIcon,
@@ -21,7 +20,7 @@ const UserList = () => {
 
   const load = async () => {
     try {
-      const res = await API.get("/admin/users");
+      const res = await API.get("/htt/users");
       setItems(res.data || []);
     } catch (e) {
       console.error(e);
@@ -37,13 +36,22 @@ const UserList = () => {
   useEffect(() => {
     if (!items.length) return;
     const query = new URLSearchParams(location.search);
-    const targetId = Number(query.get("user"));
-    if (!targetId) return;
-    const match = items.find((u) => u.id === targetId);
+    const target = query.get("user");
+    if (!target) return;
+    
+    const match = items.find(
+      (u) => String(u.hashed_id) === target || String(u.id) === target
+    );
     if (match) {
       setSelectedUser(match);
+      
+      // Auto-obfuscate numeric ID in query param
+      if (/^\d+$/.test(target) && match.hashed_id) {
+        query.set("user", match.hashed_id);
+        navigate(`/htt/users?${query.toString()}`, { replace: true });
+      }
     }
-  }, [items, location.search]);
+  }, [items, location.search, navigate]);
 
   const filtered = useMemo(() => {
     return items.filter((u) => {

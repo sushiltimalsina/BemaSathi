@@ -32,7 +32,7 @@ const PolicyList = () => {
 
   const loadPolicies = async () => {
     try {
-      const res = await API.get("/admin/policies");
+      const res = await API.get("/htt/policies");
       setPolicies(res.data || []);
     } catch (e) {
       console.error(e);
@@ -78,7 +78,7 @@ const PolicyList = () => {
 
   const toggleStatus = async (policy) => {
     try {
-      await API.post(`/admin/policies/${policy.id}/toggle`);
+      await API.post(`/htt/policies/${policy.id}/toggle`);
       loadPolicies();
     } catch (e) {
       addToast({ type: "error", title: "Update failed", message: "Failed to update policy status." });
@@ -94,7 +94,7 @@ const PolicyList = () => {
       return;
     }
     try {
-      await API.delete(`/admin/policies/${policy.id}`);
+      await API.delete(`/htt/policies/${policy.id}`);
       loadPolicies();
       addToast({ type: "success", title: "Policy deleted", message: "Policy removed successfully." });
     } catch (e) {
@@ -121,7 +121,7 @@ const PolicyList = () => {
             inline-flex items-center gap-2 px-4 py-2 rounded-lg
             bg-primary-light text-white hover:opacity-90 transition
           "
-          onClick={() => navigate("/admin/policies/create")}
+          onClick={() => navigate("/htt/policies/create")}
         >
           <PlusIcon className="w-4 h-4" />
           Add Policy
@@ -257,7 +257,7 @@ const PolicyList = () => {
                 </td>
                 <td className="px-4 py-3 flex gap-2">
                   <button
-                    onClick={() => navigate(`/admin/policies/${p.id}/edit`)}
+                    onClick={() => navigate(`/htt/policies/${p.hashed_id || p.id}/edit`)}
                     className="text-xs font-semibold px-3 py-1 rounded-lg border border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark"
                   >
                     Edit

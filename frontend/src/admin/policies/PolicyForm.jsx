@@ -88,6 +88,12 @@ const PolicyForm = () => {
     try {
       const res = await API.get(`/admin/policies/${id}`);
       const data = res.data || {};
+      
+      // Auto-obfuscate numeric ID in address bar
+      if (/^\d+$/.test(id) && data.hashed_id) {
+          window.history.replaceState(null, "", `/htt/policies/${data.hashed_id}/edit`);
+      }
+
       setForm({
         ...data,
         supports_smokers: Boolean(data.supports_smokers),
@@ -180,7 +186,7 @@ const PolicyForm = () => {
       } else {
         await API.post("/admin/policies", payload);
       }
-      navigate("/admin/policies");
+      navigate("/htt/policies");
     } catch (e) {
       console.error(e);
       setError("Failed to save policy.");
@@ -245,7 +251,7 @@ const PolicyForm = () => {
         <div className="space-y-2">
           <button
             type="button"
-            onClick={() => navigate("/admin/companies/create")}
+            onClick={() => navigate("/htt/companies/create")}
             className="text-sm font-semibold text-primary-light hover:underline"
           >
             + Add Company
@@ -282,7 +288,7 @@ const PolicyForm = () => {
             <label className="text-sm font-medium">Assigned Agents</label>
             <button
               type="button"
-              onClick={() => navigate("/admin/agents/create")}
+              onClick={() => navigate("/htt/agents/create")}
               className="text-xs font-semibold text-primary-light hover:underline"
             >
               + Add Agent

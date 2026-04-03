@@ -26,7 +26,7 @@ const Topbar = ({ onToggleSidebar }) => {
 
   const loadUnread = async () => {
     try {
-      const res = await API.get("/admin/support/unread-count");
+      const res = await API.get("/htt/support/unread-count");
       const next = res.data?.count ?? 0;
       const latestUnreadAt = res.data?.latest_unread_at || null;
       const latestUnreadUser = res.data?.latest_unread_user || "a user";
@@ -86,7 +86,7 @@ const Topbar = ({ onToggleSidebar }) => {
     localStorage.removeItem("admin_token");
     localStorage.removeItem("admin_user");
     broadcastLogout("admin");
-    window.location.href = "/admin/login";
+    window.location.href = "/htt/login";
   };
 
   const avatar = admin?.name ? admin.name.charAt(0).toUpperCase() : "A";
@@ -102,7 +102,7 @@ const Topbar = ({ onToggleSidebar }) => {
         >
           <Bars3Icon className="w-5 h-5" />
         </button>
-        <Link to="/admin/dashboard" className="text-xl font-bold text-primary-light dark:text-primary-dark">
+        <Link to="/htt/dashboard" className="text-xl font-bold text-primary-light dark:text-primary-dark">
           <h1 className="text-lg font-semibold">Admin</h1>
         </Link>
       </div>
@@ -110,7 +110,7 @@ const Topbar = ({ onToggleSidebar }) => {
       <div className="flex items-center gap-4">
         {/* Support */}
         <button
-          onClick={() => navigate("/admin/support")}
+          onClick={() => navigate("/htt/support")}
           className="relative p-2 rounded-lg hover:bg-hover-light dark:hover:bg-hover-dark"
         >
           <ChatBubbleLeftRightIcon className="w-5 h-5" />
@@ -120,11 +120,6 @@ const Topbar = ({ onToggleSidebar }) => {
             </span>
           )}
         </button>
-        {/* Notifications */}
-        {/* <button className="relative p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
-          <BellIcon className="w-5 h-5" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-        </button> */}
 
         {/* Profile dropdown */}
         <div className="relative" ref={dropdownRef}>
@@ -144,7 +139,7 @@ const Topbar = ({ onToggleSidebar }) => {
           </button>
 
           {profileOpen && (
-            <div className="absolute right-0 mt-2 w-48 rounded-xl border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark shadow-lg py-2">
+            <div className="absolute right-0 mt-2 w-48 rounded-xl border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark shadow-xl py-2 z-50">
               <div className="px-4 py-2">
                 <ThemeDropdown />
               </div>
@@ -153,7 +148,7 @@ const Topbar = ({ onToggleSidebar }) => {
                 type="button"
                 onClick={() => {
                   setProfileOpen(false);
-                  navigate("/admin/profile");
+                  navigate("/htt/profile");
                 }}
                 className="w-full text-left px-4 py-2 text-sm hover:bg-hover-light dark:hover:bg-hover-dark inline-flex items-center gap-2"
               >
@@ -163,7 +158,7 @@ const Topbar = ({ onToggleSidebar }) => {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-hover-light dark:hover:bg-hover-dark inline-flex items-center gap-2 text-red-600 dark:text-red-300"
+                className="w-[calc(100%-16px)] mx-2 mt-2 text-left px-4 py-2 text-sm rounded-lg hover:bg-red-600 hover:text-white dark:hover:bg-red-500 bg-red-500/10 text-red-600 dark:text-red-400 font-bold inline-flex items-center gap-2 transition-all"
               >
                 <ArrowRightOnRectangleIcon className="w-4 h-4" />
                 Logout

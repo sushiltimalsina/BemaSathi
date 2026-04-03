@@ -27,7 +27,9 @@ const CompanyList = () => {
 
   const load = async () => {
     try {
-      const res = await API.get("/admin/companies");
+      // Interceptor will handle /admin or /htt translation if needed, 
+      // but using /htt is safer here.
+      const res = await API.get("/htt/companies");
       setItems(res.data || []);
     } catch (e) {
       console.error(e);
@@ -56,7 +58,7 @@ const CompanyList = () => {
 
   const toggleStatus = async (company) => {
     try {
-      await API.post(`/admin/companies/${company.id}/toggle`);
+      await API.post(`/htt/companies/${company.id}/toggle`);
       load();
     } catch (e) {
       addToast({ type: "error", title: "Update failed", message: "Failed to update status." });
@@ -72,7 +74,7 @@ const CompanyList = () => {
       return;
     }
     try {
-      await API.delete(`/admin/companies/${company.id}`);
+      await API.delete(`/htt/companies/${company.id}`);
       load();
       addToast({ type: "success", title: "Company deleted", message: "Company removed successfully." });
     } catch (e) {
@@ -98,7 +100,7 @@ const CompanyList = () => {
         </div>
 
         <button
-          onClick={() => navigate("/admin/companies/create")}
+          onClick={() => navigate("/htt/companies/create")}
           className="
             inline-flex items-center gap-2 px-4 py-2 rounded-lg
             bg-primary-light text-white hover:bg-primary-dark transition
@@ -184,7 +186,7 @@ const CompanyList = () => {
 
                 <td className="px-4 py-3 flex gap-2">
                   <button
-                    onClick={() => navigate(`/admin/companies/${c.id}/edit`)}
+                    onClick={() => navigate(`/htt/companies/${c.id}/edit`)}
                     className="
                       text-xs font-semibold px-3 py-1 rounded-lg
                       border border-border-light dark:border-border-dark

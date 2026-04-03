@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { NavLink, Link } from "react-router-dom";
+import API from "../utils/adminApi";
 import {
   HomeIcon,
   ShieldCheckIcon,
@@ -18,22 +19,41 @@ import {
 } from "@heroicons/react/24/outline";
 
 const navItems = [
-  { name: "Dashboard", path: "/admin/dashboard", icon: HomeIcon },
-  { name: "Policies", path: "/admin/policies", icon: ShieldCheckIcon },
-  { name: "Agents", path: "/admin/agents", icon: UsersIcon },
-  { name: "Companies", path: "/admin/companies", icon: BuildingOffice2Icon },
-  { name: "Renewals", path: "/admin/renewals", icon: ArrowPathIcon },
-  { name: "Payments", path: "/admin/payments", icon: BanknotesIcon },
-  { name: "Agent Inquiries", path: "/admin/agent-inquiries", icon: EnvelopeIcon },
-  { name: "Users", path: "/admin/users", icon: UserGroupIcon },
-  { name: "Notifications", path: "/admin/notifications", icon: BellIcon },
-  { name: "Reports", path: "/admin/reports", icon: ChartBarSquareIcon },
-  { name: "Audit Log", path: "/admin/audit", icon: ClipboardDocumentListIcon },
-  { name: "Settings", path: "/admin/settings", icon: Cog6ToothIcon },
-  { name: "Support", path: "/admin/support", icon: LifebuoyIcon },
+  { name: "Dashboard", path: "/htt/dashboard", icon: HomeIcon },
+  { name: "Policies", path: "/htt/policies", icon: ShieldCheckIcon },
+  { name: "Agents", path: "/htt/agents", icon: UsersIcon },
+  { name: "Companies", path: "/htt/companies", icon: BuildingOffice2Icon },
+  { name: "Renewals", path: "/htt/renewals", icon: ArrowPathIcon },
+  { name: "Payments", path: "/htt/payments", icon: BanknotesIcon },
+  { name: "Agent Inquiries", path: "/htt/agent-inquiries", icon: EnvelopeIcon },
+  { name: "Guest Messages", path: "/htt/guest-messages", icon: EnvelopeIcon },
+  { name: "Users", path: "/htt/users", icon: UserGroupIcon },
+  { name: "Notifications", path: "/htt/notifications", icon: BellIcon },
+  { name: "Reports", path: "/htt/reports", icon: ChartBarSquareIcon },
+  { name: "Audit Log", path: "/htt/audit", icon: ClipboardDocumentListIcon },
+  { name: "Settings", path: "/htt/settings", icon: Cog6ToothIcon },
+  { name: "Support", path: "/htt/support", icon: LifebuoyIcon },
 ];
 
 const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
+  const [unreadGuestCount, setUnreadGuestCount] = useState(0);
+
+  useEffect(() => {
+    const fetchUnread = async () => {
+      try {
+        const res = await API.get("/htt/inquiries");
+        const unread = res.data.filter(i => !i.is_read).length;
+        setUnreadGuestCount(unread);
+      } catch (err) {
+        // Silently fail if unable to fetch inquiries
+      }
+    };
+    fetchUnread();
+    
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <>
       {isOpen && (
@@ -52,7 +72,7 @@ const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
         {/* Brand */}
         <div className="h-16 flex items-center justify-between px-6 border-b border-border-light dark:border-border-dark">
           <span className="text-xl font-bold text-primary-light dark:text-primary-dark">
-            <Link to="/admin/dashboard">BeemaSathi</Link>
+            <Link to="/htt/dashboard">BeemaSathi</Link>
           </span>
           <button
             type="button"
@@ -83,8 +103,15 @@ const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
               `
               }
             >
-              <item.icon className="w-5 h-5" />
-              {item.name}
+              <div className="flex items-center gap-3 flex-1">
+                <item.icon className="w-5 h-5" />
+                {item.name}
+              </div>
+              {item.name === "Guest Messages" && unreadGuestCount > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto">
+                  {unreadGuestCount}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>

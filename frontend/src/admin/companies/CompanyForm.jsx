@@ -48,7 +48,7 @@ const CompanyForm = () => {
       } else {
         await API.post("/admin/companies", form);
       }
-      navigate("/admin/companies");
+      navigate("/htt/companies");
     } catch (e) {
       addToast({ type: "error", title: "Save failed", message: "Failed to save company." });
     }

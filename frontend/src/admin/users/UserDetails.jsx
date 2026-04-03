@@ -68,7 +68,7 @@ const UserDetails = ({ user, onClose, onKycEditAllowed, onKycStatusUpdated }) =>
 
   const loadKyc = async () => {
     try {
-      const res = await API.get(`/admin/users/${user.id}/kyc`);
+      const res = await API.get(`/admin/users/${user.hashed_id || user.id}/kyc`);
       setKyc(res.data || null);
     } catch (e) {
       console.error(e);
@@ -121,7 +121,7 @@ const UserDetails = ({ user, onClose, onKycEditAllowed, onKycStatusUpdated }) =>
       message: `KYC status set to ${status}.`,
     });
     try {
-      await API.post(`/admin/users/${user.id}/kyc-update`, {
+      await API.post(`/admin/users/${user.hashed_id || user.id}/kyc-update`, {
         status,
         remarks: nextRemarks,
       });
@@ -141,7 +141,7 @@ const UserDetails = ({ user, onClose, onKycEditAllowed, onKycStatusUpdated }) =>
     );
     if (!confirmed) return;
     try {
-      const res = await API.post(`/admin/users/${user.id}/kyc-allow-edit`);
+      const res = await API.post(`/admin/users/${user.hashed_id || user.id}/kyc-allow-edit`);
       setKyc((prev) => ({ ...prev, ...(res.data?.kyc || {}), allow_edit: true }));
       addToast({
         type: "success",
@@ -185,7 +185,7 @@ const UserDetails = ({ user, onClose, onKycEditAllowed, onKycStatusUpdated }) =>
     setRemarksModal({ open: false, value: "" });
     setPendingAction(null);
     try {
-      await API.post(`/admin/users/${user.id}/kyc-update`, {
+      await API.post(`/admin/users/${user.hashed_id || user.id}/kyc-update`, {
         status: pendingAction,
         remarks: trimmed,
       });

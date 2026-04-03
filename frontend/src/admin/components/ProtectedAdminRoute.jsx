@@ -22,7 +22,7 @@ const ProtectedAdminRoute = ({ children }) => {
     sessionStorage.removeItem("admin_token");
     sessionStorage.removeItem("admin_user");
     broadcastLogout("admin");
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/htt/login" replace />;
   }
 
   // Support both wrapper usage (<ProtectedAdminRoute><Layout/></ProtectedAdminRoute>)

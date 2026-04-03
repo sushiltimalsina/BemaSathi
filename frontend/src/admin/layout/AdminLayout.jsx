@@ -19,7 +19,7 @@ const AdminLayout = () => {
       sessionStorage.removeItem("admin_token");
       sessionStorage.removeItem("admin_user");
       broadcastLogout("admin");
-      window.location.href = "/admin/login";
+      window.location.href = "/htt/login";
     },
     activityKey: "admin_last_activity",
     tokenKey: "admin_token",

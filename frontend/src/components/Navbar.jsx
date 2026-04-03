@@ -28,7 +28,7 @@ const Navbar = () => {
     return () => window.removeEventListener("auth-sync", handler);
   }, []);
 
-  if (location.pathname.startsWith("/admin")) return null;
+  if (location.pathname.startsWith("/htt")) return null;
 
   const handleLogout = () => {
     localStorage.removeItem("client_token");

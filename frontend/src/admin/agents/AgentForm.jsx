@@ -16,13 +16,27 @@ const AgentForm = () => {
     name: "",
     email: "",
     phone: "",
-    password: "",
+    company_id: "",
     is_active: true,
   });
 
+  const [companies, setCompanies] = useState([]);
+  const [companiesLoading, setCompaniesLoading] = useState(true);
+
   useEffect(() => {
     if (isEdit) loadAgent();
+    loadCompanies();
   }, [id]);
+
+  const loadCompanies = async () => {
+    try {
+      const res = await API.get("/htt/companies");
+      setCompanies(res.data || []);
+    } catch (e) {
+      addToast({ type: "error", title: "Load failed", message: "Failed to load companies." });
+    }
+    setCompaniesLoading(false);
+  };
 
   const loadAgent = async () => {
     try {
@@ -40,7 +54,6 @@ const AgentForm = () => {
 
   const save = async () => {
     setSaving(true);
-
     try {
       if (isEdit) {
         await API.put(`/admin/agents/${id}`, form);
@@ -48,11 +61,10 @@ const AgentForm = () => {
         await API.post("/admin/agents", form);
       }
 
-      navigate("/admin/agents");
+      navigate("/htt/agents");
     } catch (e) {
       addToast({ type: "error", title: "Save failed", message: "Failed to save agent." });
     }
-
     setSaving(false);
   };
 
@@ -87,14 +99,35 @@ const AgentForm = () => {
 
         <Input label="Phone Number" value={form.phone} onChange={(e) => update("phone", e.target.value)} />
 
-        {!isEdit && (
-          <Input
-            label="Password"
-            type="password"
-            value={form.password}
-            onChange={(e) => update("password", e.target.value)}
-          />
-        )}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">Associated Company</label>
+            <button
+              type="button"
+              onClick={() => navigate("/htt/companies/create")}
+              className="text-xs font-semibold text-primary-light hover:underline"
+            >
+              + Add Company
+            </button>
+          </div>
+          <select
+            value={form.company_id || ""}
+            onChange={(e) => update("company_id", e.target.value)}
+            disabled={companiesLoading}
+            className="
+              w-full px-4 py-2 rounded-lg border
+              bg-card-light dark:bg-card-dark border-border-light dark:border-border-dark
+              focus:outline-none focus:ring-2 focus:ring-primary-light
+            "
+          >
+            <option value="">{companiesLoading ? "Loading..." : "Select Company"}</option>
+            {companies.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <div className="flex items-center gap-2">
           <input
