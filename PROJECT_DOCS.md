@@ -141,101 +141,102 @@ Agent inquiries:
 
 ### Admin Routes (auth + admin + audit)
 Auth:
-- `POST /admin/login`
-- `POST /admin/logout`
-- `POST /admin/register`
-- `GET /admin/profile`
+- `POST /htt/login`
+- `POST /htt/logout`
+- `POST /htt/register`
+- `GET /htt/profile`
+- `POST /htt/profile/change-password`
 
 Dashboard:
-- `GET /admin/stats`
+- `GET /htt/stats`
 
 Policies:
-- `GET /admin/policies`
-- `POST /admin/policies`
-- `GET /admin/policies/{policy}`
-- `PUT /admin/policies/{policy}`
-- `DELETE /admin/policies/{policy}`
-- `POST /admin/policies/{policy}/toggle`
+- `GET /htt/policies`
+- `POST /htt/policies`
+- `GET /htt/policies/{policy}`
+- `PUT /htt/policies/{policy}`
+- `DELETE /htt/policies/{policy}`
+- `POST /htt/policies/{policy}/toggle`
 
 Agents:
-- `GET /admin/agents`
-- `POST /admin/agents`
-- `GET /admin/agents/{agent}`
-- `PUT /admin/agents/{agent}`
-- `DELETE /admin/agents/{agent}`
-- `POST /admin/agents/{agent}/toggle`
+- `GET /htt/agents`
+- `POST /htt/agents`
+- `GET /htt/agents/{agent}`
+- `PUT /htt/agents/{agent}`
+- `DELETE /htt/agents/{agent}`
+- `POST /htt/agents/{agent}/toggle`
 
 Companies:
-- `GET /admin/companies`
-- `POST /admin/companies`
-- `GET /admin/companies/{company}`
-- `PUT /admin/companies/{company}`
-- `DELETE /admin/companies/{company}`
-- `POST /admin/companies/{company}/toggle`
+- `GET /htt/companies`
+- `POST /htt/companies`
+- `GET /htt/companies/{company}`
+- `PUT /htt/companies/{company}`
+- `DELETE /htt/companies/{company}`
+- `POST /htt/companies/{company}/toggle`
 
 Clients:
-- `GET /admin/clients`
-- `POST /admin/clients`
-- `GET /admin/clients/{client}`
-- `PUT /admin/clients/{client}`
-- `DELETE /admin/clients/{client}`
+- `GET /htt/clients`
+- `POST /htt/clients`
+- `GET /htt/clients/{client}`
+- `PUT /htt/clients/{client}`
+- `DELETE /htt/clients/{client}`
 
 Inquiries:
-- `GET /admin/inquiries`
-- `GET /admin/inquiries/{inquiry}`
-- `DELETE /admin/inquiries/{inquiry}`
+- `GET /htt/inquiries`
+- `GET /htt/inquiries/{inquiry}`
+- `DELETE /htt/inquiries/{inquiry}`
 
 KYC:
-- `GET /admin/kyc`
-- `PATCH /admin/kyc/{id}/status`
+- `GET /htt/kyc`
+- `PATCH /htt/kyc/{id}/status`
 
 Renewals:
-- `GET /admin/renewals`
-- `POST /admin/renewals/{buyRequest}/notify`
+- `GET /htt/renewals`
+- `POST /htt/renewals/{buyRequest}/notify`
 
 Payments:
-- `GET /admin/payments`
-- `POST /admin/payments/{payment}/verify`
+- `GET /htt/payments`
+- `POST /htt/payments/{payment}/verify`
 
 Buy Requests:
-- `GET /admin/buy-requests`
-- `GET /admin/buy-requests/{buyRequest}`
-- `PUT /admin/buy-requests/{buyRequest}`
-- `DELETE /admin/buy-requests/{buyRequest}`
+- `GET /htt/buy-requests`
+- `GET /htt/buy-requests/{buyRequest}`
+- `PUT /htt/buy-requests/{buyRequest}`
+- `DELETE /htt/buy-requests/{buyRequest}`
 
 Users + KYC detail:
-- `GET /admin/users`
-- `GET /admin/users/{user}/kyc`
-- `POST /admin/users/{user}/kyc-update`
-- `POST /admin/users/{user}/kyc-allow-edit`
+- `GET /htt/users`
+- `GET /htt/users/{user}/kyc`
+- `POST /htt/users/{user}/kyc-update`
+- `POST /htt/users/{user}/kyc-allow-edit`
 
 Notifications:
-- `GET /admin/notifications`
-- `POST /admin/notifications/send`
+- `GET /htt/notifications`
+- `POST /htt/notifications/send`
 
 Reports:
-- `POST /admin/reports/export`
+- `POST /htt/reports/export`
 
 Audit logs:
-- `GET /admin/audit-logs`
-- `GET /admin/audit-logs/export`
+- `GET /htt/audit-logs`
+- `GET /htt/audit-logs/export`
 
 Settings:
-- `GET /admin/settings`
-- `POST /admin/settings`
+- `GET /htt/settings`
+- `POST /htt/settings`
 - `GET /settings/public`
 
 Support:
-- `GET /admin/support`
-- `GET /admin/support/unread-count`
-- `GET /admin/support/{ticket}`
-- `POST /admin/support/{ticket}/reply`
-- `POST /admin/support/{ticket}/status`
-- `POST /admin/support/{ticket}/mark-seen`
+- `GET /htt/support`
+- `GET /htt/support/unread-count`
+- `GET /htt/support/{ticket}`
+- `POST /htt/support/{ticket}/reply`
+- `POST /htt/support/{ticket}/status`
+- `POST /htt/support/{ticket}/mark-seen`
 
 Agent inquiries:
-- `GET /admin/agent-inquiries`
-- `POST /admin/agent-inquiries/{agentInquiry}/notify`
+- `GET /htt/agent-inquiries`
+- `POST /htt/agent-inquiries/{agentInquiry}/notify`
 
 ## Premium Calculation
 The backend uses `PremiumCalculator` to compute a quote based on:
@@ -337,6 +338,20 @@ Recent changes (documentation + backend fixes):
 - Implemented the missing `/api/premium/calculate` handler in `backend/app/Http/Controllers/PolicyController.php` (`calculatePremium()`), matching the existing route.
 - Hardened migration `backend/database/migrations/2025_12_11_174545_add_billing_cycle_to_buy_requests_table.php` with `Schema::hasColumn` checks and a reversible `down()` to reduce conflicts with other migrations.
 - Documented that algorithms are custom rule-based logic (not external API / not ML).
+- Added `encoded_id` obfuscation strategy to disguise primary database identifiers (base64 + XOR) on frontend URLs to deter ID enumeration and improve security.
+- Migrated admin interface URLs and internal API paths from `/admin/*` to `/htt/*` to implement security through obscurity for sensitive management routes.
+- Enhanced Admin Profile with a secure, modal-based password rotation flow (`/htt/profile/change-password`).
+- Refactored Agent creation workflow: removed manual password requirements (auto-generates securely via backend), simplified the UI, and added a robust company assignment selector.
+- Updated `pdfs/payment-receipt.blade.php` to greet the client by name (`$userName`) instead of the generic fallback "there".
+- Added client email address (`$userEmail`) as a visible row in the payment receipt PDF, surfaced from both the Client and Admin download endpoints.
+- Removed unused `agent_id` field from `BuyRequest` model (`$fillable`) and its `agent()` relation — no agent was ever auto-assigned to buy requests.
+- Created migration `2026_03_28_000001_drop_agent_id_from_buy_requests_table.php` to safely drop the `agent_id` column from `buy_requests` with `Schema::hasColumn` guards.
+- Deleted orphaned `app/Services/LeadDistributor.php` — it had zero active usages in the codebase.
+- **Security:** Moved public Agent contact routes (`GET /agents`, `GET /agents/{agent}`) behind `auth:sanctum` to prevent data scraping of unauthenticated guests.
+- **Guest Inquiries:** Overhauled generic `ContactUs.jsx` form. Integrated real-time, dynamic frontend inline validation (onBlur checks + onChange auto-clearing) for Name, Email, Phone, and Message length.
+- **Guest Inquiries:** Added a live dynamic dropdown to the generic contact form allowing guests to optionally link an existing Policy to their message.
+- **Guest Inquiries:** Created migration `2026_03_31_000000_make_fields_nullable_in_inquiries_table.php` to drop strict constraints on `policy_id` and `phone`, mapping form payloads dynamically without DB crashes.
+- **Admin Dashboard:** Built robust `GuestInquiryList.jsx` for admins to review Guest contact messages, complete with nested `mailto:` (Reply) and `tel:` (Call) action buttons natively rendered based on user-provided data.
 
 ## Quick Start (Local)
 Backend (Laravel):
