@@ -130,6 +130,113 @@ class BuyRequestController extends Controller
         return response()->json($buyRequest);
     }
 
+    public function policyDocument(BuyRequest $buyRequest)
+    {
+        if ($buyRequest->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $buyRequest->loadMissing(['payments', 'user', 'policy']);
+
+        $payment = $buyRequest->payments()->where('is_verified', true)->first();
+        if (!$payment) {
+            return response()->json(['message' => 'No verified payment found for this request'], 404);
+        }
+
+        // Logic reused from AdminBuyRequestController for consistency
+        $policy = $payment->policy ?? $buyRequest->policy;
+        $user = $payment->user;
+        $kyc = $user?->kycDocuments()?->where('status', 'approved')->latest()->first();
+        $recipientEmail = $buyRequest->email ?? $user?->email;
+        $policyNumber = 'BS-' . str_pad((string) $payment->id, 6, '0', STR_PAD_LEFT);
+        $tz = 'Asia/Kathmandu';
+        $effectiveDate = \Illuminate\Support\Carbon::parse($payment->verified_at ?? $payment->paid_at ?? now())->timezone($tz);
+
+        $premiumAmount = $buyRequest->cycle_amount ?? $payment->amount ?? 0;
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdfs.policy-document', [
+            'policyNumber' => $policyNumber,
+            'policyName' => $policy?->policy_name ?? 'Policy',
+            'companyName' => $policy?->company_name ?? 'Insurance Company',
+            'insuranceType' => $policy?->insurance_type ?? 'Medical',
+            'coverageLimit' => $policy?->coverage_limit ?? 'N/A',
+            'premium' => $premiumAmount,
+            'billingCycle' => $buyRequest->billing_cycle ?? 'yearly',
+            'effectiveDate' => $effectiveDate,
+            'nextRenewalDate' => $buyRequest->next_renewal_date,
+            'policyDescription' => $policy?->policy_description ?? '',
+            'coveredConditions' => $policy?->covered_conditions ?? [],
+            'exclusions' => $policy?->exclusions ?? [],
+            'waitingPeriodDays' => $policy?->waiting_period_days ?? 0,
+            'copayPercent' => $policy?->copay_percent ?? 0,
+            'claimSettlementRatio' => $policy?->claim_settlement_ratio ?? 0,
+            'supportsSmokers' => $policy?->supports_smokers ?? false,
+            'userName' => $kyc?->full_name ?? $user?->name ?? 'Policy Holder',
+            'userEmail' => $recipientEmail ?? 'N/A',
+            'userPhone' => $kyc?->phone ?? $user?->phone ?? 'N/A',
+            'userAddress' => $kyc?->address ?? $user?->address ?? 'N/A',
+            'userDob' => $kyc?->dob ?? $user?->dob,
+            'userDocumentNumber' => $kyc?->document_number ?? 'N/A',
+            'userOccupation' => $user?->occupation_class,
+            'userBmi' => $this->calculateBmi($user),
+            'userSmoker' => $user?->is_smoker,
+            'paymentType' => 'new',
+            'healthDeclaration' => $buyRequest->health_declaration ?? $payment->paymentIntent?->health_declaration ?? $payment->paymentIntent?->meta['health_declaration'] ?? null,
+            'taxAmount' => round($premiumAmount * 0.13, 2),
+            'subtotal' => round($premiumAmount / 1.13, 2),
+        ]);
+
+        return $pdf->download("policy-{$policyNumber}.pdf");
+    }
+
+    public function paymentReceipt(BuyRequest $buyRequest)
+    {
+        if ($buyRequest->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $buyRequest->loadMissing(['payments', 'user', 'policy']);
+
+        $payment = $buyRequest->payments()->where('is_verified', true)->latest()->first();
+        
+        $policy = $payment->policy ?? $buyRequest->policy;
+        $user = $payment->user ?? auth()->user();
+        $recipientEmail = $buyRequest->email ?? $user?->email;
+        $billingCycle = $buyRequest->billing_cycle ?? 'yearly';
+        
+        // Use payment data if available, otherwise fallback to request data for localhost testing
+        $transactionId = $payment ? ($payment->provider_reference ?? ($payment->meta['transaction_uuid'] ?? (string) $payment->id)) : 'PENDING-' . $buyRequest->id;
+        $tz = 'Asia/Kathmandu';
+        $paidAt = \Illuminate\Support\Carbon::parse(($payment ? ($payment->verified_at ?? $payment->paid_at) : $buyRequest->created_at) ?? now())->timezone($tz);
+        $receiptNumber = $payment ? ('RCPT-' . str_pad((string) $payment->id, 6, '0', STR_PAD_LEFT)) : ('REQ-' . str_pad((string) $buyRequest->id, 6, '0', STR_PAD_LEFT));
+        
+        $policyNumber = 'BS-PENDING';
+        if ($payment) {
+            $firstPayment = $buyRequest->payments()->where('is_verified', true)->orderBy('created_at', 'asc')->first();
+            $policyNumber = 'BS-' . str_pad((string) ($firstPayment?->id ?? $payment->id), 6, '0', STR_PAD_LEFT);
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdfs.payment-receipt', [
+            'receiptNumber' => $receiptNumber,
+            'policyNumber' => $policyNumber,
+            'transactionId' => $transactionId,
+            'amount' => $payment ? $payment->amount : $buyRequest->cycle_amount,
+            'currency' => $payment ? ($payment->currency ?? 'NPR') : 'NPR',
+            'paidAt' => $paidAt,
+            'paidAtText' => $paidAt->format('M j, Y g:i A') . ($payment ? " (NPT)" : " (Preliminary)"),
+            'policyName' => $policy?->policy_name ?? 'Policy',
+            'companyName' => $policy?->company_name ?? 'Insurance Company',
+            'billingCycle' => $billingCycle ?? 'yearly',
+            'userName' => $user?->name ?? 'Customer',
+            'userEmail' => $recipientEmail ?? 'N/A',
+            'nextRenewalDate' => $buyRequest->next_renewal_date,
+            'nextRenewalDateText' => $buyRequest->next_renewal_date ? \Illuminate\Support\Carbon::parse($buyRequest->next_renewal_date)->format('M j, Y') . " (NPT)" : null,
+            'paymentType' => $payment ? 'verified' : 'pending',
+        ]);
+
+        return $pdf->download("receipt-{$receiptNumber}.pdf");
+    }
+
     private function calculateBillingInterval(string $cycle, float $basePremium): array
     {
         return match ($cycle) {
@@ -172,5 +279,17 @@ class BuyRequestController extends Controller
         'next_renewal_date' => $nextRenewal
     ]);
 }
+
+    private function calculateBmi($user): string
+    {
+        if (!$user || !$user->weight_kg || !$user->height_cm) {
+            return 'N/A';
+        }
+
+        $heightM = $user->height_cm / 100;
+        $bmi = $user->weight_kg / ($heightM * $heightM);
+        
+        return number_format($bmi, 1);
+    }
 
 }

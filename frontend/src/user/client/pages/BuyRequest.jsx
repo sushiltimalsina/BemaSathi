@@ -148,8 +148,16 @@ const BuyRequest = () => {
       }
       setLoading(false);
     };
+
+    // Only clear if we explicitly started a NEW checkout from scratch
+    // (Checked by seeing if we have the declaration but NO location state indicating we just came back)
+    if (!location.state?.healthDeclarationCompleted) {
+        // commented out to avoid loop, let's let the user buy. 
+        // sessionStorage.removeItem("healthDeclaration");
+    }
+
     if (policyId) load();
-  }, [policyId]);
+  }, [policyId, location.state]);
 
   // Load default billing cycle from settings
   useEffect(() => {
@@ -209,12 +217,19 @@ const BuyRequest = () => {
           return;
         }
 
-        // ✅ CHECK HEALTH DECLARATION BEFORE PAYMENT
-        const healthDeclaration = sessionStorage.getItem("healthDeclaration");
-        if (!healthDeclaration) {
-          // Redirect to health declaration page with return path
+        // ✅ ALWAYS FORCE HEALTH DECLARATION ON EVERY CLICK
+        const justCompleted = location.state?.healthDeclarationCompleted;
+
+        if (!justCompleted) {
+          // Clear any old session data to force a fresh declaration
+          sessionStorage.removeItem("healthDeclaration");
+          
+          // Redirect to health declaration page with policy type
           navigate("/client/health-declaration", {
-            state: { returnTo: `/client/buy?policy=${policyId}` },
+            state: { 
+              returnTo: `/client/buy?policy=${policyId}`,
+              policyType: policy?.insurance_type 
+            },
             replace: true
           });
           return;
@@ -297,10 +312,12 @@ const BuyRequest = () => {
     setPayingEsewa(true);
 
     try {
+      const healthData = JSON.parse(sessionStorage.getItem("healthDeclaration") || "null");
       const payRes = await API.post("/payments/esewa", {
         policy_id: Number(policyId),
         billing_cycle: billingCycle,
         email: getEmailValue(),
+        health_declaration: healthData,
       });
 
       const { redirect_url, payload } = payRes.data;
@@ -331,10 +348,12 @@ const BuyRequest = () => {
     setPayingKhalti(true);
 
     try {
+      const healthData = JSON.parse(sessionStorage.getItem("healthDeclaration") || "null");
       const payRes = await API.post("/payments/khalti", {
         policy_id: Number(policyId),
         billing_cycle: billingCycle,
         email: getEmailValue(),
+        health_declaration: healthData,
       });
 
       if (payRes.data?.payment_url) {
