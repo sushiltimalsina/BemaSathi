@@ -3,7 +3,6 @@ import API from "../utils/adminApi";
 import { useParams } from "react-router-dom";
 import {
   PaperAirplaneIcon,
-  ChatBubbleOvalLeftIcon,
   ClockIcon,
   CheckIcon,
   ArrowLeftIcon,
@@ -35,7 +34,7 @@ const SupportView = () => {
     if (!hasUnread || !isTabActive()) return;
 
     try {
-      await API.post(`/admin/support/${id}/mark-seen`);
+      await API.post(`/htt/support/${id}/mark-seen`);
       window.dispatchEvent(new Event("support:refresh"));
     } catch (e) {
       // ignore
@@ -44,14 +43,23 @@ const SupportView = () => {
 
   const load = async () => {
     try {
-      const res = await API.get(`/admin/support/${id}`);
-      setTicket(res.data);
-      await markSeenIfActive(res.data);
+      const res = await API.get(`/htt/support/${id}`);
+      const t = res.data;
+      setTicket(t);
+      
+      // Security Check: If current ID is numeric and we have a hashed_id, redirect
+      if (is_numeric(id) && t.hashed_id) {
+         window.history.replaceState(null, "", `/htt/support/${t.hashed_id}`);
+      }
+      
+      await markSeenIfActive(t);
     } catch (err) {
       console.error(err);
     }
     setLoading(false);
   };
+
+  const is_numeric = (str) => /^\d+$/.test(str);
 
   useEffect(() => {
     load();
@@ -84,7 +92,7 @@ const SupportView = () => {
 
     try {
       setSending(true);
-      await API.post(`/admin/support/${id}/reply`, { message });
+      await API.post(`/htt/support/${id}/reply`, { message });
       setMessage("");
       await load();
     } catch (e) {
@@ -104,7 +112,7 @@ const SupportView = () => {
       if (!confirmed) return;
     }
     try {
-      await API.post(`/admin/support/${id}/status`, { status });
+      await API.post(`/htt/support/${id}/status`, { status });
       load();
     } catch (e) {
       addToast({ type: "error", title: "Update failed", message: "Failed to update status." });

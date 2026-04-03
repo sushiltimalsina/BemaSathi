@@ -17,16 +17,19 @@ const SupportList = () => {
   const [status, setStatus] = useState("all");
   const [priority, setPriority] = useState("all");
   const [category, setCategory] = useState("all");
+
   const normalizeCategory = (value) =>
     (value || "").toLowerCase().replace(/\s+/g, "_");
+
   const getTicketName = (ticket) =>
     ticket.user?.name || ticket.guest_name || "Guest";
+
   const getTicketEmail = (ticket) =>
     ticket.user?.email || ticket.guest_email || "-";
 
   const load = async () => {
     try {
-      const res = await API.get("/admin/support");
+      const res = await API.get("/htt/support");
       setTickets(res.data || []);
       window.dispatchEvent(new Event("support:refresh"));
     } catch (e) {
@@ -213,12 +216,12 @@ const SupportList = () => {
                       <button
                         onClick={async () => {
                           try {
-                            await API.post(`/admin/support/${t.id}/mark-seen`);
+                            await API.post(`/htt/support/${t.hashed_id || t.id}/mark-seen`);
                             window.dispatchEvent(new Event("support:refresh"));
                           } catch (e) {
                             // ignore
                           }
-                          navigate(`/admin/support/${t.id}`);
+                          navigate(`/htt/support/${t.hashed_id || t.id}`);
                         }}
                         className="
                           flex items-center gap-2 px-3 py-1 rounded-lg text-xs border
@@ -232,8 +235,8 @@ const SupportList = () => {
                     <td className="px-4 py-3">
                       <button
                         onClick={() => {
-                          if (t.user?.id) {
-                            navigate(`/admin/users?user=${t.user.id}`);
+                          if (t.user?.hashed_id || t.user?.id) {
+                            navigate(`/htt/users?user=${t.user.hashed_id || t.user.id}`);
                           }
                         }}
                         className="
@@ -309,12 +312,12 @@ const SupportList = () => {
                       <button
                         onClick={async () => {
                           try {
-                            await API.post(`/admin/support/${t.id}/mark-seen`);
+                            await API.post(`/htt/support/${t.hashed_id || t.id}/mark-seen`);
                             window.dispatchEvent(new Event("support:refresh"));
                           } catch (e) {
                             // ignore
                           }
-                          navigate(`/admin/support/${t.id}`);
+                          navigate(`/htt/support/${t.hashed_id || t.id}`);
                         }}
                         className="
                           flex items-center gap-2 px-3 py-1 rounded-lg text-xs border
@@ -389,12 +392,12 @@ const SupportList = () => {
                   <button
                     onClick={async () => {
                       try {
-                        await API.post(`/admin/support/${t.id}/mark-seen`);
+                        await API.post(`/htt/support/${t.hashed_id || t.id}/mark-seen`);
                         window.dispatchEvent(new Event("support:refresh"));
                       } catch (e) {
                         // ignore
                       }
-                      navigate(`/admin/support/${t.id}`);
+                      navigate(`/htt/support/${t.hashed_id || t.id}`);
                     }}
                     className="
                       flex items-center gap-2 px-3 py-1 rounded-lg text-xs border

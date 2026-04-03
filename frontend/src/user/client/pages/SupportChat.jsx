@@ -40,8 +40,15 @@ const SupportChat = () => {
   const load = async () => {
     try {
       const res = await API.get(`/support/${id}`);
-      setTicket(res.data);
-      await markSeenIfActive(res.data);
+      const t = res.data;
+      setTicket(t);
+      
+      // Auto-obfuscate numeric ID in address bar
+      if (/^\d+$/.test(id) && t.hashed_id) {
+          window.history.replaceState(null, "", `/client/support/${t.hashed_id}`);
+      }
+      
+      await markSeenIfActive(t);
     } catch (e) {
       alert("Unable to load ticket.");
     }
