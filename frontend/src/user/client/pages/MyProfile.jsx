@@ -23,6 +23,12 @@ const MEDICAL_CONDITIONS = [
   { id: "asthma", label: "Asthma" },
 ];
 
+const OCCUPATION_LIST = [
+  { group: "Level 1: Low Risk (Office / Indoor)", classValue: "class_1", items: ["Teacher / Academic", "Software Engineer / IT", "Doctor / Healthcare", "Accountant / Clerical", "Banker / Cashier", "Business Owner / Manager", "Other (Office / Indoor)"] },
+  { group: "Level 2: Medium Risk (Outdoor / Supervisory)", classValue: "class_2", items: ["Nurse / Medical Staff", "Sales Agent / Traveling", "Civil Engineer / Site Supervisor", "Mechanic / Technician", "Chef / Hospitality", "Other (Outdoor / Field)"] },
+  { group: "Level 3: High Risk (Manual / Industrial)", classValue: "class_3", items: ["Farmer / Agriculture", "Driver / Transport", "Construction Worker", "Police / Military / Security", "Factory Worker / Heavy Labor", "Other (Manual / Industrial)"] }
+];
+
 const MyProfile = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -60,7 +66,9 @@ const MyProfile = () => {
     };
   });
 
-  const [loading, setLoading] = useState(!sessionStorage.getItem("client_user"));
+  const [occupationTitle, setOccupationTitle] = useState(() => localStorage.getItem("bs_occ_title") || "");
+  const [customOccupation, setCustomOccupation] = useState(() => localStorage.getItem("bs_custom_occ") || "");
+  const [loading, setLoading] = useState(!sessionStorage.getItem("client_token") && !localStorage.getItem("token"));
   const [updating, setUpdating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState("");
@@ -127,6 +135,13 @@ const MyProfile = () => {
           street_address: data.street_address || "",
           region_type: data.region_type || "urban",
         }));
+
+        let title = localStorage.getItem("bs_occ_title");
+        if (!title) {
+          title = data.occupation_class === "class_3" ? "Other (Manual / Industrial)" :
+                  data.occupation_class === "class_2" ? "Other (Outdoor / Field)" : "Other (Office / Indoor)";
+          setOccupationTitle(title);
+        }
 
         const isComplete =
           data.dob &&
@@ -666,25 +681,60 @@ const MyProfile = () => {
 
                 <div>
                   <label className="text-[10px] font-black uppercase tracking-widest opacity-40 block mb-6 ml-1">Occupation Hazard Class</label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {[
-                      { id: "class_1", label: "Level 1: Low", desc: "Clerical / Admin" },
-                      { id: "class_2", label: "Level 2: Med", desc: "Supervisory / Outdoor" },
-                      { id: "class_3", label: "Level 3: High", desc: "Manual / Industrial" },
-                    ].map(occ => (
-                      <button
-                        key={occ.id}
-                        type="button"
-                        disabled={!isEditing}
-                        onClick={() => setForm({ ...form, occupation_class: occ.id })}
-                        className={`p-6 rounded-[2rem] border text-left transition-all ${form.occupation_class === occ.id
-                          ? 'border-primary-light bg-primary-light/10 ring-4 ring-primary-light/5'
-                          : 'border-border-light dark:border-border-dark opacity-60 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5'} disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:opacity-30 disabled:hover:bg-transparent`}
-                      >
-                        <p className="text-sm font-black mb-1">{occ.label}</p>
-                        <p className="text-[10px] opacity-50 font-bold uppercase tracking-tight">{occ.desc}</p>
-                      </button>
-                    ))}
+                  <div className="relative">
+                    <select
+                      value={occupationTitle}
+                      disabled={!isEditing}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const selectedOption = e.target.options[e.target.selectedIndex];
+                        const hazardClass = selectedOption.getAttribute('data-class');
+                        setOccupationTitle(val);
+                        localStorage.setItem("bs_occ_title", val);
+                        setForm({ ...form, occupation_class: hazardClass });
+                      }}
+                      className="w-full px-5 py-4 text-sm rounded-2xl bg-background-light dark:bg-card-dark/50 border border-border-light dark:border-border-dark focus:ring-4 focus:ring-primary-light/10 focus:border-primary-light transition-all outline-none font-bold disabled:opacity-50 disabled:cursor-not-allowed [&>optgroup]:font-black [&>optgroup]:text-[10px] [&>optgroup]:uppercase [&>optgroup]:tracking-widest [&>optgroup]:opacity-70 [&>option]:font-bold [&>option]:text-sm [&>option]:normal-case [&>option]:tracking-normal"
+                      required
+                    >
+                      <option value="" disabled>Select your occupation...</option>
+                      {OCCUPATION_LIST.map((group, gIdx) => (
+                        <optgroup key={gIdx} label={group.group}>
+                          {group.items.map((item, iIdx) => (
+                            <option key={iIdx} value={item} data-class={group.classValue}>{item}</option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+
+                    {occupationTitle && occupationTitle.startsWith("Other") && (
+                      <div className="mt-4 animate-in fade-in duration-300">
+                        <label className="text-[9px] font-black uppercase opacity-50 mb-1.5 block ml-1">Please Specify Occupation</label>
+                        <input
+                          type="text"
+                          value={customOccupation}
+                          disabled={!isEditing}
+                          onChange={(e) => {
+                            setCustomOccupation(e.target.value);
+                            localStorage.setItem("bs_custom_occ", e.target.value);
+                          }}
+                          placeholder="e.g. Graphic Designer, Freelancer"
+                          className="w-full px-5 py-3 text-sm rounded-xl bg-background-light dark:bg-card-dark/20 border border-border-light dark:border-border-dark focus:ring-2 focus:ring-primary-light/20 focus:border-primary-light outline-none transition-all disabled:opacity-50"
+                          required={occupationTitle.startsWith("Other")}
+                        />
+                      </div>
+                    )}
+
+                    {form.occupation_class && (
+                      <div className="mt-3 flex items-start gap-2 p-3 rounded-xl bg-primary-light/5 border border-primary-light/10">
+                        <ShieldCheckIcon className="w-4 h-4 text-primary-light dark:text-primary-dark shrink-0" />
+                        <div>
+                          <p className="text-[9px] font-black uppercase opacity-60 tracking-wider mb-0.5">Automated Hazard Classification</p>
+                          <p className={`text-xs font-bold ${form.occupation_class === 'class_1' ? 'text-green-600 dark:text-green-400' : form.occupation_class === 'class_2' ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`}>
+                            {form.occupation_class === 'class_1' ? 'Level 1 (Low Risk - Nominal Premium)' : form.occupation_class === 'class_2' ? 'Level 2 (Medium Risk - Standard Loading)' : 'Level 3 (High Risk - Extra Loading)'}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

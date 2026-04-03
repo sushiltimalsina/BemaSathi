@@ -530,11 +530,11 @@ const PolicyCard = ({
   const renewalBlocked = owned && !isRenewable(ownedRequest);
   const detailTo = owned
     ? {
-      pathname: `/policy/${policy.id}`,
+      pathname: `/policy/${policy.hashed_id || policy.id}`,
       search: `?owned=1&buyRequest=${ownedRequest?.id}`,
       state: { owned: true, buyRequestId: ownedRequest?.id },
     }
-    : { pathname: `/policy/${policy.id}` };
+    : { pathname: `/policy/${policy.hashed_id || policy.id}` };
 
   return (
     <div
@@ -662,7 +662,7 @@ const PolicyCard = ({
                 navigate(`/client/buy?policy=${policy.id}`);
                 return;
               }
-              navigate(`/client/payment?request=${ownedRequest?.id}`);
+              navigate(`/client/payment?request=${ownedRequest?.hashed_id || ownedRequest?.id}`);
             }}
             className="
               px-4 py-2 rounded-lg text-sm font-semibold

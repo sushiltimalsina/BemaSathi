@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import API from "../../../api/api";
 import {
     ShieldCheckIcon,
     ExclamationTriangleIcon,
@@ -107,6 +108,49 @@ const HealthDeclaration = () => {
     });
     const [showCaseStudy, setShowCaseStudy] = useState(true);
     const [timeSpent, setTimeSpent] = useState(0);
+    const [kycName, setKycName] = useState("");
+    const [signatureError, setSignatureError] = useState("");
+
+    // Reset state on component mount if we didn't just come from buy flow
+    useEffect(() => {
+        const hasPrev = sessionStorage.getItem("healthDeclaration");
+        if (!hasPrev) {
+            setCurrentStep(1);
+            setGeneralAnswers({});
+            setSelectedConditions([]);
+            setFamilyConditions([]);
+            setFinalDeclaration({
+                truthful: false,
+                understand: false,
+                consequences: false,
+                signature: ""
+            });
+            setShowCaseStudy(true);
+            setTimeSpent(0);
+            setSignatureError("");
+        }
+    }, []);
+
+    // Fetch user KYC data for signature verification
+    useEffect(() => {
+        const fetchKyc = async () => {
+            try {
+                const res = await API.get("/kyc/me");
+                // API returns { data: [...] } based on previous views
+                const list = res.data?.data || res.data || [];
+                if (Array.isArray(list) && list.length > 0) {
+                   const approved = list.find(k => k.status === 'approved');
+                   if (approved && approved.full_name) {
+                       setKycName(approved.full_name.trim());
+                       console.log("Verified KYC Name:", approved.full_name);
+                   }
+                }
+            } catch (err) {
+                console.error("KYC fetch failed", err);
+            }
+        };
+        fetchKyc();
+    }, []);
 
     // Track time spent on page (fraud detection metric)
     useEffect(() => {
@@ -115,6 +159,19 @@ const HealthDeclaration = () => {
         }, 1000);
         return () => clearInterval(timer);
     }, []);
+
+    // Watch signature for mismatch
+    useEffect(() => {
+        if (currentStep === 3 && finalDeclaration.signature && kycName) {
+            const typed = finalDeclaration.signature.trim();
+            const actual = kycName.trim();
+            if (typed.toLowerCase() !== actual.toLowerCase()) {
+                setSignatureError(`Signature must exactly match your KYC name: ${kycName}`);
+            } else {
+                setSignatureError("");
+            }
+        }
+    }, [finalDeclaration.signature, kycName, currentStep]);
 
     const shouldShowQuestion = (question) => {
         if (!question.showIf) return true;
@@ -158,7 +215,10 @@ const HealthDeclaration = () => {
                 finalDeclaration.truthful &&
                 finalDeclaration.understand &&
                 finalDeclaration.consequences &&
-                finalDeclaration.signature.trim().length > 0
+                finalDeclaration.consequences &&
+                finalDeclaration.signature.trim().length > 0 &&
+                !signatureError &&
+                (kycName ? finalDeclaration.signature.trim().toLowerCase() === kycName.trim().toLowerCase() : true)
             );
         }
         return false;
@@ -177,11 +237,20 @@ const HealthDeclaration = () => {
         // Store in session/state for payment page
         sessionStorage.setItem("healthDeclaration", JSON.stringify(healthData));
 
-        // Navigate to payment or next step
-        navigate(location.state?.returnTo || "/client/payment", {
-            state: { healthDeclarationCompleted: true }
+        // IMPORTANT: Extract policy ID from returnTo if possible
+        const returnTo = location.state?.returnTo || "/client/buy";
+        
+        // Navigate back to where we came from with the completion flag
+        navigate(returnTo, {
+            state: { 
+                healthDeclarationCompleted: true,
+                policyType: location.state?.policyType
+            },
+            replace: true
         });
     };
+
+    const isFamilyPolicy = location.state?.policyType === 'family';
 
     return (
         <div className="min-h-screen bg-background-light dark:bg-background-dark py-12 px-4">
@@ -395,37 +464,39 @@ const HealthDeclaration = () => {
                                 </div>
                             </div>
 
-                            {/* Family Conditions */}
-                            <div className="pt-8 border-t border-border-light dark:border-border-dark">
-                                <h3 className="text-lg font-black mb-4 flex items-center gap-2">
-                                    <UserGroupIcon className="w-5 h-5 text-primary-light" />
-                                    Family Members' Medical Conditions
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {SPECIFIC_CONDITIONS.map(condition => {
-                                        const isSelected = familyConditions.includes(condition.id);
-                                        return (
-                                            <button
-                                                key={condition.id}
-                                                type="button"
-                                                onClick={() => toggleCondition(condition.id, true)}
-                                                className={`p-5 rounded-2xl border-2 text-left transition-all flex items-center gap-4 ${isSelected
-                                                        ? 'border-red-500 bg-red-500/10 shadow-lg shadow-red-500/20'
-                                                        : 'border-border-light dark:border-border-dark hover:border-primary-light/50'
-                                                    }`}
-                                            >
-                                                <span className="text-3xl">{condition.icon}</span>
-                                                <div className="flex-1">
-                                                    <p className="font-bold text-sm">{condition.label}</p>
-                                                </div>
-                                                {isSelected && (
-                                                    <CheckCircleIcon className="w-6 h-6 text-red-500 flex-shrink-0" />
-                                                )}
-                                            </button>
-                                        );
-                                    })}
+                            {/* Family Conditions - ONLY SHOW FOR FAMILY POLICIES */}
+                            {isFamilyPolicy && (
+                                <div className="pt-8 border-t border-border-light dark:border-border-dark">
+                                    <h3 className="text-lg font-black mb-4 flex items-center gap-2">
+                                        <UserGroupIcon className="w-5 h-5 text-primary-light" />
+                                        Family Members' Medical Conditions
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {SPECIFIC_CONDITIONS.map(condition => {
+                                            const isSelected = familyConditions.includes(condition.id);
+                                            return (
+                                                <button
+                                                    key={condition.id}
+                                                    type="button"
+                                                    onClick={() => toggleCondition(condition.id, true)}
+                                                    className={`p-5 rounded-2xl border-2 text-left transition-all flex items-center gap-4 ${isSelected
+                                                            ? 'border-red-500 bg-red-500/10 shadow-lg shadow-red-500/20'
+                                                            : 'border-border-light dark:border-border-dark hover:border-primary-light/50'
+                                                        }`}
+                                                >
+                                                    <span className="text-3xl">{condition.icon}</span>
+                                                    <div className="flex-1">
+                                                        <p className="font-bold text-sm">{condition.label}</p>
+                                                    </div>
+                                                    {isSelected && (
+                                                        <CheckCircleIcon className="w-6 h-6 text-red-500 flex-shrink-0" />
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             <div className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-6 mt-8">
                                 <p className="text-sm font-bold text-blue-600 dark:text-blue-400">
@@ -465,23 +536,25 @@ const HealthDeclaration = () => {
                                     )}
                                 </div>
 
-                                <div>
-                                    <p className="text-xs uppercase font-bold opacity-60 mb-2">Family Conditions:</p>
-                                    {familyConditions.length > 0 ? (
-                                        <div className="flex flex-wrap gap-2">
-                                            {familyConditions.map(id => {
-                                                const condition = SPECIFIC_CONDITIONS.find(c => c.id === id);
-                                                return (
-                                                    <span key={id} className="px-3 py-1 bg-red-500/10 text-red-600 rounded-full text-xs font-bold">
-                                                        {condition?.icon} {condition?.label}
-                                                    </span>
-                                                );
-                                            })}
-                                        </div>
-                                    ) : (
-                                        <p className="text-sm opacity-60 italic">No family conditions declared</p>
-                                    )}
-                                </div>
+                                {isFamilyPolicy && (
+                                    <div>
+                                        <p className="text-xs uppercase font-bold opacity-60 mb-2">Family Conditions:</p>
+                                        {familyConditions.length > 0 ? (
+                                            <div className="flex flex-wrap gap-2">
+                                                {familyConditions.map(id => {
+                                                    const condition = SPECIFIC_CONDITIONS.find(c => c.id === id);
+                                                    return (
+                                                        <span key={id} className="px-3 py-1 bg-red-500/10 text-red-600 rounded-full text-xs font-bold">
+                                                            {condition?.icon} {condition?.label}
+                                                        </span>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm opacity-60 italic">No family conditions declared</p>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Legal Declarations */}
@@ -532,20 +605,35 @@ const HealthDeclaration = () => {
                                     type="text"
                                     value={finalDeclaration.signature}
                                     onChange={(e) => setFinalDeclaration(prev => ({ ...prev, signature: e.target.value }))}
-                                    className="w-full px-5 py-4 rounded-2xl bg-background-light dark:bg-card-dark/50 border border-border-light dark:border-border-dark focus:ring-4 focus:ring-primary-light/10 focus:border-primary-light transition-all outline-none font-signature text-2xl"
-                                    placeholder="Your Full Name"
+                                    className={`w-full px-5 py-4 rounded-2xl bg-background-light dark:bg-card-dark/50 border focus:ring-4 transition-all outline-none font-signature text-2xl ${signatureError ? 'border-red-500 focus:ring-red-500/10' : 'border-border-light dark:border-border-dark focus:ring-primary-light/10 focus:border-primary-light'}`}
+                                    placeholder={kycName || "Your FULL Verified Name"}
                                 />
+                                {signatureError && (
+                                    <p className="text-red-500 text-xs font-bold animate-in fade-in slide-in-from-top-1">
+                                        {signatureError}
+                                    </p>
+                                )}
                                 <p className="text-xs opacity-60 flex items-center gap-2">
                                     <ClockIcon className="w-4 h-4" />
                                     Date: {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
                                 </p>
                             </div>
 
-                            <div className="bg-green-500/10 border border-green-500/30 rounded-2xl p-6">
-                                <p className="text-sm font-bold text-green-600 dark:text-green-400">
-                                    ✓ This declaration is legally binding and will be stored securely. You will receive a copy via email.
-                                </p>
-                            </div>
+                            {!signatureError && finalDeclaration.signature && (
+                                <div className="bg-green-500/10 border border-green-500/30 rounded-2xl p-6">
+                                    <p className="text-sm font-bold text-green-600 dark:text-green-400">
+                                        ✓ Signature matches verified identity.
+                                    </p>
+                                </div>
+                            )}
+
+                            {signatureError && (
+                                <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-6">
+                                    <p className="text-sm font-bold text-red-600 dark:text-red-400">
+                                        ❌ Signature verification failed. Please type your name exactly as approved in your KYC.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     )}
 

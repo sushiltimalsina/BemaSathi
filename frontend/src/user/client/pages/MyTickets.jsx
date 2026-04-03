@@ -65,7 +65,7 @@ const MyTickets = () => {
               <h2 className="text-lg font-medium">{t.subject}</h2>
 
               <button
-                onClick={() => navigate(`/client/support/${t.id}`)}
+                onClick={() => navigate(`/client/support/${t.hashed_id || t.id}`)}
                 className="flex items-center gap-2 px-3 py-1 rounded-lg text-sm border border-border-light dark:border-border-dark hover:bg-hover-light dark:hover:bg-hover-dark"
               >
                 <EyeIcon className="w-4 h-4" />

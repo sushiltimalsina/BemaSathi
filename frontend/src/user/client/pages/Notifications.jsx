@@ -526,7 +526,7 @@ function getNotificationLink(n) {
     meta.ticket?.id;
 
   if (title.includes("renewal") || message.includes("renew")) {
-    return buyRequestId ? `/client/payment?request=${buyRequestId}` : "/client/my-policies";
+    return buyRequestId ? `/client/payment?request=${n.buy_request?.hashed_id || meta.buy_request?.hashed_id || buyRequestId}` : "/client/my-policies";
   }
 
   if (type === "payment" || title.includes("payment")) {

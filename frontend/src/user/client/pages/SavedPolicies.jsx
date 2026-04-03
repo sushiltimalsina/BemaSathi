@@ -273,7 +273,7 @@ const SavedPolicies = () => {
                         navigate(`/client/buy?policy=${p.id}`);
                         return;
                       }
-                      navigate(`/client/payment?request=${ownedRequest.id}`);
+                      navigate(`/client/payment?request=${ownedRequest.hashed_id || ownedRequest.id}`);
                       return;
                     }
                     navigate(`/client/buy?policy=${p.id}`);
@@ -306,7 +306,7 @@ const SavedPolicies = () => {
               </div>
 
               <button
-                onClick={() => navigate(`/policy/${p.id}`)}
+                onClick={() => navigate(`/policy/${p.hashed_id || p.id}`)}
                 className="text-blue-600 dark:text-blue-400 hover:underline font-semibold text-left"
               >
                 View Details
