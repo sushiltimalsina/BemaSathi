@@ -139,14 +139,15 @@
 
 <!-- POLICY HOLDER -->
 <div class="section">
-  <div class="section-title">Policy Holder</div>
+  <div class="section-title">Policy Holder Details</div>
   <table>
     <tr><td class="label">Name</td><td class="value">{{ $userName }}</td></tr>
     <tr><td class="label">Email</td><td class="value">{{ $userEmail }}</td></tr>
     <tr><td class="label">Phone</td><td class="value">{{ $userPhone ?? 'N/A' }}</td></tr>
     <tr><td class="label">Address</td><td class="value">{{ $userAddress ?? 'N/A' }}</td></tr>
     <tr><td class="label">Date of Birth</td><td class="value">{{ $userDob ? \Illuminate\Support\Carbon::parse($userDob)->toFormattedDateString() : 'N/A' }}</td></tr>
-    <tr><td class="label">Document Number</td><td class="value">{{ $userDocumentNumber ?? 'N/A' }}</td></tr>
+    <tr><td class="label">Occupation Class</td><td class="value">{{ ucfirst(str_replace('_', ' ', $userOccupation ?? 'Class 1')) }}</td></tr>
+    <tr><td class="label">BMI / Smoker Status</td><td class="value">{{ $userBmi ?? 'N/A' }} / {{ $userSmoker ? 'Smoker' : 'Non-Smoker' }}</td></tr>
   </table>
 </div>
 
@@ -172,6 +173,54 @@
     <tr><td class="label">Smoker Coverage</td><td class="value">{{ $supportsSmokers ? 'Supported' : 'Not Supported' }}</td></tr>
   </table>
 </div>
+
+<!-- HEALTH DECLARATION -->
+@if(!empty($healthDeclaration))
+<div class="section">
+  <div class="section-title">Health Declaration</div>
+  <table>
+    @if(!empty($healthDeclaration['selectedConditions']))
+    <tr>
+      <td class="label">Personal Conditions</td>
+      <td class="value">
+        {{ implode(', ', array_map('ucfirst', $healthDeclaration['selectedConditions'])) }}
+      </td>
+    </tr>
+    @endif
+
+    @if(!empty($healthDeclaration['familyConditions']))
+    <tr>
+      <td class="label">Family Conditions</td>
+      <td class="value">
+        {{ implode(', ', array_map('ucfirst', $healthDeclaration['familyConditions'])) }}
+      </td>
+    </tr>
+    @endif
+
+    @if(!empty($healthDeclaration['generalAnswers']))
+      @foreach($healthDeclaration['generalAnswers'] as $key => $val)
+        @if($val === 'yes' || (is_string($val) && strlen($val) > 3))
+          <tr>
+            <td class="label">{{ ucfirst(str_replace('_', ' ', $key)) }}</td>
+            <td class="value">
+              @if($val === 'yes') <span style="color: #059669; font-weight: bold;">Yes</span> 
+              @elseif($val === 'no') <span style="color: #6b7280;">No</span>
+              @else {{ ucfirst($val) }} @endif
+            </td>
+          </tr>
+        @endif
+      @endforeach
+    @endif
+
+    @if(!empty($healthDeclaration['finalDeclaration']['signature']))
+    <tr>
+      <td class="label">Digitally Signed By</td>
+      <td class="value"><strong>{{ $healthDeclaration['finalDeclaration']['signature'] }}</strong></td>
+    </tr>
+    @endif
+  </table>
+</div>
+@endif
 
 <!-- TERMS -->
 <div class="section">
