@@ -65,10 +65,21 @@ class PaymentSuccessMail extends Mailable
                 'timezoneLabel' => $timezoneLabel,
             ]);
         } catch (\Throwable $e) {
-            Log::warning('Payment receipt PDF generation failed', [
+            Log::error('Payment receipt PDF generation failed', [
                 'payment_id' => $this->payment->id,
                 'error' => $e->getMessage(),
             ]);
+            // Safety Fallback: generate a basic receipt if the complex template fails
+            $pdf = Pdf::loadHTML("
+                <div style='font-family: sans-serif; padding: 40px;'>
+                    <h1>Payment Receipt</h1>
+                    <p>Receipt Number: <strong>{$receiptNumber}</strong></p>
+                    <p>Amount: <strong>रु. {$this->payment->amount}</strong></p>
+                    <p>Policy: <strong>" . ($policy?->policy_name ?? 'Insurance Policy') . "</strong></p>
+                    <hr/>
+                    <p>Status: Verified</p>
+                </div>
+            ");
         }
 
         $mail = $this->subject('Payment Successful - Receipt')

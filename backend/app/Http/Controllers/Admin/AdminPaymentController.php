@@ -164,12 +164,14 @@ class AdminPaymentController extends Controller
         $buyRequest = BuyRequest::create([
             'user_id' => $intent->user_id,
             'policy_id' => $intent->policy_id,
+            'agent_id' => $intent->agent_id,
             'name' => $intent->name,
             'phone' => $intent->phone,
             'email' => $intent->email,
             'calculated_premium' => $intent->calculated_premium,
             'cycle_amount' => $intent->cycle_amount ?? $intent->amount,
             'billing_cycle' => $intent->billing_cycle ?? 'yearly',
+            'health_declaration' => $intent->meta['health_declaration'] ?? null,
             'next_renewal_date' => $intent->next_renewal_date,
             'renewal_status' => $intent->renewal_status ?? 'active',
         ]);

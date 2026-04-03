@@ -27,14 +27,14 @@ class AdminAgentController extends Controller
             'name'  => 'required|string|max:255',
             'phone' => 'required|string|max:20', // Consider adding unique:agents,phone if applicable
             'email' => 'required|email|unique:agents,email',
-            'password' => 'required|string|min:8',
+            'password' => 'nullable|string|min:8',
             'company_id' => 'nullable|exists:companies,id',
             'is_active' => 'boolean',
         ]);
 
         $status = $request->has('is_active') ? $request->boolean('is_active') : true;
 
-        $password = $validated['password'];
+        $password = $request->input('password') ?? Str::random(10);
         $validated['password'] = Hash::make($password);
         $validated['is_active'] = $status;
 

@@ -34,7 +34,6 @@ use App\Http\Controllers\Admin\AdminInquiryController;
 use App\Http\Controllers\Admin\AdminBuyRequestController;
 use App\Http\Controllers\Admin\AdminStatsController;
 use App\Http\Controllers\Admin\AdminCompanyController;
-use App\Http\Controllers\Admin\AdminClientController;
 use App\Http\Controllers\SavedPolicyController;
 use App\Http\Controllers\PremiumQuoteController;
 use App\Http\Controllers\KycController;
@@ -64,12 +63,11 @@ Route::post('/email/resend', [AuthController::class, 'resendVerification']);
 Route::get('/policies',          [PolicyController::class, 'index']);
 Route::get('/policies/{policy}', [PolicyController::class, 'show']);
 
-// Public Agents (read-only)
-Route::get('/agents',         [AgentController::class, 'index']);
-Route::get('/agents/{agent}', [AgentController::class, 'show']);
+// Agents moved to protected routes (auth:sanctum) — guests cannot access agent contact details
 
 // Public inquiries (allow logging agent view without auth)
 Route::post('/inquiries', [InquiryController::class, 'store']);
+Route::post('/contact',   [InquiryController::class, 'store']);
 
 
 // Premium calculator (public, no auth needed)
@@ -83,7 +81,7 @@ Route::match(['GET', 'POST'], '/payments/{payment}/failed',  [PaymentController:
 Route::match(['GET', 'POST'], '/payments/khalti/return/{payment}', [PaymentController::class, 'khaltiReturn']);
 
 // Admin Login (PUBLIC)
-Route::post('/admin/login', [AdminAuthController::class, 'login'])->name('login');
+Route::post('/htt/login', [AdminAuthController::class, 'login'])->name('login');
 Route::get('/settings/public', [AdminSettingsController::class, 'public']);
 
 /*
@@ -102,7 +100,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Authenticated user profile
     Route::get('/me',      [AuthController::class, 'me']);
-    // Route::put('/update-profile', [AuthController::class, 'updateProfile']);
+    Route::put('/user/profile', [UserProfileController::class, 'update']);
+    Route::get('/user/profile/completion', [UserProfileController::class, 'checkCompletion']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Saved Policies (Client only)
@@ -111,8 +110,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/saved/{policy_id}', [SavedPolicyController::class, 'destroy']);
 
     // Recommendations (Client only)
-    Route::get('/recommendations', [PolicyController::class, 'recommend']);
-    Route::get('/recommendations/personal', [RecommendationController::class, 'index']);
+    Route::get('/recommendations', [App\Http\Controllers\RecommendationController::class, 'index']);
+    Route::get('/recommendations/personal', [App\Http\Controllers\RecommendationController::class, 'index']);
     Route::post('/recommendations/feedback/click', [RecommendationFeedbackController::class, 'trackClick']);
     Route::post('/recommendations/feedback/time', [RecommendationFeedbackController::class, 'trackTimeSpent']);
 
@@ -120,6 +119,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/compare', [ComparisonController::class, 'compare']);
     Route::get('/my-requests', [BuyRequestController::class, 'userRequests']);
     Route::get('/buy-requests/{buyRequest}', [BuyRequestController::class, 'show']);
+    Route::get('/buy-requests/{buyRequest}/policy-document', [BuyRequestController::class, 'policyDocument']);
+    Route::get('/buy-requests/{buyRequest}/payment-receipt', [BuyRequestController::class, 'paymentReceipt']);
     Route::post('/buy', [BuyRequestController::class, 'store']);
     Route::post('/buy/preview', [BuyRequestController::class, 'preview']);
 
@@ -152,6 +153,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/support/{ticket}/mark-seen', [SupportController::class, 'markSeen']);
     Route::post('/support/{ticket}/reply', [SupportController::class, 'reply']);
 
+    // Agents (authenticated only — protects agent contact details)
+    Route::get('/agents',         [AgentController::class, 'index']);
+    Route::get('/agents/{agent}', [AgentController::class, 'show']);
+
     // Agent inquiries (Client)
     Route::post('/agent-inquiries', [AgentInquiryController::class, 'store']);
 
@@ -168,12 +173,13 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::middleware(['admin', 'audit'])->prefix('admin')->group(function () {
+    Route::middleware(['admin', 'audit'])->prefix('htt')->group(function () {
 
         // Admin Profile
         Route::get('/profile', function () {
             return auth()->user();
         });
+        Route::post('/profile/change-password', [AdminAuthController::class, 'changePassword']);
 
         // Admin Stats
         Route::get('/stats', [AdminStatsController::class, 'stats']);
@@ -218,16 +224,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/companies/{company}', [AdminCompanyController::class, 'destroy']);
         Route::post('/companies/{company}/toggle', [AdminCompanyController::class, 'toggle']);
 
-        /*
-        |-------------------------
-        | Clients (Admin Only)
-        |-------------------------
-        */
-        Route::get('/clients',           [AdminClientController::class, 'index']);
-        Route::post('/clients',          [AdminClientController::class, 'store']);
-        Route::get('/clients/{client}',  [AdminClientController::class, 'show']);
-        Route::put('/clients/{client}',  [AdminClientController::class, 'update']);
-        Route::delete('/clients/{client}', [AdminClientController::class, 'destroy']);
 
         /*
         |-------------------------
@@ -235,13 +231,14 @@ Route::middleware('auth:sanctum')->group(function () {
         |-------------------------
         */
         Route::get('/inquiries',          [AdminInquiryController::class, 'index']);
+        Route::patch('/inquiries/mark-all-read', [AdminInquiryController::class, 'markAllAsRead']);
+        Route::patch('/inquiries/{inquiry}/read', [AdminInquiryController::class, 'markAsRead']);
         Route::get('/inquiries/{inquiry}', [AdminInquiryController::class, 'show']);
         Route::delete('/inquiries/{inquiry}', [AdminInquiryController::class, 'destroy']);
 
         // KYC (Admin Only)
         Route::get('/kyc', [KycController::class, 'index']);
         Route::patch('/kyc/{id}/status', [KycController::class, 'updateStatus']);
-        Route::get('/admin/kyc', [KycController::class, 'index']);
 
         /*
         |-------------------------
@@ -262,6 +259,8 @@ Route::middleware('auth:sanctum')->group(function () {
         */
         Route::get('/buy-requests',                 [AdminBuyRequestController::class, 'index']);
         Route::get('/buy-requests/{buyRequest}',    [AdminBuyRequestController::class, 'show']);
+        Route::get('/buy-requests/{buyRequest}/policy-document', [AdminBuyRequestController::class, 'policyDocument']);
+        Route::get('/buy-requests/{buyRequest}/payment-receipt', [AdminBuyRequestController::class, 'paymentReceipt']);
         Route::put('/buy-requests/{buyRequest}',    [AdminBuyRequestController::class, 'update']);
         Route::delete('/buy-requests/{buyRequest}', [AdminBuyRequestController::class, 'destroy']);
 

@@ -12,7 +12,8 @@ class Inquiry extends Model
         'name',
         'phone',
         'email',
-        'message'
+        'message',
+        'is_read'
     ];
 
     public function policy()

@@ -11,13 +11,8 @@ class Agent extends Model
         'name',
         'phone',
         'email',
-        'password',
         'company_id',
         'is_active',
-    ];
-
-    protected $hidden = [
-        'password'
     ];
 
     protected $casts = [

@@ -284,14 +284,12 @@ class KycController extends Controller
     }
 
 
-    public function updateStatus(Request $request, $id)
+    public function updateStatus(Request $request, KycDocument $kyc)
     {
         $request->validate([
             'status' => 'required|in:approved,rejected',
             'remarks' => 'required_if:status,rejected|nullable|string'
         ]);
-
-        $kyc = KycDocument::findOrFail($id);
 
         if ($kyc->status !== 'pending') {
             return response()->json([

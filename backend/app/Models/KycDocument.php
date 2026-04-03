@@ -30,6 +30,8 @@ class KycDocument extends Model
         'verified_at',
     ];
 
+    protected $appends = ['hashed_id'];
+
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
@@ -39,4 +41,50 @@ class KycDocument extends Model
         'family_members' => 'array',
         'allow_edit' => 'boolean',
     ];
+
+    /**
+     * Override to support both numeric and hashed IDs in route model binding.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        if (is_numeric($value)) {
+            return $this->where($field ?? $this->getRouteKeyName(), $value)->first();
+        }
+
+        $decodedId = self::decodeId($value);
+        if ($decodedId) {
+            return $this->where($field ?? $this->getRouteKeyName(), $decodedId)->first();
+        }
+
+        return null;
+    }
+
+    public function getHashedIdAttribute()
+    {
+        // Unique salt for KYC
+        $salt = 3141592; 
+        return base64_encode(($this->id ^ $salt) . '-' . substr(md5($this->id), 0, 5));
+    }
+
+    public static function decodeId($hash)
+    {
+        try {
+            $decoded = base64_decode($hash);
+            if (!$decoded) return null;
+            
+            $parts = explode('-', $decoded);
+            if (count($parts) < 2) return null;
+            
+            $salt = 3141592;
+            $id = $parts[0] ^ $salt;
+            
+            if (substr(md5($id), 0, 5) !== $parts[1]) {
+                return null;
+            }
+            
+            return (int) $id;
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
 }

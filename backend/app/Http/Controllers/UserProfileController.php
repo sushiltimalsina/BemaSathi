@@ -59,7 +59,7 @@ class UserProfileController extends Controller
         // Also sync the generic address field for backward compat
         $fullAddressItems = array_filter([
             $validated['street_address'] ?? null,
-            ($validated['municipality_name'] ?? '') . ($validated['ward_number'] ? '-' . $validated['ward_number'] : ''),
+            (isset($validated['municipality_name']) ? $validated['municipality_name'] : '') . (isset($validated['ward_number']) && $validated['ward_number'] ? '-' . $validated['ward_number'] : ''),
             $validated['district'] ?? null,
             $validated['province'] ?? null
         ]);

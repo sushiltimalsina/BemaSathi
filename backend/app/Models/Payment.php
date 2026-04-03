@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Payment extends Model
 {
+    protected $appends = ['hashed_id'];
+
     protected $fillable = [
         'user_id',
         'buy_request_id',
@@ -53,5 +55,51 @@ class Payment extends Model
     public function policy()
     {
         return $this->belongsTo(Policy::class);
+    }
+
+    /**
+     * Override to support both numeric and hashed IDs in route model binding.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        if (is_numeric($value)) {
+            return $this->where($field ?? $this->getRouteKeyName(), $value)->first();
+        }
+
+        $decodedId = self::decodeId($value);
+        if ($decodedId) {
+            return $this->where($field ?? $this->getRouteKeyName(), $decodedId)->first();
+        }
+
+        return null;
+    }
+
+    public function getHashedIdAttribute()
+    {
+        // Simple XOR obfuscation to create "encrypted" ID
+        $salt = 9421873; 
+        return base64_encode(($this->id ^ $salt) . '-' . substr(md5($this->id), 0, 5));
+    }
+
+    public static function decodeId($hash)
+    {
+        try {
+            $decoded = base64_decode($hash);
+            if (!$decoded) return null;
+            
+            $parts = explode('-', $decoded);
+            if (count($parts) < 2) return null;
+            
+            $salt = 9421873;
+            $id = $parts[0] ^ $salt;
+            
+            if (substr(md5($id), 0, 5) !== $parts[1]) {
+                return null;
+            }
+            
+            return (int) $id;
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 }
