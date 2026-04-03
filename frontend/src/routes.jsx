@@ -24,6 +24,7 @@ import Settings from "./admin/settings/Settings";
 import SupportList from "./admin/support/SupportList";
 import SupportView from "./admin/support/SupportView";
 import AgentInquiryList from "./admin/agent-inquiries/AgentInquiryList";
+import GuestInquiryList from "./admin/agent-inquiries/GuestInquiryList";
 import AdminProfile from "./admin/pages/Profile";
 
 /* -------- Guest Pages -------- */
@@ -280,17 +281,17 @@ const AppRoutes = () => {
       />
 
       {/* ----- ADMIN ROUTES ----- */}
-      <Route path="/admin/login" element={<Login />} />
+      <Route path="/htt/login" element={<Login />} />
 
       <Route
-        path="/admin"
+        path="/htt"
         element={
           <ProtectedAdminRoute>
             <AdminLayout />
           </ProtectedAdminRoute>
         }
       >
-        <Route index element={<Navigate to="/admin/dashboard" replace />} />
+        <Route index element={<Navigate to="/htt/dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="policies" element={<PolicyList />} />
         <Route path="policies/create" element={<PolicyForm />} />
@@ -312,6 +313,7 @@ const AppRoutes = () => {
         <Route path="support" element={<SupportList />} />
         <Route path="support/:id" element={<SupportView />} />
         <Route path="agent-inquiries" element={<AgentInquiryList />} />
+        <Route path="guest-messages" element={<GuestInquiryList />} />
       </Route>
     </Routes>
   );

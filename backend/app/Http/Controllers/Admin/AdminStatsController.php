@@ -90,6 +90,7 @@ class AdminStatsController extends Controller
                     ->whereIn('status', ['success', 'paid', 'completed']);
             })
             ->whereNotNull('next_renewal_date')
+            ->whereDate('next_renewal_date', '>=', Carbon::today())
             ->orderBy('next_renewal_date')
             ->take(5)
             ->get(['id', 'user_id', 'policy_id', 'next_renewal_date', 'renewal_status', 'billing_cycle', 'cycle_amount']);
