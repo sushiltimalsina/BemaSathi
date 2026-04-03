@@ -27,16 +27,13 @@ class RecommendationController extends Controller
         // Get A/B test variant for this user
         $variant = $this->getABTestVariant($user);
 
-        $ownedPolicyIds = collect();
-        if ($user) {
-            $ownedPolicyIds = Payment::query()
-                ->where('user_id', $user->id)
-                ->where('is_verified', true)
-                ->whereIn('status', ['success', 'paid', 'completed'])
-                ->pluck('policy_id')
-                ->filter()
-                ->unique();
-        }
+        $ownedPolicyIds = Payment::query()
+            ->where('user_id', $user->id)
+            ->where('is_verified', true)
+            ->whereIn('status', ['success', 'paid', 'completed'])
+            ->pluck('policy_id')
+            ->filter()
+            ->unique();
 
         $policies = Policy::when($type, fn($q) => $q->where('insurance_type', $type))
             ->when($ownedPolicyIds->isNotEmpty(), function ($q) use ($ownedPolicyIds) {
@@ -44,22 +41,7 @@ class RecommendationController extends Controller
             })
             ->get();
 
-        $profile = $user ? $this->resolveStandardProfile($user) : [
-            'age' => 30,
-            'city' => 'default',
-            'region_type' => 'urban',
-            'is_smoker' => false,
-            'health_score' => 70,
-            'coverage_type' => 'individual',
-            'budget_range' => null,
-            'family_members' => 1,
-            'family_ages' => [30],
-            'has_seniors' => false,
-            'weight' => null,
-            'height' => null,
-            'occupation_class' => 'class_1',
-            'conditions' => []
-        ];
+        $profile = $this->resolveStandardProfile($user);
 
         // Get popularity with multi-dimensional similarity
         $popularityMap = $this->getPeerPopularity($profile, $user);
@@ -67,15 +49,11 @@ class RecommendationController extends Controller
         $scored = $policies->map(function ($policy) use ($profile, $user, $popularityMap, $variant) {
 
             // Always compute personalized premium with full context
-            if ($user) {
-                $policy->personalized_premium = $this->getPersonalizedPremium(
-                    $this->calculator,
-                    $policy,
-                    $profile
-                );
-            } else {
-                $policy->personalized_premium = $policy->premium_amt;
-            }
+            $policy->personalized_premium = $this->getPersonalizedPremium(
+                $this->calculator,
+                $policy,
+                $profile
+            );
 
             // Compute match score based on A/B variant
             $scoreData = match($variant) {
@@ -97,9 +75,7 @@ class RecommendationController extends Controller
 
         if ($sorted->count() <= 2) {
             // Track recommendations
-            if ($user) {
-                $this->trackRecommendations($user, $sorted, $variant);
-            }
+            $this->trackRecommendations($user, $sorted, $variant);
             
             return response()->json(['recommended' => $sorted, 'variant' => $variant]);
         }
@@ -108,9 +84,7 @@ class RecommendationController extends Controller
         $recommended = $this->diverseSelection($sorted, 5);
 
         // Track recommendations for feedback loop
-        if ($user) {
-            $this->trackRecommendations($user, $recommended, $variant);
-        }
+        $this->trackRecommendations($user, $recommended, $variant);
 
         return response()->json([
             'recommended' => $recommended,
@@ -127,11 +101,8 @@ class RecommendationController extends Controller
     /**
      * Assign users to A/B test variants consistently
      */
-    private function getABTestVariant(?User $user): string
+    private function getABTestVariant(User $user): string
     {
-        if (!$user) {
-            return 'control';
-        }
 
         // Consistent hashing: same user always gets same variant
         $hash = crc32($user->id . 'recommendation_experiment_v1');
@@ -171,14 +142,10 @@ class RecommendationController extends Controller
     /**
      * Enhanced scoring with real-time feedback signals
      */
-    private function computeScoreWithFeedback(Policy $policy, array $profile, array $popularityMap, ?User $user)
+    private function computeScoreWithFeedback(Policy $policy, array $profile, array $popularityMap, User $user)
     {
         // Get base score
         $baseScore = $this->computeScore($policy, $profile, $popularityMap);
-        
-        if (!$user) {
-            return $baseScore;
-        }
 
         // Calculate feedback signals from historical data
         $feedbackBoost = $this->calculateFeedbackBoost($policy, $profile);
@@ -266,7 +233,7 @@ class RecommendationController extends Controller
     /**
      * Enhanced scoring with weighted medical condition matching
      */
-    private function computeScoreWithWeightedMedical(Policy $policy, array $profile, array $popularityMap, ?User $user)
+    private function computeScoreWithWeightedMedical(Policy $policy, array $profile, array $popularityMap, User $user)
     {
         $age = $profile['age'];
         $healthScore = $profile['health_score'] ?? 70;
@@ -689,12 +656,8 @@ class RecommendationController extends Controller
     /**
      * Multi-dimensional peer similarity with caching
      */
-    private function getPeerPopularity(array $profile, ?User $currentUser): array
+    private function getPeerPopularity(array $profile, User $currentUser): array
     {
-        if (!$currentUser) {
-            return $this->getGlobalPopularity();
-        }
-
         $cacheKey = "peer_popularity_{$currentUser->id}";
         
         return Cache::remember($cacheKey, 1800, function() use ($profile, $currentUser) {
