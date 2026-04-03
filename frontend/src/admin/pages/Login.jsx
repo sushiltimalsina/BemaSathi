@@ -45,7 +45,7 @@ const Login = () => {
 
       const res = await adminLogin({ email: trimmedEmail, password });
       login(res.data?.admin || { email: trimmedEmail }, res.data?.token);
-      navigate("/admin/dashboard");
+      navigate("/htt/dashboard");
     } catch (err) {
       const status = err?.response?.status;
       const message = err?.response?.data?.message;

@@ -18,7 +18,7 @@ class AuthController extends Controller
     {
         $data = $request->validate([
             'name'     => 'required|string|max:255',
-            'phone'    => 'required|string|regex:/^[0-9]{10}$/',
+            'phone'    => 'nullable|string|regex:/^[0-9]{10}$/',
             'email'    => 'required|email|unique:users,email',
             'address'  => 'nullable|string|max:255',
             'password' => 'required|string|min:6',
@@ -35,9 +35,9 @@ class AuthController extends Controller
 
         $user = User::create([
             'name'      => $data['name'],
-            'phone'     => $data['phone'],
-            'email'     => $data['email'],
-            'address'   => $data['address'],
+            'phone'     => $data['phone'] ?? null,
+            'email'    => $data['email'],
+            'address'  => $data['address'] ?? null,
 
             // NEW FIELDS
             'dob' => $data['dob'],

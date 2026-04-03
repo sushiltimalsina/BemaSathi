@@ -51,7 +51,7 @@ const Register = () => {
   };
 
   const validatePhone = (value) => {
-    if (!value) return "";
+    if (!value) return "Phone number is required.";
     const ok = /^9[0-9]{9}$/.test(value);
     return ok ? "" : "Phone must be 10 digits starting with 9.";
   };
@@ -141,13 +141,6 @@ const Register = () => {
       }
 
       if (!socialUser) {
-        const phoneMsg = validatePhone(form.phone);
-        setPhoneError(phoneMsg);
-        if (phoneMsg) {
-          setLoading(false);
-          return;
-        }
-
         const emailMsg = validateEmail(form.email);
         setEmailError(emailMsg);
         if (emailMsg) {
@@ -227,9 +220,12 @@ const Register = () => {
         if (familyMsg) {
           setFamilyMembersError(familyMsg);
         }
+        
+        // Show detailed field errors instead of generic summary
+        const detailedErrors = Object.values(fieldErrors).flat().join(" | ");
         const msg =
+          detailedErrors ||
           err.response?.data?.message ||
-          Object.values(fieldErrors).flat().join(" ") ||
           "Registration failed.";
         setError(msg);
       }

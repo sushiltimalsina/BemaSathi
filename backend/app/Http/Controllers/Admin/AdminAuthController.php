@@ -79,4 +79,23 @@ class AdminAuthController extends Controller
             'message' => 'Admin logged out successfully'
         ]);
     }
+
+    /**
+     * Admin Change Password
+     */
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'password' => 'required|min:8|confirmed',
+        ]);
+
+        /** @var \App\Models\Admin $admin */
+        $admin = $request->user();
+        $admin->password = Hash::make($request->password);
+        $admin->save();
+
+        return response()->json([
+            'message' => 'Password changed successfully'
+        ]);
+    }
 }
