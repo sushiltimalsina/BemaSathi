@@ -119,23 +119,25 @@ const RecommendationCard = ({
       {/* Premium + Coverage */}
       <div className="grid md:grid-cols-2 gap-4 mt-5">
         <div
-          className="
-          p-4 rounded-xl 
-          bg-emerald-500/10 dark:bg-emerald-500/20
-          border border-emerald-500/20 dark:border-emerald-500/30
-        "
+          className={`
+          p-4 rounded-xl border
+          ${profileComplete
+            ? "bg-emerald-500/10 dark:bg-emerald-500/20 border-emerald-500/20 dark:border-emerald-500/30"
+            : "bg-amber-500/10 dark:bg-amber-500/20 border-amber-500/20 dark:border-amber-500/30"
+          }
+        `}
         >
-          <p className="text-xs font-semibold uppercase text-emerald-600 dark:text-emerald-300">
+          <p className={`text-xs font-semibold uppercase ${profileComplete ? "text-emerald-600 dark:text-emerald-300" : "text-amber-600 dark:text-amber-400"}`}>
             {profileComplete ? "Your Premium" : "Premium Starts From"}
           </p>
 
-          <h3 className="text-xl font-bold text-emerald-600 dark:text-emerald-300">
+          <h3 className={`text-xl font-bold ${profileComplete ? "text-emerald-600 dark:text-emerald-300" : "text-amber-600 dark:text-amber-400"}`}>
             रु. {fmt(effectivePremium)}
             {isClient && profileComplete && (
               <span className="block text-[10px] opacity-60">personalized quote</span>
             )}
             {isClient && !profileComplete && (
-              <span className="block text-[10px] opacity-60 italic text-amber-600 dark:text-amber-400">Complete profile for precision price</span>
+              <span className="block text-[10px] opacity-60 italic text-amber-600 dark:text-amber-400 mt-1">Complete profile for precision price</span>
             )}
           </h3>
         </div>
@@ -221,7 +223,7 @@ const RecommendationCard = ({
                   navigate(`/client/buy?policy=${policy.id}`);
                   return;
                 }
-                navigate(`/client/payment?request=${ownedRequest?.id}`);
+                navigate(`/client/payment?request=${ownedRequest?.hashed_id || ownedRequest?.id}`);
               }}
               className="
                 px-5 py-2.5 rounded-xl text-sm font-semibold text-white
@@ -286,7 +288,7 @@ const RecommendationCard = ({
         </div>
 
         <Link
-          to={`/policy/${policy.id}`}
+          to={`/policy/${policy.hashed_id || policy.id}`}
           className="text-primary-light dark:text-primary-dark text-sm font-semibold hover:underline"
         >
           View Details

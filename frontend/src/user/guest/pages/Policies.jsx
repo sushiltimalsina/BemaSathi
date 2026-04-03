@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import API from "../../../api/api";
 import { useCompare } from "../../../context/CompareContext";
@@ -485,7 +485,7 @@ const GuestPolicies = () => {
                                   navigate(`/client/buy?policy=${policy.id}`);
                                   return;
                                 }
-                                navigate(`/client/payment?request=${ownedRequest.id}`);
+                                navigate(`/client/payment?request=${ownedRequest.hashed_id || ownedRequest.id}`);
                                 return;
                               }
                               navigate(`/client/buy?policy=${policy.id}`);
@@ -531,7 +531,7 @@ const GuestPolicies = () => {
                         </div>
 
                         <button
-                          onClick={() => navigate(`/policy/${policy.id}`)}
+                          onClick={() => navigate(`/policy/${policy.hashed_id || policy.id}`)}
                           className="w-full text-sm font-medium text-primary-light dark:text-primary-dark hover:underline text-left"
                         >
                           View Details

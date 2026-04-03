@@ -83,6 +83,13 @@ const PolicyDetails = () => {
         if (match) {
           setOwnedRequest(match);
           setOwnedRequestId(match.id);
+          
+          // Obfuscate numeric ID in query param
+          if (/^\d+$/.test(ownedRequestId) && match.hashed_id) {
+            const query = new URLSearchParams(location.search);
+            query.set("buyRequest", match.hashed_id);
+            navigate(`${location.pathname}?${query.toString()}`, { replace: true });
+          }
         }
       } catch (err) {
         console.error("Owned policy check failed", err);
@@ -112,7 +119,13 @@ const PolicyDetails = () => {
   const fetchPolicy = async () => {
     try {
       const res = await API.get(`/policies/${id}`);
-      setPolicy(res.data);
+      const p = res.data;
+      setPolicy(p);
+      
+      // Obfuscate numeric ID in address bar
+      if (/^\d+$/.test(id) && p.hashed_id) {
+          window.history.replaceState(null, "", `/policy/${p.hashed_id}`);
+      }
     } catch (err) {
       console.error(err);
       setPolicy(null);
@@ -171,7 +184,7 @@ const PolicyDetails = () => {
       navigate(`/client/buy?policy=${policy.id}`);
       return;
     }
-    navigate(`/client/payment?request=${ownedRequestId}`);
+    navigate(`/client/payment?request=${ownedRequest?.hashed_id || ownedRequestId}`);
   };
 
   const handleBuyClick = () => {

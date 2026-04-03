@@ -28,7 +28,7 @@ const PolicyCard = ({ policy, onSelect, selected }) => {
       </p>
 
       <Link
-        to={`/policy/${policy.id}`}
+        to={`/policy/${policy.hashed_id || policy.id}`}
         className="text-blue-600 hover:underline block mb-3"
       >
         View Details

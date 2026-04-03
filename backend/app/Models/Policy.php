@@ -11,6 +11,8 @@ class Policy extends Model
 
     protected $table = 'policies';
 
+    protected $appends = ['hashed_id'];
+
     protected $fillable = [
         'insurance_type',
         'company_name',
@@ -83,5 +85,52 @@ class Policy extends Model
     public function agents()
     {
         return $this->belongsToMany(Agent::class, 'policy_agent');
+    }
+
+    /**
+     * Override to support both numeric and hashed IDs in route model binding.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        if (is_numeric($value)) {
+            return $this->where($field ?? $this->getRouteKeyName(), $value)->first();
+        }
+
+        $decodedId = self::decodeId($value);
+        if ($decodedId) {
+            return $this->where($field ?? $this->getRouteKeyName(), $decodedId)->first();
+        }
+
+        return null;
+    }
+
+    public function getHashedIdAttribute()
+    {
+        // Simple XOR obfuscation to create "encrypted" ID
+        $salt = 7355608; // Choose any large prime or constant
+        return base64_encode(($this->id ^ $salt) . '-' . substr(md5($this->id), 0, 5));
+    }
+
+    public static function decodeId($hash)
+    {
+        try {
+            $decoded = base64_decode($hash);
+            if (!$decoded) return null;
+            
+            $parts = explode('-', $decoded);
+            if (count($parts) < 2) return null;
+            
+            $salt = 7355608;
+            $id = $parts[0] ^ $salt;
+            
+            // Validate checksum (optional but good)
+            if (substr(md5($id), 0, 5) !== $parts[1]) {
+                return null;
+            }
+            
+            return (int) $id;
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 }

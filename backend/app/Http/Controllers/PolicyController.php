@@ -44,28 +44,22 @@ class PolicyController extends Controller
     }
 
 
-    public function show(Request $request, $id)
+    public function show(Policy $policy)
     {
-        $policyQuery = Policy::query();
-        if (Schema::hasColumn('policies', 'is_active')) {
-            $policyQuery->where('is_active', true);
-        }
-        $policy = $policyQuery->findOrFail($id);
         $user = auth('sanctum')->user();
-
         $profile = $user ? $this->resolveStandardProfile($user) : null;
 
         if ($profile && $user) {
-                $policy->personalized_premium = $this->getPersonalizedPremium(
-                    $this->calculator,
-                    $policy,
-                    $profile
-                );
+            $policy->personalized_premium = $this->getPersonalizedPremium(
+                $this->calculator,
+                $policy,
+                $profile
+            );
         } else {
             $policy->personalized_premium = $policy->premium_amt;
         }
 
-        return response()->json($policy);
+        return response()->json($policy->load('agents', 'agent'));
     }
 
     /**

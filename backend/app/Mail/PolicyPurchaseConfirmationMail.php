@@ -37,6 +37,10 @@ class PolicyPurchaseConfirmationMail extends Mailable
             ? Carbon::parse($this->payment->buyRequest->next_renewal_date)->timezone($timezone)
             : null;
         $paymentType = $this->resolvePaymentType();
+        $healthData = $this->payment->buyRequest?->health_declaration
+                ?? $this->payment->paymentIntent?->health_declaration
+                ?? $this->payment->paymentIntent?->meta['health_declaration']
+                ?? null;
 
         $pdf = null;
         try {
@@ -63,13 +67,30 @@ class PolicyPurchaseConfirmationMail extends Mailable
                 'userAddress' => $kyc?->address ?? $user?->address,
                 'userDob' => $kyc?->dob ?? $user?->dob,
                 'userDocumentNumber' => $kyc?->document_number,
+                'userOccupation' => $user?->occupation_class,
+                'userBmi' => $this->calculateBmi($user),
+                'userSmoker' => $user?->is_smoker,
                 'paymentType' => $paymentType,
+                'healthDeclaration' => $healthData,
+                'taxAmount' => round($premium * 0.13, 2), // 13% VAT
+                'subtotal' => round($premium / 1.13, 2),
             ]);
         } catch (\Throwable $e) {
-            Log::warning('Policy document PDF generation failed', [
+            Log::error('Policy document PDF generation failed', [
                 'payment_id' => $this->payment->id,
                 'error' => $e->getMessage(),
             ]);
+            // Safety Fallback for Policy Document
+            $pdf = Pdf::loadHTML("
+                <div style='font-family: sans-serif; padding: 40px;'>
+                    <h1>Insurance Policy Certificate</h1>
+                    <p>Policy Number: <strong>{$policyNumber}</strong></p>
+                    <p>Holder: <strong>" . ($user?->name ?? 'Policy Holder') . "</strong></p>
+                    <p>Policy: <strong>" . ($policy?->policy_name ?? 'Insurance Policy') . "</strong></p>
+                    <hr/>
+                    <p>Certificate generation pending final review.</p>
+                </div>
+            ");
         }
 
         $mail = $this->subject('Policy Purchase Confirmation')
@@ -109,5 +130,17 @@ class PolicyPurchaseConfirmationMail extends Mailable
             ->exists();
 
         return $otherVerified ? 'renewal' : 'new';
+    }
+
+    private function calculateBmi($user): string
+    {
+        if (!$user || !$user->weight_kg || !$user->height_cm) {
+            return 'N/A';
+        }
+
+        $heightM = $user->height_cm / 100;
+        $bmi = $user->weight_kg / ($heightM * $heightM);
+        
+        return number_format($bmi, 1);
     }
 }

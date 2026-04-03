@@ -389,7 +389,7 @@ const AllPolicies = () => {
                   <span className="text-text-light dark:text-text-dark opacity-80">
                     {profileComplete ? "Personalized Premium:" : "Premium Starts From:"}
                   </span>
-                  <span className="font-semibold text-green-600 dark:text-green-400">
+                  <span className={`font-semibold ${profileComplete ? "text-green-600 dark:text-green-400" : "text-yellow-500 dark:text-yellow-400"}`}>
                     Rs. {fmt(effectivePremium(p))}
                   </span>
                 </div>
@@ -449,7 +449,7 @@ const AllPolicies = () => {
                           navigate(`/client/buy?policy=${p.id}`);
                           return;
                         }
-                        navigate(`/client/payment?request=${ownedRequest.id}`);
+                        navigate(`/client/payment?request=${ownedRequest.hashed_id || ownedRequest.id}`);
                         return;
                       }
                       navigate(`/client/buy?policy=${p.id}`);
@@ -478,7 +478,7 @@ const AllPolicies = () => {
                 </div>
 
                 <button
-                  onClick={() => navigate(`/policy/${p.id}`)}
+                  onClick={() => navigate(`/policy/${p.hashed_id || p.id}`)}
                   className="text-primary-light dark:text-primary-dark font-semibold hover:underline text-left"
                 >
                   View Details
