@@ -5,6 +5,10 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   ClockIcon,
+  PrinterIcon,
+  ShieldCheckIcon,
+  UserIcon,
+  DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 
 const PaymentHistory = () => {
@@ -24,6 +28,26 @@ const PaymentHistory = () => {
       setError("Unable to load payment history.");
     }
     setLoading(false);
+  };
+
+  const handleDownload = async (type, buyRequestId) => {
+    if (!buyRequestId) return;
+    const endpoint = type === 'policy' ? 'policy-document' : 'payment-receipt';
+    try {
+      const response = await API.get(`/buy-requests/${buyRequestId}/${endpoint}`, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${type}_receipt.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Download failed", err);
+    }
   };
 
   useEffect(() => {
@@ -99,6 +123,7 @@ const PaymentHistory = () => {
               <th className="px-4 py-3 text-left">Cycle</th>
               <th className="px-4 py-3 text-left">Status</th>
               <th className="px-4 py-3 text-left">Date</th>
+              <th className="px-4 py-3 text-right">Receipt</th>
             </tr>
           </thead>
 
@@ -138,6 +163,18 @@ const PaymentHistory = () => {
 
                 <td className="px-4 py-3">
                   {new Date(p.created_at).toLocaleDateString()}
+                </td>
+
+                <td className="px-4 py-3 text-right">
+                  {(p.is_verified || (p.status || "").toLowerCase() === "success") && p.buy_request_id ? (
+                    <button
+                      onClick={() => handleDownload("receipt", p.buy_request_id)}
+                      className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white transition"
+                      title="Download Receipt"
+                    >
+                      <PrinterIcon className="w-5 h-5 ml-auto" />
+                    </button>
+                  ) : "-"}
                 </td>
               </tr>
             ))}

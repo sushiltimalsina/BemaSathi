@@ -20,7 +20,7 @@ import CompareBar from "./user/client/components/CompareBar";
 const AppShell = () => {
   const location = useLocation();
 
-  const isAdmin = location.pathname.startsWith("/admin");
+  const isAdmin = location.pathname.startsWith("/htt");
   const isClient = location.pathname.startsWith("/client");
   const showGuestCompare =
     location.pathname === "/policies" &&

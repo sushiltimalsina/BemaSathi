@@ -85,6 +85,7 @@ class PaymentController extends Controller
             'billing_cycle'  => 'nullable|in:monthly,quarterly,half_yearly,yearly',
             'email' => 'nullable|email',
             'agent_id' => 'nullable|exists:agents,id', // User's selected agent
+            'health_declaration' => 'nullable|array',
         ]);
 
         if (empty($data['buy_request_id']) && empty($data['policy_id'])) {
@@ -133,7 +134,8 @@ class PaymentController extends Controller
                 (int) $data['policy_id'],
                 $cycle,
                 $data['email'] ?? null,
-                $data['agent_id'] ?? null // Pass selected agent
+                $data['agent_id'] ?? null, // Pass selected agent
+                $data['health_declaration'] ?? null
             );
             $cycle = $intent->billing_cycle;
             $amount = $intent->amount;
@@ -161,6 +163,7 @@ class PaymentController extends Controller
             'billing_cycle' => $cycle ?? 'yearly',
             'meta' => [
                 'transaction_uuid' => (string) Str::uuid(),
+                'health_declaration' => $data['health_declaration'] ?? $intent?->meta['health_declaration'] ?? null,
             ],
         ]);
 
@@ -224,7 +227,7 @@ class PaymentController extends Controller
             // Ignore and continue redirect
         }
 
-        $successRedirect = $this->frontendBase() . "/client/payment-success?payment={$payment->id}";
+        $successRedirect = $this->frontendBase() . "/client/payment-success?payment={$payment->hashed_id}";
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -257,7 +260,7 @@ class PaymentController extends Controller
 
         $this->notifyPayment($payment, $status);
 
-        $failureRedirect = $this->frontendBase() . "/client/payment-failure?payment={$payment->id}";
+        $failureRedirect = $this->frontendBase() . "/client/payment-failure?payment={$payment->hashed_id}";
 
         if ($request->wantsJson()) {
             return response()->json(['message' => 'Payment failed'], 400);
@@ -273,6 +276,7 @@ class PaymentController extends Controller
             'policy_id' => 'nullable|exists:policies,id',
             'billing_cycle'  => 'nullable|in:monthly,quarterly,half_yearly,yearly',
             'email' => 'nullable|email',
+            'health_declaration' => 'nullable|array',
         ]);
 
         if (empty($data['buy_request_id']) && empty($data['policy_id'])) {
@@ -320,7 +324,9 @@ class PaymentController extends Controller
                 $request,
                 (int) $data['policy_id'],
                 $cycle,
-                $data['email'] ?? null
+                $data['email'] ?? null,
+                null, // agent_id not currently parsed here unless added
+                $data['health_declaration'] ?? null
             );
             $cycle = $intent->billing_cycle;
             $amount = $intent->amount;
@@ -345,10 +351,13 @@ class PaymentController extends Controller
             'provider' => 'Khalti',
             'status' => 'pending',
             'billing_cycle' => $cycle ?? 'yearly',
+            'meta' => [
+                'health_declaration' => $data['health_declaration'] ?? $intent?->meta['health_declaration'] ?? null,
+            ],
         ]);
 
         $payload = [
-            'return_url'         => url("/api/payments/khalti/return/{$payment->id}"),
+            'return_url'         => url("/api/payments/khalti/return/{$payment->hashed_id}"),
             'website_url'        => $this->frontendBase(),
             'amount'             => (int) round($amount * 100), // paisa
             'purchase_order_id'  => (string) $payment->id,
@@ -423,7 +432,7 @@ class PaymentController extends Controller
             ]);
             $this->notifyPayment($payment, 'failed');
 
-            return redirect()->away($this->frontendBase() . "/client/payment-failure?payment={$payment->id}");
+            return redirect()->away($this->frontendBase() . "/client/payment-failure?payment={$payment->hashed_id}");
         }
 
         $this->ensureBuyRequestForPayment($payment);
@@ -455,7 +464,7 @@ class PaymentController extends Controller
             // ignore
         }
 
-        return redirect()->away($this->frontendBase() . "/client/payment-success?payment={$payment->id}");
+        return redirect()->away($this->frontendBase() . "/client/payment-success?payment={$payment->hashed_id}");
     }
 
     /**
@@ -509,8 +518,8 @@ class PaymentController extends Controller
             'product_code'            => $this->merchantCode,
             'product_service_charge'  => 0,
             'product_delivery_charge' => 0,
-            'success_url'             => url("/api/payments/{$payment->id}/success"),
-            'failure_url'             => url("/api/payments/{$payment->id}/failed"),
+            'success_url'             => url("/api/payments/{$payment->hashed_id}/success"),
+            'failure_url'             => url("/api/payments/{$payment->hashed_id}/failed"),
             'signed_field_names'      => 'total_amount,transaction_uuid,product_code',
             // explicit fields eSewa expects for UI amount display
             'amount_breakdown'        => [
@@ -584,7 +593,8 @@ class PaymentController extends Controller
         int $policyId,
         ?string $billingCycle,
         ?string $email,
-        ?int $agentId = null // Add agent_id parameter
+        ?int $agentId = null, // Add agent_id parameter
+        ?array $healthDeclaration = null
     ): PaymentIntent {
         $user = $request->user();
         $profile = $this->resolveProfile($user);
@@ -633,6 +643,10 @@ class PaymentController extends Controller
             'renewal_status' => 'active',
             'status' => 'pending',
             'expires_at' => now()->addDay(),
+            'meta' => [
+                'health_declaration' => $healthDeclaration,
+            ],
+            'health_declaration' => $healthDeclaration,
         ]);
 
         $intent->setRelation('policy', $policy);
@@ -652,6 +666,7 @@ class PaymentController extends Controller
             'calculated_premium' => $intent->calculated_premium,
             'cycle_amount' => $intent->cycle_amount ?? $intent->amount,
             'billing_cycle' => $intent->billing_cycle ?? 'yearly',
+            'health_declaration' => $intent->health_declaration ?? $intent->meta['health_declaration'] ?? null,
             'next_renewal_date' => $intent->next_renewal_date,
             'renewal_status' => $intent->renewal_status ?? 'active',
         ]);
@@ -743,7 +758,7 @@ class PaymentController extends Controller
      */
     private function notifyPayment(Payment $payment, string $status): void
     {
-        $payment->loadMissing('user', 'policy', 'buyRequest.policy');
+        $payment->loadMissing(['user', 'policy', 'buyRequest.policy']);
         $user = $payment->user ?? $payment->buyRequest?->user;
         if (!$user) {
             return;

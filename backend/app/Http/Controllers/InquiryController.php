@@ -10,11 +10,11 @@ class InquiryController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'policy_id' => 'required|exists:policies,id',
             'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
             'phone' => 'required|string|max:20',
-            'email' => 'nullable|email',
-            'message' => 'nullable|string'
+            'message' => 'required|string',
+            'policy_id' => 'nullable|exists:policies,id',
         ]);
 
         // Public route: user may be unauthenticated, so guard against null user
