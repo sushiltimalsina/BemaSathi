@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import GuestNavbar from "./GuestNavbar";
 import ClientNavbar from "./ClientNavbar";
+import API from "../api/api";
 import useIdleLogout from "../hooks/useIdleLogout";
 import { broadcastLogout } from "../utils/authBroadcast";
 
@@ -37,7 +38,7 @@ const Navbar = () => {
     sessionStorage.removeItem("client_user");
     broadcastLogout("client");
     setIsLoggedIn(false);
-    navigate("/");
+    navigate("/login?reason=session_expired");
   };
 
   useIdleLogout({
@@ -46,6 +47,7 @@ const Navbar = () => {
     activityKey: "client_last_activity",
     tokenKey: "client_token",
     timeoutMs: 5 * 60 * 1000,
+    apiClient: API,
   });
 
   return isLoggedIn ? (

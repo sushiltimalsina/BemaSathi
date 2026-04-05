@@ -4,6 +4,7 @@ import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import { AdminToastProvider } from "../ui/AdminToast";
 import { AdminConfirmProvider } from "../ui/AdminConfirm";
+import adminApi from "../utils/adminApi";
 import useIdleLogout from "../../hooks/useIdleLogout";
 import { broadcastLogout } from "../../utils/authBroadcast";
 
@@ -24,6 +25,7 @@ const AdminLayout = () => {
     activityKey: "admin_last_activity",
     tokenKey: "admin_token",
     timeoutMs: 5 * 60 * 1000,
+    apiClient: adminApi,
   });
 
   return (

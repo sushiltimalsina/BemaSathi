@@ -30,6 +30,12 @@
 
   --ring-light: rgba(37, 99, 235, 0.25);
   --ring-dark: rgba(96, 165, 250, 0.35);
+
+  --nav-light: #ffffff;
+  --nav-dark: #0f172a;
+
+  --sidebar-light: #ffffff;
+  --sidebar-dark: #0f172a;
 }
 
 /* -----------------------------------------------------------
@@ -58,6 +64,12 @@
 
 .border-border-light { border-color: var(--border-light); }
 .border-border-dark { border-color: var(--border-dark); }
+
+.bg-nav-light { background-color: var(--nav-light); }
+.bg-nav-dark { background-color: var(--nav-dark); }
+
+.bg-sidebar-light { background-color: var(--sidebar-light); }
+.bg-sidebar-dark { background-color: var(--sidebar-dark); }
 
 /* -----------------------------------------------------------
    LOGOUT BUTTON (LIGHT + DARK)
@@ -90,6 +102,8 @@
 .dark .text-success-light { color: var(--success-dark); }
 
 .dark .border-border-light { border-color: var(--border-dark); }
+.dark .bg-nav-light { background-color: var(--nav-dark); }
+.dark .bg-sidebar-light { background-color: var(--sidebar-dark); }
 
 /* -----------------------------------------------------------
    GLOBAL RESET

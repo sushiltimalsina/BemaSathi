@@ -364,6 +364,21 @@ const MyProfile = () => {
           </p>
         </div>
 
+        {redirectMsg && (
+          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-sm p-5 rounded-2xl mb-8 flex items-center justify-between animate-in slide-in-from-top duration-700">
+            <div className="flex items-center gap-3">
+              <SparklesIcon className="w-5 h-5 text-amber-600 animate-pulse" />
+              <p className="font-bold">Hint: {redirectMsg}</p>
+            </div>
+            <button 
+              onClick={clearStateMessage}
+              className="text-xs font-black uppercase opacity-40 hover:opacity-100 transition-opacity"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 text-red-600 text-sm p-4 rounded-xl mb-6 text-center animate-in shake duration-500">
             {error}

@@ -40,6 +40,27 @@ class AdminUserController extends Controller
         return response()->json($users);
     }
 
+    public function pendingCount()
+    {
+        $pendingKycUserIds = KycDocument::where('status', 'pending')
+            ->pluck('user_id')
+            ->unique()
+            ->values()
+            ->toArray();
+
+        $newUserIds = User::where('created_at', '>=', now()->subHours(24))
+            ->pluck('id')
+            ->toArray();
+
+        $allIds = array_values(array_unique(array_merge($pendingKycUserIds, $newUserIds)));
+
+        return response()->json([
+            'pending_kyc_user_ids' => $pendingKycUserIds,
+            'new_user_ids'         => $newUserIds,
+            'alert_user_ids'       => $allIds,
+        ]);
+    }
+
     public function kyc(User $user)
     {
         $kyc = $user->kycDocuments()->latest()->first();

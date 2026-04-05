@@ -130,33 +130,32 @@ const RenewalCard = ({ request }) => {
   
   const statusClass = {
     active:
-      "bg-green-500/20 text-green-400 border-green-500/30",
-    due: "bg-amber-500/20 text-amber-500 border-amber-500/30 shadow-[0_4px_12px_rgba(245,158,11,0.2)]",
+      "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20",
+    due: "bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-500/20",
     expired:
-      "bg-red-500/20 text-red-500 border-red-500/30",
-  }[effectiveStatus] || "bg-gray-500/20 text-gray-500";
+      "bg-red-500/10 text-red-600 dark:text-red-500 border-red-500/20",
+  }[effectiveStatus] || "bg-gray-500/10 text-gray-600 dark:text-gray-400";
 
-  // URGENCY COLOR
   const urgentColor =
     daysLeft() <= 3
       ? "text-red-600 dark:text-red-400 font-semibold"
-      : "text-text-light/80 dark:text-text-dark/80";
+      : "text-text-light/70 dark:text-text-dark/70";
 
   return (
     <div
       className="
       relative p-6 rounded-3xl
-      bg-card-dark/40 dark:bg-[#0f172a]/60
-      border border-slate-800 dark:border-slate-800/60
-      backdrop-blur-xl shadow-2xl transition-all duration-300
+      bg-card-light dark:bg-card-dark
+      border border-border-light dark:border-border-dark
+      shadow-md dark:shadow-2xl transition-all duration-300
       hover:border-primary-light/30
     "
     >
       {/* HEADER */}
       <div className="flex justify-between items-center mb-1">
         <div className="flex items-center gap-2">
-          <ShieldCheckIcon className="w-5 h-5 text-blue-500" />
-          <h2 className="text-lg font-black text-slate-100">
+          <ShieldCheckIcon className="w-5 h-5 text-primary-light dark:text-primary-dark" />
+          <h2 className="text-lg font-bold text-text-light dark:text-text-dark">
             {request.policy?.policy_name}
           </h2>
         </div>
@@ -171,7 +170,7 @@ const RenewalCard = ({ request }) => {
         </span>
       </div>
 
-      <p className="text-xs text-slate-400 font-medium mb-6">
+      <p className="text-xs text-muted-light dark:text-muted-dark font-medium mb-6">
         {request.policy?.company_name}
       </p>
 
@@ -179,44 +178,42 @@ const RenewalCard = ({ request }) => {
       <div className="space-y-2.5 text-xs">
         {/* BILLING CYCLE */}
         <div className="flex justify-between">
-          <span className="flex items-center gap-2 text-slate-400">
+          <span className="flex items-center gap-2 text-muted-light dark:text-muted-dark">
             <ClockIcon className="w-3.5 h-3.5" />
             Billing Cycle:
           </span>
-          <span className="font-bold text-slate-100 capitalize">{cycle}</span>
+          <span className="font-bold text-text-light dark:text-text-dark capitalize">{cycle}</span>
         </div>
 
         {/* NEXT RENEWAL */}
         <div className="flex justify-between">
-          <span className="flex items-center gap-2 text-slate-400">
+          <span className="flex items-center gap-2 text-muted-light dark:text-muted-dark">
             <ClockIcon className="w-3.5 h-3.5" />
             Next Renewal Date:
           </span>
-          <span className="font-bold text-slate-100">
+          <span className="font-bold text-text-light dark:text-text-dark">
             {formatDate(renewalDate)}
           </span>
         </div>
 
         {/* AMOUNT */}
         <div className="flex justify-between">
-          <span className="flex items-center gap-2 text-slate-400">
+          <span className="flex items-center gap-2 text-muted-light dark:text-muted-dark">
             <ArrowPathIcon className="w-3.5 h-3.5" />
             Renewal Amount:
           </span>
-          <span className="font-bold text-slate-100">
-             <span className="text-green-500 mr-0.5">रु.</span> {fmt(amount)}
+          <span className="font-bold text-text-light dark:text-text-dark">
+             रु. {fmt(amount)}
           </span>
         </div>
 
         {/* DAYS LEFT */}
         <div className="flex justify-between">
-          <span className="flex items-center gap-2 text-slate-400">
+          <span className="flex items-center gap-2 text-muted-light dark:text-muted-dark">
             <ExclamationTriangleIcon className="w-3.5 h-3.5" />
             Days Left:
           </span>
-          <span className={`font-black ${daysLeft() < 0 ? 'text-red-500/80' : 'text-slate-100'}`}>
-            {daysLeftLabel()}
-          </span>
+          <span className={urgentColor}>{daysLeftLabel()}</span>
         </div>
       </div>
 
@@ -225,9 +222,9 @@ const RenewalCard = ({ request }) => {
         <button
           onClick={canRenew ? handleRenew : handleBuyAgain}
           className={`
-            flex-1 py-3.5 rounded-2xl font-black text-sm text-white
-            ${canRenew ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-blue-600 hover:bg-blue-700'}
-            shadow-[0_8px_20px_-4px_rgba(79,70,229,0.4)]
+            flex-1 py-3.5 rounded-2xl font-bold text-sm text-white
+            ${canRenew ? 'bg-primary-light hover:bg-blue-700' : 'bg-indigo-600 hover:bg-indigo-700'}
+            shadow-lg dark:shadow-[0_8px_20px_-4px_rgba(79,70,229,0.4)]
             transition-all active:scale-95
           `}
         >
@@ -237,8 +234,8 @@ const RenewalCard = ({ request }) => {
         <button
           onClick={handleDetails}
           className="
-            px-6 py-3.5 rounded-2xl font-black text-xs text-slate-200
-            bg-slate-800 hover:bg-slate-700 border border-slate-700
+            px-6 py-3.5 rounded-2xl font-bold text-xs text-text-light dark:text-text-dark
+            bg-hover-light dark:bg-hover-dark border border-border-light dark:border-border-dark
             transition-all active:scale-95
           "
         >
@@ -251,8 +248,8 @@ const RenewalCard = ({ request }) => {
             onClick={() => handleDownload("policy", request.id)}
             disabled={downloading}
             className={`
-              p-3.5 rounded-2xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30
-              text-indigo-400 transition-all active:scale-95
+              p-3.5 rounded-2xl bg-primary-light/10 dark:bg-primary-dark/10 hover:bg-primary-light/20 dark:hover:bg-primary-dark/20 border border-primary-light/30 dark:border-primary-dark/30
+              text-primary-light dark:text-primary-dark transition-all active:scale-95
               ${downloading ? 'animate-pulse cursor-wait opacity-50' : ''}
             `}
             title="Download Policy Document"

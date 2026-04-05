@@ -85,9 +85,8 @@ const ClientDashboard = () => {
     try {
       const res = await API.get("/recommendations/personal", {
         params: { insurance_type: insuranceType },
-        headers: {
-          Authorization: `Bearer ${sessionStorage.getItem("client_token")}`,
-        },
+        // NOTE: Do NOT set Authorization header manually here.
+        // The axios interceptor in api.js already attaches the correct token.
       });
 
       setRecommended(res.data.recommended || []);
@@ -111,7 +110,7 @@ const ClientDashboard = () => {
       try {
         const [requestsRes, profileRes, kycRes] = await Promise.all([
           API.get("/my-requests"),
-          API.get("/user/profile/check"),
+          API.get("/user/profile/completion"),
           API.get("/kyc/me")
         ]);
 

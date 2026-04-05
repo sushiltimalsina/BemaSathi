@@ -37,6 +37,7 @@ const navItems = [
 
 const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
   const [unreadGuestCount, setUnreadGuestCount] = useState(0);
+  const [usersBadgeCount, setUsersBadgeCount] = useState(0);
 
   useEffect(() => {
     const fetchUnread = async () => {
@@ -49,9 +50,53 @@ const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
       }
     };
     fetchUnread();
-    
     const interval = setInterval(fetchUnread, 30000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const SEEN_KEY = "admin_seen_user_ids";
+
+    const getSeenIds = () => {
+      try {
+        return new Set(JSON.parse(localStorage.getItem(SEEN_KEY) || "[]"));
+      } catch {
+        return new Set();
+      }
+    };
+
+    const computeBadge = (alertIds) => {
+      const seen = getSeenIds();
+      return alertIds.filter((id) => !seen.has(id)).length;
+    };
+
+    const fetchUsersBadge = async () => {
+      try {
+        const res = await API.get("/htt/users/pending-count");
+        const alertIds = res.data?.alert_user_ids || [];
+        setUsersBadgeCount(computeBadge(alertIds));
+      } catch {
+        // silently fail
+      }
+    };
+
+    fetchUsersBadge();
+    const interval = setInterval(fetchUsersBadge, 30000);
+
+    const handleUserViewed = (e) => {
+      const userId = e.detail?.userId;
+      if (!userId) return;
+      const seen = getSeenIds();
+      seen.add(userId);
+      localStorage.setItem(SEEN_KEY, JSON.stringify([...seen]));
+      setUsersBadgeCount((prev) => Math.max(0, prev - 1));
+    };
+
+    window.addEventListener("userViewed", handleUserViewed);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("userViewed", handleUserViewed);
+    };
   }, []);
 
   return (
@@ -110,6 +155,11 @@ const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
               {item.name === "Guest Messages" && unreadGuestCount > 0 && (
                 <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto">
                   {unreadGuestCount}
+                </span>
+              )}
+              {item.name === "Users" && usersBadgeCount > 0 && (
+                <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto">
+                  {usersBadgeCount}
                 </span>
               )}
             </NavLink>

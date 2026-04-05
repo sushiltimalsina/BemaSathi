@@ -58,7 +58,7 @@ const CompareBar = () => {
       <div className="flex items-center gap-2">
         <button
           onClick={clearCompare}
-          className="px-3 py-2 text-xs font-semibold rounded-lg border border-border-light dark:border-border-dark bg-black/35 dark:bg-slate-200/10 text-slate-700 dark:text-slate-200 hover:bg-hover-light dark:hover:bg-hover-dark transition"
+          className="px-3 py-2 text-xs font-semibold rounded-lg border border-border-light dark:border-border-dark bg-hover-light dark:bg-hover-dark text-text-light dark:text-text-dark hover:opacity-80 transition"
         >
           Clear
         </button>
@@ -67,7 +67,7 @@ const CompareBar = () => {
           onClick={() =>
             navigate(`/client/compare?p1=${compare[0].id}&p2=${compare[1].id}`)
           }
-          className="px-5 py-2 bg-primary-light text-white hover:opacity-90 font-semibold rounded-lg shadow transition mr-4 sm:mr-6"
+          className="px-5 py-2 bg-primary-light dark:bg-primary-dark text-white hover:opacity-90 font-semibold rounded-lg shadow transition mr-4 sm:mr-6"
         >
           Compare Now
         </button>

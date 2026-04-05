@@ -7,7 +7,7 @@ import {
   FunnelIcon,
 } from "@heroicons/react/24/outline";
 import UserDetails from "./UserDetails";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const UserList = () => {
   const [items, setItems] = useState([]);
@@ -17,6 +17,7 @@ const UserList = () => {
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const load = async () => {
     try {
@@ -180,7 +181,12 @@ const UserList = () => {
 
                 <td className="px-4 py-3">
                   <button
-                    onClick={() => setSelectedUser(u)}
+                    onClick={() => {
+                      setSelectedUser(u);
+                      window.dispatchEvent(
+                        new CustomEvent("userViewed", { detail: { userId: u.id } })
+                      );
+                    }}
                     className="
                       text-xs font-semibold px-3 py-1 rounded-lg
                       border border-border-light dark:border-border-dark
