@@ -254,7 +254,8 @@ class KycController extends Controller
                 $backUrl = $kyc->back_path
                     ? $base . '/storage/' . ltrim($kyc->back_path, '/')
                     : null;
-                return array_merge($kyc->toArray(), [
+                $data = method_exists($kyc, 'toArray') ? $kyc->toArray() : (array) $kyc;
+                return array_merge($data, [
                     'front_image_url' => $frontUrl,
                     'back_image_url' => $backUrl,
                 ]);
