@@ -193,7 +193,7 @@ const BuyRequest = () => {
           // Redirect to profile page with a message
           navigate("/client/profile", {
             state: {
-              msg: "Please complete your profile details (DOB, Phone, Address, Height, Weight) before purchasing a policy.",
+              msg: "Please complete your profile to see your actual premium and continue purchasing the policy. Details like DOB, Height, and Weight are essential for accurate pricing.",
               returnTo: `/client/buy?policy=${policyId}`
             },
             replace: true

@@ -113,6 +113,17 @@ class BuyRequestController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
+        $profile = $this->resolveStandardProfile($user);
+
+        // Map over requests to attach current personalized premium
+        $requests = $requests->map(function ($r) use ($profile) {
+            $base = $this->getPersonalizedPremium($this->calculator, $r->policy, $profile);
+            $r->current_cycle_amount = $this->calculateBillingInterval($r->billing_cycle, $base)[0];
+            // Also update the cycle_amount returned to the frontend for the renewal card
+            $r->cycle_amount = $r->current_cycle_amount;
+            return $r;
+        });
+
         return response()->json($requests);
     }
 
@@ -180,6 +191,7 @@ class BuyRequestController extends Controller
             'userOccupation' => $user?->occupation_class,
             'userBmi' => $this->calculateBmi($user),
             'userSmoker' => $user?->is_smoker,
+            'profileConditions' => $user?->pre_existing_conditions ?? [],
             'paymentType' => 'new',
             'healthDeclaration' => $buyRequest->health_declaration ?? $payment->paymentIntent?->health_declaration ?? $payment->paymentIntent?->meta['health_declaration'] ?? null,
             'taxAmount' => round($premiumAmount * 0.13, 2),
@@ -229,9 +241,8 @@ class BuyRequestController extends Controller
             'billingCycle' => $billingCycle ?? 'yearly',
             'userName' => $user?->name ?? 'Customer',
             'userEmail' => $recipientEmail ?? 'N/A',
-            'nextRenewalDate' => $buyRequest->next_renewal_date,
             'nextRenewalDateText' => $buyRequest->next_renewal_date ? \Illuminate\Support\Carbon::parse($buyRequest->next_renewal_date)->format('M j, Y') . " (NPT)" : null,
-            'paymentType' => $payment ? 'verified' : 'pending',
+            'paymentType' => ($payment && $buyRequest->payments()->where('is_verified', true)->oldest()->first()?->id === $payment->id) ? 'new' : 'renewal',
         ]);
 
         return $pdf->download("receipt-{$receiptNumber}.pdf");

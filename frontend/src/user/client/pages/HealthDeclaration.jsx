@@ -596,6 +596,23 @@ const HealthDeclaration = () => {
                                 </label>
                             </div>
 
+                            {/* Support Query Disclaimer */}
+                            {(Object.values(generalAnswers).includes("yes") || selectedConditions.length > 0 || familyConditions.length > 0) && (
+                                <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-6 mt-6 flex gap-4 animate-in fade-in slide-in-from-bottom duration-500 delay-300">
+                                    <div className="p-2 bg-amber-500/20 rounded-xl h-fit">
+                                        <ExclamationTriangleIcon className="w-5 h-5 text-amber-600 dark:text-amber-500" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-amber-600 dark:text-amber-500 mb-1">
+                                            Important Note on Declarations
+                                        </p>
+                                        <p className="text-xs opacity-80 leading-relaxed font-semibold">
+                                            As you have declared health conditions, you may receive a query call from our support team to verify details and complete the remaining procedure. Please stay connected as per support instructions.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Signature */}
                             <div className="space-y-3">
                                 <label className="text-sm font-bold opacity-80 block">
