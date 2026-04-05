@@ -21,6 +21,9 @@ use App\Http\Controllers\RecommendationFeedbackController;
 
 class PaymentController extends Controller
 {
+    use \App\Traits\SyncsPolicyStatus;
+    use \App\Traits\HandlesInsuranceQuotes;
+    
     private string $esewaEndpoint;
     private string $verifyEndpoint;
     private string $merchantCode;
@@ -67,14 +70,18 @@ class PaymentController extends Controller
         $this->khaltiBase = rtrim($base, '/');
     }
 
-    public function show(Payment $payment)
+    public function show($id)
     {
         $user = auth()->user();
-        if ($payment->user_id !== $user?->id) {
-            return response()->json(['message' => 'Forbidden'], 403);
+        
+        $realId = is_numeric($id) ? $id : Payment::decodeId($id);
+        $payment = Payment::with(['policy', 'buyRequest.policy'])->find($realId);
+
+        if (!$payment || $payment->user_id !== $user?->id) {
+            return response()->json(['message' => 'Payment not found or access denied.'], 404);
         }
 
-        return response()->json($payment->load('policy', 'buyRequest', 'buyRequest.policy'));
+        return response()->json($payment);
     }
 
     public function create(Request $request)
@@ -473,11 +480,27 @@ class PaymentController extends Controller
     public function myPayments(Request $request)
     {
         $payments = Payment::with([
+            'policy',
             'buyRequest.policy',
         ])
             ->where('user_id', $request->user()?->id)
             ->orderByDesc('created_at')
             ->get();
+
+        // Calculate payment type (new vs renewal) for each
+        $payments->map(function ($p) {
+            if (!$p->buy_request_id) {
+                $p->payment_type = 'new';
+            } else {
+                $firstVerifiedId = Payment::where('buy_request_id', $p->buy_request_id)
+                    ->where('is_verified', true)
+                    ->oldest()
+                    ->value('id');
+                // If it's the first verified, or if it says active without others (fallback), it's new
+                $p->payment_type = ($firstVerifiedId === $p->id || !$firstVerifiedId) ? 'new' : 'renewal';
+            }
+            return $p;
+        });
 
         return response()->json($payments);
     }
@@ -539,19 +562,29 @@ class PaymentController extends Controller
      */
     private function resolveAmount(BuyRequest $br, ?string $overrideCycle = null): float
     {
-        if ($br->cycle_amount) {
-            return (float) $br->cycle_amount;
+        $user = auth()->user();
+        if (!$user) {
+            return (float) ($br->cycle_amount ?? $br->calculated_premium ?? 0);
         }
 
-        $base = $br->calculated_premium ?? $br->policy?->premium_amt ?? 0;
-        $cycle = $overrideCycle ?? $br->billing_cycle ?? 'yearly';
+        // Always recalculate based on current profile for true accuracy
+        $profile = $this->resolveStandardProfile($user);
+        $policy = $br->policy;
+        
+        $basePremium = $this->getPersonalizedPremium(
+            $this->calculator,
+            $policy,
+            $profile
+        );
 
-        return match ($cycle) {
-            'monthly'     => round($base / 12, 2),
-            'quarterly'   => round($base / 4, 2),
-            'half_yearly' => round($base / 2, 2),
-            default       => (float) $base,
-        };
+        $interval = $overrideCycle ?? $br->billing_cycle ?? 'yearly';
+        
+        [$recalculatedAmount] = $this->calculateBillingInterval(
+            $interval,
+            $basePremium
+        );
+
+        return (float) $recalculatedAmount;
     }
 
     private function resolveProfile($user): array

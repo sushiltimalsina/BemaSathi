@@ -21,8 +21,8 @@ const PaymentPage = () => {
 
   const [loading, setLoading] = useState(true);
   const [buyRequest, setBuyRequest] = useState(null);
+  const [payment, setPayment] = useState(null);
   const [policy, setPolicy] = useState(null);
-  const [paymentStatus, setPaymentStatus] = useState(null);
   const [error, setError] = useState("");
   const [paying, setPaying] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
@@ -117,19 +117,21 @@ const PaymentPage = () => {
     // ✅ ALWAYS FORCE HEALTH DECLARATION ON EVERY CLICK
     const justCompleted = location.state?.healthDeclarationCompleted;
 
-    if (!justCompleted && buyRequest) {
+    if (!justCompleted && (buyRequest || policy)) {
       // Clear any old session data to force a fresh declaration
       sessionStorage.removeItem("healthDeclaration");
 
       navigate("/client/health-declaration", {
         state: { 
-          returnTo: `/client/payment?request=${requestId}`,
+          returnTo: paymentId 
+            ? `/client/payment?payment=${paymentId}`
+            : `/client/payment?request=${requestId}`,
           policyType: policy?.insurance_type 
         },
         replace: true
       });
     }
-  }, [buyRequest, policy, requestId, navigate, location.state, accessBlocked]);
+  }, [buyRequest, policy, requestId, paymentId, navigate, location.state, accessBlocked]);
 
   const loadRequestByBuyRequest = async (reqId) => {
     try {
@@ -150,16 +152,16 @@ const PaymentPage = () => {
   const loadRequestByPayment = async (payId) => {
     try {
       const res = await API.get(`/payments/${payId}`);
-      const payment = res.data;
-      if (!payment?.buy_request_id || !payment?.buy_request) {
-        setError("Payment is missing request details.");
+      const payData = res.data?.data || res.data;
+      if (!payData || payData.message) {
+        setError(payData?.message || "Payment not found.");
       } else {
-        setBuyRequest(payment.buy_request);
-        setPolicy(payment.policy || payment.buy_request?.policy || {});
-        setPaymentStatus(payment.status || null);
+        setPayment(payData);
+        setBuyRequest(payData.buy_request || null);
+        setPolicy(payData.policy || payData.buy_request?.policy || {});
       }
     } catch (err) {
-      setError("Unable to load payment details.");
+      setError(err.response?.data?.message || "Unable to load payment details.");
     }
     setLoading(false);
   };
@@ -172,8 +174,9 @@ const PaymentPage = () => {
     try {
       const healthData = JSON.parse(sessionStorage.getItem("healthDeclaration") || "null");
       const res = await API.post("/payments/esewa", {
-        buy_request_id: buyRequest.id,
-        billing_cycle: buyRequest.billing_cycle,
+        buy_request_id: buyRequest?.id,
+        policy_id: policy?.id,
+        billing_cycle: buyRequest?.billing_cycle || payment?.billing_cycle,
         health_declaration: healthData,
       });
       const { redirect_url, payload } = res.data || {};
@@ -197,8 +200,9 @@ const PaymentPage = () => {
     try {
       const healthData = JSON.parse(sessionStorage.getItem("healthDeclaration") || "null");
       const res = await API.post("/payments/khalti", {
-        buy_request_id: buyRequest.id,
-        billing_cycle: buyRequest.billing_cycle,
+        buy_request_id: buyRequest?.id,
+        policy_id: policy?.id,
+        billing_cycle: buyRequest?.billing_cycle || payment?.billing_cycle,
         health_declaration: healthData,
       });
       if (res.data?.payment_url) {
@@ -233,23 +237,23 @@ const PaymentPage = () => {
         <p className="text-sm opacity-80 mb-2">Company: {policy?.company_name || "-"}</p>
         <div className="mt-4 p-4 rounded-lg bg-hover-light dark:bg-hover-dark border border-border-light dark:border-border-dark">
           <p className="text-sm">Amount to Pay Now:</p>
-          <p className="text-2xl font-bold mt-1">रु. {fmt(computeCycleAmount(buyRequest))}</p>
-          {buyRequest.billing_cycle && (
-            <p className="text-xs opacity-70 mt-1">Billing Cycle: {buyRequest.billing_cycle.replace("_", " ")}</p>
+          <p className="text-2xl font-bold mt-1">रु. {payment ? fmt(payment.amount) : fmt(computeCycleAmount(buyRequest))}</p>
+          {(buyRequest?.billing_cycle || payment?.billing_cycle) && (
+            <p className="text-xs opacity-70 mt-1">Billing Cycle: {(buyRequest?.billing_cycle || payment?.billing_cycle).replace("_", " ")}</p>
           )}
         </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <button type="button" disabled={paying || renewalBlocked} onClick={handlePayment} className={`relative group w-full py-3 px-5 rounded-2xl font-semibold overflow-hidden flex items-center justify-center gap-3 transition-all duration-300 active:scale-95 ${paying || renewalBlocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
-          <span className="absolute inset-0 rounded-2xl bg-linear-to-br from-[#3CB043] via-[#49d157] to-[#2f8a37] p-0.5 group-hover:from-[#49d157] group-hover:to-[#3CB043] transition-all duration-500"></span>
-          <span className="absolute inset-0.5 rounded-2xl bg-white/10 dark:bg-black/20 backdrop-blur-xl shadow-lg group-hover:shadow-xl transition-all duration-300"></span>
+          <span className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#3CB043] via-[#49d157] to-[#2f8a37] p-0.5 group-hover:from-[#49d157] group-hover:to-[#3CB043] transition-all duration-500"></span>
+          <span className="absolute inset-0.5 rounded-2xl bg-card-light dark:bg-card-dark opacity-20 dark:opacity-40 shadow-lg group-hover:shadow-xl transition-all duration-300"></span>
           <span className="relative z-10">{paying ? "Processing..." : "Pay via eSewa"}</span>
         </button>
 
         <button type="button" disabled={paying || renewalBlocked} onClick={handleKhaltiPayment} className={`relative group w-full py-3 px-5 rounded-2xl font-semibold overflow-hidden flex items-center justify-center gap-3 transition-all duration-300 active:scale-95 ${paying || renewalBlocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
-          <span className="absolute inset-0 rounded-2xl bg-linear-to-br from-[#8B0000] via-[#a30f0f] to-[#600000] p-0.5 group-hover:from-[#a30f0f] group-hover:to-[#8B0000] transition-all duration-500"></span>
-          <span className="absolute inset-0.5 rounded-2xl bg-white/10 dark:bg-black/20 backdrop-blur-xl shadow-lg group-hover:shadow-xl transition-all duration-300"></span>
+          <span className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#8B0000] via-[#a30f0f] to-[#600000] p-0.5 group-hover:from-[#a30f0f] group-hover:to-[#8B0000] transition-all duration-500"></span>
+          <span className="absolute inset-0.5 rounded-2xl bg-card-light dark:bg-card-dark opacity-20 dark:opacity-40 shadow-lg group-hover:shadow-xl transition-all duration-300"></span>
           <span className="relative z-10">{paying ? "Processing..." : "Pay via Khalti"}</span>
         </button>
       </div>

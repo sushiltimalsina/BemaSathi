@@ -156,7 +156,7 @@ public function restore($id)
             'userEmail' => $recipientEmail ?? 'N/A',
             'nextRenewalDate' => $buyRequest->next_renewal_date,
             'nextRenewalDateText' => $buyRequest->next_renewal_date ? \Illuminate\Support\Carbon::parse($buyRequest->next_renewal_date)->format('M j, Y') . " (NPT)" : null,
-            'paymentType' => 'new',
+            'paymentType' => ($payment && $buyRequest->payments()->where('is_verified', true)->oldest()->first()?->id === $payment->id) ? 'new' : 'renewal',
         ]);
 
         return $pdf->download("receipt-{$receiptNumber}.pdf");

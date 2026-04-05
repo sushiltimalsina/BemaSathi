@@ -108,13 +108,13 @@ const PaymentSuccess = () => {
     };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
+    <div className="min-h-screen flex items-center justify-center px-6 bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark transition-colors">
       <div
         className="
           max-w-xl w-full p-8 rounded-2xl
-          bg-white/70 dark:bg-black/40 backdrop-blur-xl
+          bg-card-light dark:bg-card-dark
           border border-border-light dark:border-border-dark
-          shadow-[0_10px_30px_rgba(0,0,0,0.2)]
+          shadow-2xl transition-colors
         "
       >
         {/* STATUS */}
@@ -164,8 +164,8 @@ const PaymentSuccess = () => {
             onClick={() => navigate("/client/my-policies")}
             className="
               w-full py-3 rounded-xl font-semibold text-white
-              bg-linear-to-r from-primary-light to-primary-dark
-              hover:opacity-90 transition
+              bg-gradient-to-r from-primary-light to-primary-dark
+              hover:opacity-90 transition shadow-lg
             "
           >
             Go to My Policies
@@ -176,7 +176,8 @@ const PaymentSuccess = () => {
             className="
               w-full py-3 rounded-xl font-semibold
               border border-border-light dark:border-border-dark
-              hover:bg-hover-light dark:hover:bg-hover-dark transition
+              bg-hover-light dark:bg-hover-dark
+              hover:bg-hover-light/80 dark:hover:bg-hover-dark/80 transition
             "
           >
             View Payments

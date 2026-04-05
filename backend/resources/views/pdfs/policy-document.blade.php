@@ -116,6 +116,27 @@
   {{ \Illuminate\Support\Carbon::parse($effectiveDate)->toFormattedDateString() }}
 </div>
 
+@php
+  $hasProfileConditions = !empty($profileConditions) && is_array($profileConditions) && count($profileConditions) > 0;
+  
+  $hasDeclaredConditions = !empty($healthDeclaration['selectedConditions']) && count($healthDeclaration['selectedConditions']) > 0;
+  $hasFamilyConditions = !empty($healthDeclaration['familyConditions']) && count($healthDeclaration['familyConditions']) > 0;
+  
+  $hasYesAnswer = false;
+  if (!empty($healthDeclaration['generalAnswers']) && is_array($healthDeclaration['generalAnswers'])) {
+      foreach($healthDeclaration['generalAnswers'] as $val) {
+          if ($val === 'yes') { $hasYesAnswer = true; break; }
+      }
+  }
+@endphp
+
+@if(!$hasProfileConditions && ($hasDeclaredConditions || $hasFamilyConditions || $hasYesAnswer))
+  <div style="background: #fffbeb; border: 1px solid #fcd34d; padding: 12px 14px; margin-bottom: 22px; border-radius: 8px; color: #92400e;">
+    <strong style="font-size: 13px;">⚠️ Medical Screening Required:</strong><br>
+    <span style="font-size: 11px;">Medical screening is necessary for this policy as per your health declaration. Our support team will coordinate for the same.</span>
+  </div>
+@endif
+
 <!-- POLICY DETAILS -->
 <div class="section">
   <div class="section-title">Policy Details</div>

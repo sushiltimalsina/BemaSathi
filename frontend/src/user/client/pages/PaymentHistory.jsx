@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import API from "../../../api/api";
 import {
   BanknotesIcon,
@@ -9,9 +10,11 @@ import {
   ShieldCheckIcon,
   UserIcon,
   DocumentTextIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 
 const PaymentHistory = () => {
+  const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -120,6 +123,7 @@ const PaymentHistory = () => {
               <th className="px-4 py-3 text-left">Policy</th>
               <th className="px-4 py-3 text-left">Amount</th>
               <th className="px-4 py-3 text-left">Method</th>
+              <th className="px-4 py-3 text-left">Type</th>
               <th className="px-4 py-3 text-left">Cycle</th>
               <th className="px-4 py-3 text-left">Status</th>
               <th className="px-4 py-3 text-left">Date</th>
@@ -135,10 +139,10 @@ const PaymentHistory = () => {
               >
                 <td className="px-4 py-3">
                   <div className="font-semibold">
-                    {p.buy_request?.policy?.policy_name}
+                    {p.buy_request?.policy?.policy_name || p.policy?.policy_name || 'Policy Payment'}
                   </div>
                   <div className="text-xs opacity-70">
-                    {p.buy_request?.policy?.company_name}
+                    {p.buy_request?.policy?.company_name || p.policy?.company_name || 'Insurance Provider'}
                   </div>
                 </td>
 
@@ -151,6 +155,12 @@ const PaymentHistory = () => {
                     <BanknotesIcon className="w-4 h-4 opacity-70" />
                     {p.method || p.payment_method || "-"}
                   </span>
+                </td>
+
+                <td className="px-4 py-3 capitalize">
+                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${p.payment_type === 'renewal' ? 'bg-amber-100 text-amber-700 dark:bg-amber-600/30 dark:text-amber-600' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-500'}`}>
+                    {p.payment_type === 'renewal' ? 'Renewal' : 'New'}
+                   </span>
                 </td>
 
                 <td className="px-4 py-3 capitalize">
@@ -174,7 +184,18 @@ const PaymentHistory = () => {
                     >
                       <PrinterIcon className="w-5 h-5 ml-auto" />
                     </button>
-                  ) : "-"}
+                  ) : (
+                    // RETRY BUTTON FOR FAILED/PENDING
+                    ((p.status || "").toLowerCase() === "failed" || (p.status || "").toLowerCase() === "pending") && (
+                      <button
+                        onClick={() => navigate(`/client/payment?payment=${p.hashed_id || p.id}`)}
+                        className="px-3 py-1.5 rounded-lg bg-primary-light/10 text-primary-light dark:bg-primary-dark/20 dark:text-primary-dark hover:bg-primary-light hover:text-white dark:hover:bg-primary-dark transition text-xs font-bold flex items-center gap-1 ml-auto"
+                        title="Retry Payment"
+                      >
+                        <ArrowPathIcon className="w-4 h-4" /> Retry
+                      </button>
+                    )
+                  )}
                 </td>
               </tr>
             ))}
