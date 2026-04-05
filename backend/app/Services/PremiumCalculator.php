@@ -10,7 +10,7 @@ class PremiumCalculator
      * Main premium calculation logic.
      */
     public function quote(
-        Policy $policy,
+        $policy,
         ?int $age,
         bool $isSmoker,
         ?int $healthScore = null,
@@ -73,6 +73,20 @@ class PremiumCalculator
             $basePremium * $ageFactor * $smokerFactor * $healthFactor * $coverageFactor * $diseaseLoading * $regionalLoading * $bmiFactor * $occFactor * ($policy->premium_factor ?? 1.0),
             2
         );
+
+        // ─── SANITY CAPS ─────────────────────────────────────────────────────────
+        // 1. Premium must never exceed 30% of coverage limit (economic sense)
+        $coverageLimit = (float) ($policy->coverage_limit ?? 0);
+        if ($coverageLimit > 0) {
+            $maxByCoverage = round($coverageLimit * 0.30, 2);
+            $calculated = min($calculated, $maxByCoverage);
+        }
+
+        // 2. Worst-case cap: never exceed 8× base premium regardless of risk profile
+        if ($basePremium > 0) {
+            $calculated = min($calculated, round($basePremium * 8.0, 2));
+        }
+        // ─────────────────────────────────────────────────────────────────────────
 
         return [
             'policy_id'        => $policy->id,

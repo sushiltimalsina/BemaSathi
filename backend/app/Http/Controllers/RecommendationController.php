@@ -48,6 +48,13 @@ class RecommendationController extends Controller
 
         $scored = $policies->map(function ($policy) use ($profile, $user, $popularityMap, $variant) {
 
+            // Guard: ensure $policy is a proper Eloquent Policy model.
+            // stdClass can appear if this collection was ever cached/deserialized.
+            if (!($policy instanceof \App\Models\Policy)) {
+                $policy = Policy::find($policy->id);
+                if (!$policy) return null;
+            }
+
             // Always compute personalized premium with full context
             $policy->personalized_premium = $this->getPersonalizedPremium(
                 $this->calculator,
@@ -70,8 +77,8 @@ class RecommendationController extends Controller
             return $policy;
         });
 
-        // Sort by best-fit score
-        $sorted = $scored->sortByDesc('match_score')->values();
+        // Sort by best-fit score (filter() removes any nulls from the type-guard above)
+        $sorted = $scored->filter()->sortByDesc('match_score')->values();
 
         if ($sorted->count() <= 2) {
             // Track recommendations
@@ -301,6 +308,8 @@ class RecommendationController extends Controller
         if ($waitingDays <= 30) $reasons[] = "No-wait immediate coverage";
 
         // Budget Fit - "The Sweet Spot Strategy"
+        // Only show savings reasons if the profile is genuinely complete (not just registration defaults)
+        $profileIsComplete = !empty($profile['weight']) && !empty($profile['height']);
         if ($profile['budget_range']) {
             $budget = $this->parseBudgetRange($profile['budget_range']);
             $max = $budget['max'];
@@ -308,18 +317,20 @@ class RecommendationController extends Controller
             
             if ($premium <= $max && $premium >= $max * 0.6) {
                 $weightedScore += $wBudget;
-                $reasons[] = "Maximizes your coverage capacity";
+                if ($profileIsComplete) $reasons[] = "Maximizes your coverage capacity";
             } elseif ($premium < $max * 0.6) {
                 $weightedScore += ($wBudget * 0.7);
-                if (!$isHighTier) {
-                    $savings = round($max - $premium);
-                    $reasons[] = "Saves you ₹{$savings}/year";
-                } else {
-                    $reasons[] = "Well within your budget";
+                if ($profileIsComplete) {
+                    if (!$isHighTier) {
+                        $savings = round($max - $premium);
+                        $reasons[] = "Saves you ₹{$savings}/year";
+                    } else {
+                        $reasons[] = "Well within your budget";
+                    }
                 }
             } elseif ($premium <= $max * 1.15) {
                 $weightedScore += ($wBudget * 0.4);
-                $reasons[] = "Premium quality (slightly above budget)";
+                if ($profileIsComplete) $reasons[] = "Premium quality (slightly above budget)";
             }
         } else {
             $weightedScore += $wBudget;
@@ -584,6 +595,8 @@ class RecommendationController extends Controller
         if ($waitingDays <= 30) $reasons[] = "No-wait immediate coverage";
 
         // Budget Fit
+        // Only show budget reasons if profile is genuinely complete (not just registration defaults)
+        $profileIsComplete = !empty($profile['weight']) && !empty($profile['height']);
         if ($profile['budget_range']) {
             $budget = $this->parseBudgetRange($profile['budget_range']);
             $max = $budget['max'];
@@ -591,13 +604,15 @@ class RecommendationController extends Controller
             
             if ($premium <= $max && $premium >= $max * 0.6) {
                 $weightedScore += $wBudget;
-                $reasons[] = "Maximizes your coverage capacity";
+                if ($profileIsComplete) $reasons[] = "Maximizes your coverage capacity";
             } elseif ($premium < $max * 0.6) {
                 $weightedScore += ($wBudget * 0.7);
-                $reasons[] = $isHighTier ? "Well within your budget" : "Cost-effective choice";
+                if ($profileIsComplete) {
+                    $reasons[] = $isHighTier ? "Well within your budget" : "Cost-effective choice";
+                }
             } elseif ($premium <= $max * 1.15) {
                 $weightedScore += ($wBudget * 0.4);
-                $reasons[] = "Premium quality (slightly above budget)";
+                if ($profileIsComplete) $reasons[] = "Premium quality (slightly above budget)";
             }
         } else {
             $weightedScore += $wBudget;

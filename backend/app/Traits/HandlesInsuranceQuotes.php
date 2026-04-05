@@ -62,7 +62,7 @@ trait HandlesInsuranceQuotes
         ];
     }
 
-    protected function getPersonalizedPremium(PremiumCalculator $calculator, Policy $policy, array $profile)
+    protected function getPersonalizedPremium(PremiumCalculator $calculator, $policy, array $profile)
     {
         return $calculator->quote(
             $policy,
