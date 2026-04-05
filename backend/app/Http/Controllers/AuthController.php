@@ -24,7 +24,7 @@ class AuthController extends Controller
             'password' => 'required|string|min:6',
 
             // FIELDS USED BY RECOMMENDATION ENGINE
-            'dob' => 'required|date|before:today|after:1900-01-01|before:-15 years',
+            'dob' => 'required|date|before:today|after:1900-01-01|before:-8 years',
             'budget_range' => 'required|string',
             'coverage_type' => 'required|in:individual,family',
             'family_members' => 'exclude_unless:coverage_type,family|required|integer|min:2|max:20',

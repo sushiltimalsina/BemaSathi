@@ -76,10 +76,23 @@ const Register = () => {
     return !pwdError && !confirmMsg;
   };
 
-  const validateAge = (dob) => {
-    if (!dob) return "Date of Birth is required.";
-    if (new Date(dob) >= new Date()) return "Date of Birth cannot be today or in the future.";
-    return ""; // No longer blocking registration for under 18
+  const validateAge = (dobString) => {
+    if (!dobString) return "Date of Birth is required.";
+    const dob = new Date(dobString);
+    const today = new Date();
+    
+    if (dob >= today) return "Date of Birth cannot be today or in the future.";
+    
+    // Check if at least 8 years old
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+      age--;
+    }
+    
+    if (age < 8) return "You must be at least 8 years old to register.";
+    
+    return "";
   };
 
   const googleLogin = useGoogleLogin({
@@ -352,6 +365,7 @@ const Register = () => {
                               ? (showConfirmPassword ? "text" : "password")
                               : field.type
                         }
+                        max={field.key === "dob" ? new Date(new Date().setFullYear(new Date().getFullYear() - 8)).toISOString().split("T")[0] : undefined}
                         value={form[field.key]}
                         onChange={(e) =>
                           setForm((prev) => {
@@ -420,28 +434,7 @@ const Register = () => {
                   </div>
                 )}
 
-                {/* LIVE QUOTE PREVIEW */}
-                {form.dob && !error && (
-                  <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 animate-in slide-in-from-top-2 duration-300">
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-sm opacity-60">Plans start at</span>
-                      <span className="text-xl font-black text-green-700 dark:text-green-400">
-                        Rs. {
-                          (() => {
-                            const bDay = new Date(form.dob);
-                            const now = new Date();
-                            if (bDay >= now) return "0";
-                            const age = now.getFullYear() - bDay.getFullYear();
-                            const base = form.coverage_type === 'family' ? 9500 : 4200;
-                            const mod = age > 30 ? 1 + (age - 30) * 0.04 : 1;
-                            return Math.round(base * mod).toLocaleString();
-                          })()
-                        }
-                      </span>
-                      <span className="text-[10px] opacity-40">/year*</span>
-                    </div>
-                  </div>
-                )}
+
 
                 <button
                   type="submit"

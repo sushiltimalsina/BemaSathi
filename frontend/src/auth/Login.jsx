@@ -53,7 +53,7 @@ const Login = () => {
 
     const extraPairs = [];
     params.forEach((value, key) => {
-      if (key !== "redirect") extraPairs.push(`${key}=${value}`);
+      if (key !== "redirect" && key !== "reason") extraPairs.push(`${key}=${value}`);
     });
 
     let target = redirect || "/client/dashboard";
@@ -70,13 +70,19 @@ const Login = () => {
     return target && target.startsWith("/") ? target : "/client/dashboard";
   }, [location.search]);
 
-  // If already logged in
+  // Detect session-expired redirect
+  const sessionExpired = useMemo(() => {
+    return new URLSearchParams(location.search).get("reason") === "session_expired";
+  }, [location.search]);
+
+  // If already logged in (but NOT a session-expired redirect — don't loop)
   useEffect(() => {
+    if (sessionExpired) return; // Let the user see the expired message
     const token = sessionStorage.getItem("client_token");
     if (token) {
       navigate(redirectPath, { replace: true });
     }
-  }, [navigate, redirectPath]);
+  }, [navigate, redirectPath, sessionExpired]);
 
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
@@ -236,6 +242,14 @@ const Login = () => {
           <h1 className="text-2xl font-bold mt-2">Login</h1>
           <p className="text-sm opacity-70 mt-1">Access your BeemaSathi account</p>
         </div>
+
+        {/* SESSION EXPIRED BANNER */}
+        {sessionExpired && (
+          <div className="mb-4 flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs font-semibold">
+            <span className="text-base">⏱️</span>
+            <span>Your session expired due to inactivity. Please log in again.</span>
+          </div>
+        )}
 
         {success && <p className="text-green-600 text-sm text-center mb-3">{success}</p>}
         {error && !isRegistered && <p className="text-red-500 text-sm text-center mb-3">{error}</p>}
