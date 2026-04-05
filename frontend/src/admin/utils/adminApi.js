@@ -24,19 +24,36 @@ API.interceptors.request.use((config) => {
 
 
 // Handle auth errors globally
+let logoutTimer = null;
+
 API.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error.response?.status;
     const url = error.config?.url || "";
     const isAuthRequest = url.includes("/htt/login");
+    const isReadonly = ["GET", "HEAD"].includes((error.config?.method || "").toUpperCase());
+
     if (!isAuthRequest && (status === 401 || status === 419)) {
-      localStorage.removeItem("admin_token");
-      localStorage.removeItem("admin_user");
-      sessionStorage.removeItem("admin_token");
-      sessionStorage.removeItem("admin_user");
-      broadcastLogout("admin");
-      window.location.href = "/htt/login";
+      // For write operations (POST/PUT/DELETE) that fail, don't immediately log out.
+      // It could be a CSRF or transient issue. Give a grace window.
+      if (!isReadonly) {
+        // For non-GET requests (like saving a policy), just reject — don't logout
+        return Promise.reject(error);
+      }
+
+      // For read requests: debounce — only logout if still unauthorized after 3s
+      clearTimeout(logoutTimer);
+      logoutTimer = setTimeout(() => {
+        const token = sessionStorage.getItem("admin_token");
+        if (!token) return; // Already logged out
+        localStorage.removeItem("admin_token");
+        localStorage.removeItem("admin_user");
+        sessionStorage.removeItem("admin_token");
+        sessionStorage.removeItem("admin_user");
+        broadcastLogout("admin");
+        window.location.href = "/htt/login";
+      }, 3000);
     }
     return Promise.reject(error);
   }
