@@ -153,8 +153,9 @@ const PolicyDetails = () => {
   const fmt = (n) =>
     Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
 
-  const guestMin = policy.premium_amt;
-  const guestMax = policy.premium_amt * 3;
+  // Use backend-computed actuarial range; fallback to rough estimate for old API responses
+  const guestMin = policy.premium_min ?? policy.premium_amt;
+  const guestMax = policy.premium_max ?? policy.premium_amt * 8;
   const clientPremium =
     policy.personalized_premium ?? policy.premium_amt ?? guestMin;
 
@@ -307,9 +308,9 @@ const PolicyDetails = () => {
                 </p>
               ) : (
                 <p className="text-xl font-semibold">
-                  Rs. {fmt(guestMin)} - {fmt(guestMax)}
+                  Rs. {fmt(Math.round(guestMin))} – {fmt(Math.round(guestMax))}
                   <span className="block text-[10px] opacity-60">
-                    Login to see your exact premium
+                    Estimated range · Login to see exact
                   </span>
                 </p>
               )}

@@ -37,6 +37,33 @@ class PolicyController extends Controller
                 $policy->personalized_premium = $policy->premium_amt;
             }
 
+            // Compute realistic premium range for guest display.
+            // Min profile: young (25), healthy (score=95), non-smoker, individual, no conditions.
+            // Max profile: older (58), lower health (score=40), smoker, family of 4, 2 conditions.
+            $minQuote = $this->calculator->quote(
+                $policy,
+                25,          // age
+                false,       // non-smoker
+                95,          // health score (best tier)
+                'individual',
+                null,
+                1,
+                ['region_type' => 'rural', 'conditions' => [], 'occupation_class' => 'class_1']
+            );
+            $maxQuote = $this->calculator->quote(
+                $policy,
+                68,          // age
+                true,        // smoker
+                38,          // health score (worst tier → ×1.40)
+                'family',
+                null,
+                4,           // 4 family members
+                ['region_type' => 'urban', 'conditions' => ['Diabetes', 'Hypertension'], 'occupation_class' => 'class_2']
+            );
+
+            $policy->premium_min = $minQuote['calculated_total'];
+            $policy->premium_max = $maxQuote['calculated_total'];
+
             return $policy;
         });
 
@@ -81,7 +108,25 @@ class PolicyController extends Controller
         $policy = Policy::findOrFail($data['policy_id']);
         $user = auth('sanctum')->user();
 
-        $profile = $this->resolveProfile($user);
+        // resolveStandardProfile() requires a User model; fall back to neutral defaults for guests.
+        $profile = $user
+            ? $this->resolveStandardProfile($user)
+            : [
+                'age'              => 30,
+                'city'             => 'default',
+                'region_type'      => 'urban',
+                'is_smoker'        => false,
+                'health_score'     => 70,
+                'coverage_type'    => 'individual',
+                'budget_range'     => null,
+                'family_members'   => 1,
+                'family_ages'      => [30],
+                'has_seniors'      => false,
+                'weight'           => null,
+                'height'           => null,
+                'occupation_class' => 'class_1',
+                'conditions'       => [],
+            ];
         if (!empty($data['dob'])) {
             $profile['age'] = Carbon::parse($data['dob'])->age;
         }

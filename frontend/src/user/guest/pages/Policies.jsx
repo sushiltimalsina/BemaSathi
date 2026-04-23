@@ -373,8 +373,9 @@ const GuestPolicies = () => {
                   );
 
                   // Premium display
-                  const guestMin = policy.premium_amt;
-                  const guestMax = policy.premium_amt * 3;
+                  // Use backend-computed actuarial range when available; fall back to rough estimate.
+                  const guestMin = policy.premium_min ?? policy.premium_amt;
+                  const guestMax = policy.premium_max ?? policy.premium_amt * 8;
                   const clientPremium = Math.round(
                     policy.premium_amt * multiplier
                   );
@@ -429,10 +430,10 @@ const GuestPolicies = () => {
                             ) : (
                               <span className="font-semibold text-right">
                                 <span className="inline-flex items-center gap-1">
-                                  रु. {fmt(guestMin)} – {fmt(guestMax)}
+                                  रु. {fmt(Math.round(guestMin))} – {fmt(Math.round(guestMax))}
                                 </span>
                                 <span className="block text-[10px] opacity-60">
-                                  login to see exact premium
+                                  estimated range · login to see exact
                                 </span>
                               </span>
                             )}
