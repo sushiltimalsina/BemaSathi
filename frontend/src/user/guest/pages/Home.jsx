@@ -105,7 +105,7 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark transition-colors">
-      {showDisclaimer && (
+      {/* {showDisclaimer && (
         <div className="bg-amber-50 dark:bg-amber-900/30 border-b border-amber-800 dark:border-amber-700">
           <div className="max-w-6xl mx-auto px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <p className="text-sm text-amber-900 dark:text-amber-700">
@@ -124,7 +124,7 @@ const Home = () => {
             </button>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* HERO SECTION */}
       <section className={`relative overflow-hidden ${heroBg}`}>
