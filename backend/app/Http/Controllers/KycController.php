@@ -55,7 +55,7 @@ class KycController extends Controller
             'document_number' => 'nullable|string',
             'front' => 'required|file|mimes:jpg,jpeg,png|max:5120',
             'back' => 'nullable|file|mimes:jpg,jpeg,png|max:5120',
-            'full_name' => ['nullable', 'string', 'min:2', 'max:255', 'regex:/^[A-Za-z\\s]+$/'],
+            'full_name' => ['nullable', 'string', 'min:2', 'max:255', 'regex:/^[A-Za-z\\s\\.]+$/'],
             'dob' => 'nullable|date',
             'address' => 'nullable|string|min:5|max:255',
             'province' => 'nullable|string',
@@ -109,7 +109,7 @@ class KycController extends Controller
         if (is_array($familyMembers)) {
             foreach ($familyMembers as $member) {
                 $name = isset($member['name']) ? trim((string) $member['name']) : '';
-                if ($name === '' || strlen($name) < 2 || !preg_match('/^[A-Za-z\\s]+$/', $name)) {
+                if ($name === '' || strlen($name) < 2 || !preg_match('/^[A-Za-z\\s\\.]+$/', $name)) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Family member names must be at least 2 characters and contain only letters and spaces.'

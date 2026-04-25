@@ -282,7 +282,7 @@ const KycPage = () => {
     if (!value) return false;
     const cleaned = value.trim();
     if (cleaned.length < 2) return false;
-    return /^[A-Za-z\s]+$/.test(cleaned);
+    return /^[A-Za-z\s.]+$/.test(cleaned);
   };
   const isAddressValid = (value) => {
     if (!value) return false;
@@ -517,7 +517,8 @@ const KycPage = () => {
       setIsEditing(false);
       setLoading(false);
     } catch (error) {
-      setError("Submission failed.");
+      const backendError = error.response?.data?.message || error.response?.data?.error || "Submission failed.";
+      setError(backendError);
       setLoading(false);
     }
   };
