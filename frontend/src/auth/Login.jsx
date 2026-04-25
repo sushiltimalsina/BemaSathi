@@ -312,6 +312,7 @@ const Login = () => {
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     className="w-full mt-1 px-3 py-2 rounded-lg text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark focus:ring-2 focus:ring-primary-light/60 transition-all"
                     placeholder="example@gmail.com"
+                    autoComplete="email"
                     required
                   />
                   {emailError && <p className="text-xs text-red-500 mt-1">{emailError}</p>}
@@ -326,6 +327,7 @@ const Login = () => {
                       onChange={(e) => setForm({ ...form, password: e.target.value })}
                       className="w-full mt-1 px-3 py-2 rounded-lg text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark focus:ring-2 focus:ring-primary-light/60 transition-all"
                       placeholder="Enter your password"
+                      autoComplete="current-password"
                       required
                     />
                     <button

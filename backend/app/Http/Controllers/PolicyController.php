@@ -86,7 +86,7 @@ class PolicyController extends Controller
             $policy->personalized_premium = $policy->premium_amt;
         }
 
-        return response()->json($policy->load('agents', 'agent'));
+        return response()->json($policy->load('agents', 'agent', 'userRatings.user'));
     }
 
     /**

@@ -11,7 +11,8 @@ const Modal = ({
   onClose, 
   title, 
   message, 
-  type = 'error' // error, success, info, warning
+  type = 'error', // error, success, info, warning
+  children
 }) => {
   useEffect(() => {
     if (isOpen) {
@@ -67,8 +68,10 @@ const Modal = ({
       <div 
         className="
           relative w-full max-w-sm overflow-hidden
-          bg-slate-900 border border-slate-800 rounded-[2rem]
-          shadow-2xl shadow-black/50 transform transition-all
+          bg-card-light dark:bg-card-dark 
+          border border-border-light dark:border-border-dark 
+          rounded-[2rem] shadow-2xl shadow-black/50 
+          transform transition-all
           animate-in zoom-in-95 duration-300
         "
       >
@@ -76,44 +79,50 @@ const Modal = ({
         <div className={`absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent`} />
 
         <div className="p-8">
-          <div className="flex flex-col items-center text-center">
-            {/* Icon Circle */}
-            <div className={`
-              mb-6 p-4 rounded-full
-              ${config.bg} ${config.border} border
-            `}>
-              {config.icon}
-            </div>
+          {children ? (
+            <div className="relative z-10">{children}</div>
+          ) : (
+            <>
+              <div className="flex flex-col items-center text-center">
+                {/* Icon Circle */}
+                <div className={`
+                  mb-6 p-4 rounded-full
+                  ${config.bg} ${config.border} border
+                `}>
+                  {config.icon}
+                </div>
 
-            {/* Title */}
-            <h3 className="text-xl font-black text-slate-100 italic mb-2 tracking-tight">
-              {title}
-            </h3>
+                {/* Title */}
+                <h3 className="text-xl font-bold text-text-light dark:text-text-dark mb-2 tracking-tight">
+                  {title}
+                </h3>
 
-            {/* Message */}
-            <p className="text-sm text-slate-400 font-medium leading-relaxed px-2">
-              {message}
-            </p>
-          </div>
+                {/* Message */}
+                <p className="text-sm text-text-light/70 dark:text-text-dark/70 font-medium leading-relaxed px-2">
+                  {message}
+                </p>
+              </div>
 
-          {/* Action Button */}
-          <div className="mt-8">
-            <button
-              onClick={onClose}
-              className={`
-                w-full py-4 rounded-2xl font-black text-sm text-white
-                ${config.btn} shadow-lg transition-all active:scale-95
-              `}
-            >
-              OK
-            </button>
-          </div>
+              {/* Action Button */}
+              <div className="mt-8">
+                <button
+                  onClick={onClose}
+                  className={`
+                    w-full py-4 rounded-2xl font-black text-sm text-white
+                    ${config.btn} shadow-lg transition-all active:scale-95
+                  `}
+                >
+                  OK
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Close Interaction */}
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-slate-500 hover:text-white transition-colors"
+          className="absolute top-4 right-4 p-2 text-text-light/30 dark:text-text-dark/30 hover:text-primary-light transition-colors"
         >
           <XMarkIcon className="w-5 h-5" />
         </button>

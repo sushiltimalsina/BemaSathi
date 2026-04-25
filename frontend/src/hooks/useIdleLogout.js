@@ -46,7 +46,7 @@ const useIdleLogout = ({
       // Server-side heartbeat every 2 minutes while active
       if (apiClient && now - lastHeartbeatRef.current > 2 * 60 * 1000) {
         lastHeartbeatRef.current = now;
-        const endpoint = apiClient.defaults.baseURL?.includes("htt")
+        const endpoint = tokenKey.includes("admin")
           ? "/htt/profile"
           : "/me";
         apiClient.get(endpoint).catch(() => {});

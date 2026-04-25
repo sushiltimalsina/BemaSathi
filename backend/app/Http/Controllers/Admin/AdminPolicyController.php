@@ -37,6 +37,7 @@ class AdminPolicyController extends Controller
             'coverage_limit' => 'required|numeric',
             'policy_description' => 'nullable|string',
             'company_rating' => 'nullable|numeric',
+            'admin_rating' => 'nullable|numeric|min:1|max:5',
             'waiting_period_days' => 'nullable|integer|min:0',
             'copay_percent' => 'nullable|integer|min:0|max:100',
             'claim_settlement_ratio' => 'nullable|numeric|min:0|max:100',
@@ -97,6 +98,9 @@ class AdminPolicyController extends Controller
             $policy->agents()->sync([$validated['agent_id']]);
         }
 
+        // Recalculate display rating
+        $this->recalculateRating($policy);
+
         return response()->json([
             'message' => 'Policy created successfully',
             'policy'  => $policy->load('agents')
@@ -120,6 +124,7 @@ class AdminPolicyController extends Controller
             'coverage_limit' => 'sometimes|numeric',
             'policy_description' => 'nullable|string',
             'company_rating' => 'nullable|numeric',
+            'admin_rating' => 'nullable|numeric|min:1|max:5',
             'waiting_period_days' => 'nullable|integer|min:0',
             'copay_percent' => 'nullable|integer|min:0|max:100',
             'claim_settlement_ratio' => 'nullable|numeric|min:0|max:100',
@@ -166,6 +171,9 @@ class AdminPolicyController extends Controller
             // Optional: $policy->agents()->sync([$validated['agent_id']]);
         }
 
+        // Recalculate display rating
+        $this->recalculateRating($policy);
+
         return response()->json([
             'message' => 'Policy updated successfully',
             'policy'  => $policy->load('agents')
@@ -192,5 +200,20 @@ class AdminPolicyController extends Controller
             'message' => 'Policy status updated',
             'policy' => $policy,
         ]);
+    }
+
+    private function recalculateRating(Policy $policy)
+    {
+        $adminRating = $policy->admin_rating ?: 0;
+        $userRatings = $policy->userRatings()->get();
+        
+        $userCount = $userRatings->count();
+        $userSum = $userRatings->sum('rating');
+
+        $totalSum = $adminRating + $userSum;
+        $totalCount = 1 + $userCount;
+        $finalAverage = $totalSum / $totalCount;
+
+        $policy->update(['company_rating' => round($finalAverage, 1)]);
     }
 }

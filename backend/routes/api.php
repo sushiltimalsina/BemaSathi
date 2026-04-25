@@ -112,6 +112,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Recommendations (Client only)
     Route::get('/recommendations', [App\Http\Controllers\RecommendationController::class, 'index']);
     Route::get('/recommendations/personal', [App\Http\Controllers\RecommendationController::class, 'index']);
+    Route::post('/ratings', [App\Http\Controllers\RatingController::class, 'store']);
     Route::post('/recommendations/feedback/click', [RecommendationFeedbackController::class, 'trackClick']);
     Route::post('/recommendations/feedback/time', [RecommendationFeedbackController::class, 'trackTimeSpent']);
 

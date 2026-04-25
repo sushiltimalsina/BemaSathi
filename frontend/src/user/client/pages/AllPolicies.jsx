@@ -431,14 +431,14 @@ const AllPolicies = () => {
                         return navigate("/client/profile", {
                           state: {
                             msg: "Please complete your profile details (Phone, Address, Height, Weight) before purchasing a policy.",
-                            returnTo: `/client/buy?policy=${p.id}`
+                            returnTo: `/client/buy?policy=${p.hashed_id || p.id}`
                           }
                         });
                       }
 
                       // 2. KYC Verification Check
                       if (kycStatus !== "approved") {
-                        return navigate(`/client/kyc?policy=${p.id}`, {
+                        return navigate(`/client/kyc?policy=${p.hashed_id || p.id}`, {
                           state: { msg: "KYC verification is required to proceed with this purchase." }
                         });
                       }
@@ -446,13 +446,13 @@ const AllPolicies = () => {
                       const ownedRequest = ownedMap[String(p.id)];
                       if (ownedRequest) {
                         if (!isRenewable(ownedRequest)) {
-                          navigate(`/client/buy?policy=${p.id}`);
+                          navigate(`/client/buy?policy=${p.hashed_id || p.id}`);
                           return;
                         }
                         navigate(`/client/payment?request=${ownedRequest.hashed_id || ownedRequest.id}`);
                         return;
                       }
-                      navigate(`/client/buy?policy=${p.id}`);
+                      navigate(`/client/buy?policy=${p.hashed_id || p.id}`);
                     }}
                     className="px-4 py-2 rounded-lg font-semibold bg-primary-light text-white hover:bg-primary-dark"
                   >

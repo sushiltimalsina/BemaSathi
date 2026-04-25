@@ -8,10 +8,13 @@ import {
   UserIcon,
   DocumentTextIcon,
   ArrowDownTrayIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
+import { StarIcon } from "@heroicons/react/24/solid";
 import API from "../../../api/api";
 import { getRenewalDate, isGraceExpired, isRenewable, getGraceDays } from "../../utils/renewal";
 import Modal from "../../../components/Modal";
+import RatingSystem from "../../../components/RatingSystem";
 
 const RenewalCard = ({ request }) => {
   const navigate = useNavigate();
@@ -22,6 +25,7 @@ const RenewalCard = ({ request }) => {
     message: "",
     type: "error"
   });
+  const [showRating, setShowRating] = React.useState(false);
 
   const cycle = request.billing_cycle?.replace("_", " ");
   const renewalDate = getRenewalDate(request);
@@ -75,13 +79,23 @@ const RenewalCard = ({ request }) => {
     Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
 
   const handleRenew = () => {
-    navigate(`/client/payment?request=${request.hashed_id || request.id}`);
+    setShowRating(true);
   };
 
   const handleBuyAgain = () => {
     const policyId = request.policy_id || request.policy?.id;
     if (!policyId) return;
-    navigate(`/client/buy?policy=${policyId}`);
+    setShowRating(true);
+  };
+
+  const proceedWithAction = () => {
+    setShowRating(false);
+    if (canRenew) {
+      navigate(`/client/payment?request=${request.hashed_id || request.id}`);
+    } else {
+      const policyId = request.policy_id || request.policy?.id;
+      navigate(`/client/buy?policy=${request.policy?.hashed_id || policyId}`);
+    }
   };
 
   const handleDetails = () => {
@@ -242,6 +256,8 @@ const RenewalCard = ({ request }) => {
           Details
         </button>
 
+        {/* REMOVED OLD RATING BUTTON TO MERGE INTO RENEW/BUY FLOW */}
+
         {/* ONLY DOWNLOAD POLICY DOCUMENT FOR ACTIVE/DUE */}
         {effectiveStatus !== 'expired' && (
           <button
@@ -290,6 +306,26 @@ const RenewalCard = ({ request }) => {
         message={modalConfig.message}
         type={modalConfig.type}
       />
+
+      {/* RATING OVERLAY (In-Card) */}
+      {showRating && (
+        <div className="absolute inset-0 z-50 p-6 bg-card-light dark:bg-card-dark rounded-3xl flex flex-col animate-in fade-in zoom-in duration-300">
+          <button 
+            onClick={() => setShowRating(false)}
+            className="absolute top-4 right-4 p-1 text-muted-light hover:text-primary-light"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+          <RatingSystem 
+            policyId={request.policy_id} 
+            policyName={request.policy?.policy_name}
+            companyName={request.policy?.company_name}
+            onRatingUpdate={() => {}} 
+            onProceed={proceedWithAction}
+            actionLabel={canRenew ? "Submit & Renew" : "Submit & Buy"}
+          />
+        </div>
+      )}
     </div>
   );
 };

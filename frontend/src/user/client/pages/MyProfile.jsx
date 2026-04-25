@@ -187,22 +187,31 @@ const MyProfile = () => {
       const count = parseInt(form.family_members) || 1;
       setForm((prev) => {
         const current = prev.family_member_details || [];
-        if (current.length === count) return prev;
+        
+        // Resize or initialize
+        let newDetails;
+        if (current.length === count) {
+          newDetails = [...current];
+        } else {
+          newDetails = Array.from({ length: count }, (_, i) => {
+            if (current[i]) return current[i];
+            return { name: "", relation: "Spouse", dob: "", is_smoker: false };
+          });
+        }
 
-        // Resize: ensure index 0 exists (Self placeholder) + dependents
-        const newDetails = Array.from({ length: count }, (_, i) => {
-          // Start with existing, or default. Index 0 is Self (placeholder)
-          if (current[i]) return current[i];
-          return { name: "", relation: "Spouse", dob: "", is_smoker: false };
-        });
-
-        // Keep index 0 as placeholder if empty
-        if (!newDetails[0]) newDetails[0] = { name: "Self", relation: "Self", dob: "", is_smoker: false };
+        // Always ensure index 0 is "Self" and matches main profile
+        newDetails[0] = {
+          name: prev.name || "Self",
+          relation: "Self",
+          dob: prev.dob || "",
+          is_smoker: !!prev.is_smoker,
+          pre_existing_conditions: prev.pre_existing_conditions || []
+        };
 
         return { ...prev, family_member_details: newDetails };
       });
     }
-  }, [form.family_members, form.coverage_type]);
+  }, [form.family_members, form.coverage_type, form.name, form.dob, form.is_smoker, form.pre_existing_conditions]);
 
   // Calculate BMI & Insights
   useEffect(() => {
@@ -257,8 +266,29 @@ const MyProfile = () => {
     setError("");
     setSuccess("");
 
+    // Prepare data for submission
+    const submissionData = { ...form };
+    
+    if (form.coverage_type === "family") {
+      // Sync the "Self" member (index 0) with primary profile data one last time
+      if (Array.isArray(form.family_member_details) && form.family_member_details.length > 0) {
+        submissionData.family_member_details = [...form.family_member_details];
+        submissionData.family_member_details[0] = {
+          ...submissionData.family_member_details[0],
+          name: form.name,
+          dob: form.dob,
+          is_smoker: form.is_smoker,
+          pre_existing_conditions: form.pre_existing_conditions,
+          relation: "Self"
+        };
+      }
+    } else {
+      // For individual coverage, we should not send family member details
+      submissionData.family_member_details = [];
+    }
+
     try {
-      await API.put("/user/profile", form);
+      await API.put("/user/profile", submissionData);
       setSuccess("Profile updated successfully!");
       setIsEditing(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });

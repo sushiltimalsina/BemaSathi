@@ -21,6 +21,7 @@ class Policy extends Model
         'coverage_limit',
         'policy_description',
         'company_rating',
+        'admin_rating',
         'agent_id',
         'covered_conditions',
         'supports_smokers',
@@ -80,6 +81,11 @@ class Policy extends Model
     public function agent()
     {
         return $this->belongsTo(Agent::class);
+    }
+
+    public function userRatings()
+    {
+        return $this->hasMany(Rating::class);
     }
 
     public function agents()

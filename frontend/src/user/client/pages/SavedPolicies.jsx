@@ -270,13 +270,13 @@ const SavedPolicies = () => {
                     if (ownedRequest) {
                       if (!isRenewable(ownedRequest)) {
                         if (!ensureKycApproved()) return;
-                        navigate(`/client/buy?policy=${p.id}`);
+                        navigate(`/client/buy?policy=${p.hashed_id || p.id}`);
                         return;
                       }
                       navigate(`/client/payment?request=${ownedRequest.hashed_id || ownedRequest.id}`);
                       return;
                     }
-                    navigate(`/client/buy?policy=${p.id}`);
+                    navigate(`/client/buy?policy=${p.hashed_id || p.id}`);
                   }}
                   className="px-4 py-2 rounded-lg font-semibold bg-primary-light text-white hover:bg-primary-dark"
                 >

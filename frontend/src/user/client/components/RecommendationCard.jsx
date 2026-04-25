@@ -208,19 +208,19 @@ const RecommendationCard = ({
                     return navigate("/client/profile", {
                       state: {
                         msg: "Please complete your profile details before purchasing a policy again.",
-                        returnTo: `/client/buy?policy=${policy.id}`
+                        returnTo: `/client/buy?policy=${policy.hashed_id || policy.id}`
                       }
                     });
                   }
 
                   // 2. KYC Verification Check
                   if (kycStatus !== "approved") {
-                    return navigate(`/client/kyc?policy=${policy.id}`, {
+                    return navigate(`/client/kyc?policy=${policy.hashed_id || policy.id}`, {
                       state: { msg: "Please verify your KYC before purchasing again." }
                     });
                   }
 
-                  navigate(`/client/buy?policy=${policy.id}`);
+                  navigate(`/client/buy?policy=${policy.hashed_id || policy.id}`);
                   return;
                 }
                 navigate(`/client/payment?request=${ownedRequest?.hashed_id || ownedRequest?.id}`);
@@ -244,14 +244,14 @@ const RecommendationCard = ({
                   return navigate("/client/profile", {
                     state: {
                       msg: "Please complete your profile details (Phone, Address, Height, Weight) before purchasing a policy.",
-                      returnTo: `/client/buy?policy=${policy.id}`
+                      returnTo: `/client/buy?policy=${policy.hashed_id || policy.id}`
                     }
                   });
                 }
 
                 // 2. KYC Verification Check
                 if (kycStatus !== "approved") {
-                  return navigate(`/client/kyc?policy=${policy.id}`, {
+                  return navigate(`/client/kyc?policy=${policy.hashed_id || policy.id}`, {
                     state: {
                       msg: "Your identity verification (KYC) is required to proceed with this purchase."
                     }
@@ -259,7 +259,7 @@ const RecommendationCard = ({
                 }
 
                 // 3. Both Complete -> Buy Request Page
-                navigate(`/client/buy?policy=${policy.id}`);
+                navigate(`/client/buy?policy=${policy.hashed_id || policy.id}`);
               }}
               className="
                 px-5 py-2.5 rounded-xl text-sm font-semibold text-white

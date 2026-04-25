@@ -81,7 +81,7 @@ const ClientSidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) =
         onMouseEnter={canHover ? () => setCollapsed(false) : undefined}
         onMouseLeave={canHover ? () => setCollapsed(true) : undefined}
         className={`
-          hidden md:flex flex-col fixed top-0 left-0 h-screen z-50
+          hidden md:flex flex-col fixed top-0 left-0 h-screen z-[60]
           bg-sidebar-light dark:bg-sidebar-dark
           border-r border-border-light dark:border-border-dark
           transition-all duration-300 ease-in-out
@@ -129,7 +129,7 @@ const ClientSidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) =
       ============================================ */}
       <aside
         className={`
-          md:hidden fixed top-0 left-0 h-full w-64 z-50
+          md:hidden fixed top-0 left-0 h-full w-64 z-[60]
           bg-sidebar-light dark:bg-sidebar-dark
           border-r border-border-light dark:border-border-dark
           shadow-lg transition-transform duration-300

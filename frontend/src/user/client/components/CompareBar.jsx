@@ -29,7 +29,7 @@ const CompareBar = () => {
   if (compare.length === 0 || onComparePage) return null;
 
   return (
-    <div className="compare-bar fixed bottom-0 left-0 right-0 bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark border-t border-border-light dark:border-border-dark shadow-2xl p-4 pr-16 sm:pr-24 flex items-center justify-between z-50 transition-colors">
+    <div className="compare-bar fixed bottom-0 left-0 right-0 bg-card-light dark:bg-card-dark text-text-light dark:text-text-dark border-t border-border-light dark:border-border-dark shadow-2xl p-4 pl-24 pr-16 sm:pr-24 flex items-center justify-between z-50 transition-all">
       <div className="flex flex-col gap-2">
         {compareError && (
           <span className="text-xs font-semibold text-red-600 dark:text-red-400">
@@ -65,7 +65,7 @@ const CompareBar = () => {
         {compare.length === 2 && (
         <button
           onClick={() =>
-            navigate(`/client/compare?p1=${compare[0].id}&p2=${compare[1].id}`)
+            navigate(`/client/compare?p1=${compare[0].hashed_id || compare[0].id}&p2=${compare[1].hashed_id || compare[1].id}`)
           }
           className="px-5 py-2 bg-primary-light dark:bg-primary-dark text-white hover:opacity-90 font-semibold rounded-lg shadow transition mr-4 sm:mr-6"
         >

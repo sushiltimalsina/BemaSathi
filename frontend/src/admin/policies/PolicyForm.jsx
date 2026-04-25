@@ -29,6 +29,7 @@ const PolicyForm = () => {
     coverage_limit: "",
     policy_description: "",
     company_rating: "",
+    admin_rating: "4.0", // Default to 4.0 for new policies
     waiting_period_days: "",
     copay_percent: "",
     claim_settlement_ratio: "",
@@ -146,7 +147,9 @@ const PolicyForm = () => {
       const name = form.policy_name.trim().toLowerCase();
       const company = form.company_name.trim().toLowerCase();
       const duplicate = policies.find((p) => {
-        if (isEdit && String(p.id) === String(id)) return false;
+        // Correctly ignore the current policy being edited
+        if (isEdit && (String(p.id) === String(form.id) || String(p.id) === String(id))) return false;
+        
         const pName = (p.policy_name || "").trim().toLowerCase();
         const pCompany = (p.company_name || "").trim().toLowerCase();
         return pName === name && pCompany === company;
@@ -189,7 +192,8 @@ const PolicyForm = () => {
       navigate("/htt/policies");
     } catch (e) {
       console.error(e);
-      setError("Failed to save policy.");
+      const msg = e.response?.data?.message || "Failed to save policy. Please check if you have run 'php artisan migrate' in the backend.";
+      setError(msg);
     }
 
     setSaving(false);
@@ -357,15 +361,27 @@ const PolicyForm = () => {
           required
         />
 
-        {/* COMPANY RATING */}
-        <Input
-          label="Company Rating (1-5)"
-          type="number"
-          step="0.1"
-          value={form.company_rating}
-          onChange={(e) => updateField("company_rating", e.target.value)}
-          required
-        />
+        {/* RATINGS SECTION */}
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            label="Admin Base Rating (1-5)"
+            type="number"
+            step="0.1"
+            min="1"
+            max="5"
+            value={form.admin_rating}
+            onChange={(e) => updateField("admin_rating", e.target.value)}
+            required
+            placeholder="e.g. 4.5"
+          />
+          <div className="space-y-1">
+            <label className="text-sm font-medium opacity-60">Calculated Display Rating</label>
+            <div className="w-full px-4 py-2 rounded-lg border bg-slate-100 dark:bg-slate-800 border-border-light dark:border-border-dark text-sm font-bold text-primary-light">
+              {form.company_rating || "N/A"}
+            </div>
+            <p className="text-[10px] opacity-50 italic">Average of Admin + User reviews</p>
+          </div>
+        </div>
 
         {/* PRICING FACTORS SECTION */}
         <div className="pt-4 border-t border-border-light dark:border-border-dark space-y-6">

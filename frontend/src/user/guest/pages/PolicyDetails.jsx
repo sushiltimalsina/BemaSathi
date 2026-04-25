@@ -6,13 +6,15 @@ import {
   ShieldCheckIcon,
   CurrencyRupeeIcon,
   ArrowLeftIcon,
-  StarIcon,
+  StarIcon as StarOutline,
   UserIcon,
   CheckCircleIcon,
   ArrowsRightLeftIcon,
   BookmarkIcon,
   BookmarkSlashIcon,
 } from "@heroicons/react/24/outline";
+import { StarIcon } from "@heroicons/react/24/solid";
+import RatingSystem from "../../../components/RatingSystem";
 import { isRenewable } from "../../utils/renewal";
 
 const PolicyDetails = () => {
@@ -170,19 +172,19 @@ const PolicyDetails = () => {
         return navigate("/client/profile", {
           state: {
             msg: "Please complete your profile details before purchasing a policy again.",
-            returnTo: `/client/buy?policy=${policy.id}`
+            returnTo: `/client/buy?policy=${policy.hashed_id || policy.id}`
           }
         });
       }
 
       // 2. KYC Verification Check
       if (kycStatus !== "approved") {
-        return navigate(`/client/kyc?policy=${policy.id}`, {
+        return navigate(`/client/kyc?policy=${policy.hashed_id || policy.id}`, {
           state: { msg: "Please verify your KYC before purchasing again." }
         });
       }
 
-      navigate(`/client/buy?policy=${policy.id}`);
+      navigate(`/client/buy?policy=${policy.hashed_id || policy.id}`);
       return;
     }
     navigate(`/client/payment?request=${ownedRequest?.hashed_id || ownedRequestId}`);
@@ -199,20 +201,20 @@ const PolicyDetails = () => {
       return navigate("/client/profile", {
         state: {
           msg: "Please complete your profile details before purchasing a policy.",
-          returnTo: `/client/buy?policy=${policy.id}`
+          returnTo: `/client/buy?policy=${policy.hashed_id || policy.id}`
         }
       });
     }
 
     // 2. KYC Verification Check
     if (kycStatus !== "approved") {
-      return navigate(`/client/kyc?policy=${policy.id}`, {
+      return navigate(`/client/kyc?policy=${policy.hashed_id || policy.id}`, {
         state: { msg: "Your identity verification (KYC) is required to proceed with this purchase." }
       });
     }
 
     // 3. Both Complete -> Buy Page
-    navigate(`/client/buy?policy=${policy.id}`);
+    navigate(`/client/buy?policy=${policy.hashed_id || policy.id}`);
   };
 
   const toggleSave = async () => {
@@ -361,7 +363,7 @@ const PolicyDetails = () => {
           </div>
         </div>
       </div>
-
+      
       {/* FEATURES */}
       <div className="
         bg-card-light dark:bg-card-dark 
@@ -386,9 +388,59 @@ const PolicyDetails = () => {
             <CheckCircleIcon className="w-5 h-5 text-primary-light dark:text-primary-dark" />
             Trusted company with solid customer support.
           </li>
-
         </ul>
       </div>
+
+      {/* REVIEWS SECTION */}
+      {policy.user_ratings && policy.user_ratings.length > 0 && (
+        <div className="
+          bg-card-light dark:bg-card-dark 
+          rounded-2xl p-8 shadow-sm 
+          border border-border-light dark:border-border-dark 
+          mb-10
+        ">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-xl font-bold flex items-center gap-2 text-text-light dark:text-text-dark">
+              Community Feedback
+            </h2>
+            <div className="flex items-center gap-2 px-3 py-1 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+              <StarIcon className="w-4 h-4 text-yellow-500" />
+              <span className="text-sm font-bold text-yellow-600 dark:text-yellow-500">
+                {policy.company_rating} Average
+              </span>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {policy.user_ratings.map((review, idx) => (
+              <div key={idx} className="p-5 rounded-2xl bg-hover-light dark:bg-hover-dark border border-border-light dark:border-border-dark transition-all hover:border-primary-light/30">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary-light/10 flex items-center justify-center text-primary-light font-bold text-sm border border-primary-light/20">
+                      {(review.user?.name || "U")[0]}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-text-light dark:text-text-dark">
+                        {review.user?.name ? review.user.name.split(' ')[0] : "User"}
+                      </p>
+                      <p className="text-[10px] opacity-50 font-medium">
+                        Verified Buyer • {new Date(review.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-0.5 bg-background-light dark:bg-background-dark px-2 py-1 rounded-lg border border-border-light dark:border-border-dark">
+                    <StarIcon className="w-3 h-3 text-yellow-500" />
+                    <span className="text-xs font-bold">{review.rating}</span>
+                  </div>
+                </div>
+                <p className="text-sm text-text-light/80 dark:text-text-dark/80 italic leading-relaxed pl-1 border-l-2 border-primary-light/20 ml-1">
+                  "{review.review || "The user didn't leave a written review but gave a rating."}"
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ACTION BUTTONS */}
       <div className="flex flex-col sm:flex-row gap-4">
@@ -454,6 +506,30 @@ const PolicyDetails = () => {
           </button>
         )}
       </div>
+
+      {/* RATING SECTION (Verified Buyers Only) */}
+      {isClient && (
+        <div className="mt-10">
+          {isOwned ? (
+            <RatingSystem 
+              policyId={policy.id} 
+              onRatingUpdate={(newAvg) => setPolicy(prev => ({ ...prev, company_rating: newAvg }))}
+            />
+          ) : (
+            <div className="p-8 bg-hover-light dark:bg-hover-dark rounded-2xl border border-dashed border-border-light dark:border-border-dark text-center">
+              <p className="text-sm opacity-60 font-medium">
+                Only verified buyers of this policy can provide ratings and reviews.
+              </p>
+              <button 
+                onClick={handleBuyClick}
+                className="mt-3 text-xs font-bold text-primary-light hover:underline"
+              >
+                Buy this policy to leave a review
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 

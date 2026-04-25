@@ -70,6 +70,11 @@ class User extends Authenticatable implements MustVerifyEmail, CanResetPasswordC
 
     protected $appends = ['hashed_id'];
 
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class);
+    }
+
     public function kycDocuments()
     {
         return $this->hasMany(KycDocument::class, 'user_id', 'id');

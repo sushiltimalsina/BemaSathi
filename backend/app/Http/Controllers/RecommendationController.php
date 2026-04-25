@@ -83,7 +83,7 @@ class RecommendationController extends Controller
         if ($sorted->count() <= 2) {
             // Track recommendations
             $this->trackRecommendations($user, $sorted, $variant);
-            
+
             return response()->json(['recommended' => $sorted, 'variant' => $variant]);
         }
 
@@ -104,7 +104,7 @@ class RecommendationController extends Controller
     // ============================
     // A/B TESTING FRAMEWORK
     // ============================
-    
+
     /**
      * Assign users to A/B test variants consistently
      */
@@ -126,7 +126,7 @@ class RecommendationController extends Controller
     // ============================
     // REAL-TIME FEEDBACK LOOP
     // ============================
-    
+
     /**
      * Track shown recommendations for feedback analysis
      */
@@ -156,10 +156,10 @@ class RecommendationController extends Controller
 
         // Calculate feedback signals from historical data
         $feedbackBoost = $this->calculateFeedbackBoost($policy, $profile);
-        
+
         // Adjust final score
         $baseScore['percent'] = min(100, $baseScore['percent'] + $feedbackBoost['score_adjustment']);
-        
+
         // Add feedback-based reasons
         if (!empty($feedbackBoost['reasons'])) {
             $baseScore['reasons'] = array_merge($baseScore['reasons'], $feedbackBoost['reasons']);
@@ -174,7 +174,7 @@ class RecommendationController extends Controller
     private function calculateFeedbackBoost(Policy $policy, array $profile): array
     {
         $cacheKey = "feedback_boost_{$policy->id}_{$profile['age']}_{$profile['is_smoker']}";
-        
+
         return Cache::remember($cacheKey, 3600, function() use ($policy, $profile) {
             $ageMin = max(1, $profile['age'] - 5);
             $ageMax = $profile['age'] + 5;
@@ -202,8 +202,8 @@ class RecommendationController extends Controller
             }
 
             $ctr = $feedback->total_clicks / $feedback->total_shown;
-            $conversionRate = $feedback->total_clicks > 0 
-                ? ($feedback->total_purchases / $feedback->total_clicks) 
+            $conversionRate = $feedback->total_clicks > 0
+                ? ($feedback->total_purchases / $feedback->total_clicks)
                 : 0;
             $engagementScore = min($feedback->avg_time_spent / 60, 1); // Normalize to 0-1
 
@@ -215,12 +215,12 @@ class RecommendationController extends Controller
             );
 
             $reasons = [];
-            
+
             if ($conversionRate > 0.15) {
                 $conversionPercent = round($conversionRate * 100);
                 $reasons[] = "{$conversionPercent}% of similar users purchased this";
             }
-            
+
             if ($ctr > 0.25) {
                 $reasons[] = "Highly engaging for users like you";
             }
@@ -236,7 +236,7 @@ class RecommendationController extends Controller
     // ============================
     // WEIGHTED MEDICAL MATCHING
     // ============================
-    
+
     /**
      * Enhanced scoring with weighted medical condition matching
      */
@@ -245,7 +245,7 @@ class RecommendationController extends Controller
         $age = $profile['age'];
         $healthScore = $profile['health_score'] ?? 70;
         $hasFamily = ($profile['family_members'] ?? 1) > 1;
-        
+
         // Dynamic Weight Definition
         if ($age < 30) {
             $wBudget = 35; $wMedical = 15; $wFinePrint = 10; $wSocial = 25; $wTrust = 15;
@@ -262,7 +262,7 @@ class RecommendationController extends Controller
         // Predictive Underwriting
         $approvalLikelihood = 'High';
         $underwritingPenalty = 0;
-        
+
         $userCond = $profile['conditions'] ?? [];
         $policyExclusions = is_array($policy->exclusions) ? $policy->exclusions : [];
 
@@ -272,7 +272,7 @@ class RecommendationController extends Controller
             $approvalLikelihood = 'Very Low';
             $underwritingPenalty = 40;
             $reasons[] = "High risk of rejection due to policy exclusions";
-        } 
+        }
         elseif ($healthScore < 45 && ($policy->waiting_period_days ?? 0) < 90) {
             $approvalLikelihood = 'Low';
             $underwritingPenalty = 20;
@@ -285,11 +285,11 @@ class RecommendationController extends Controller
 
         // *** ENHANCED: WEIGHTED MEDICAL COMPATIBILITY ***
         $policyCond = is_array($policy->covered_conditions) ? $policy->covered_conditions : [];
-        
+
         if (!empty($userCond)) {
             $medicalScore = $this->weightedMedicalCompatibility($userCond, $policyCond, $policy);
             $weightedScore += ($medicalScore * $wMedical);
-            
+
             if ($medicalScore > 0.9) {
                 $reasons[] = "Comprehensive medical match";
             } elseif ($medicalScore > 0.6) {
@@ -314,7 +314,7 @@ class RecommendationController extends Controller
             $budget = $this->parseBudgetRange($profile['budget_range']);
             $max = $budget['max'];
             $isHighTier = in_array($profile['budget_range'], ['50k+', '50K+', '>30000', 'default']);
-            
+
             if ($premium <= $max && $premium >= $max * 0.6) {
                 $weightedScore += $wBudget;
                 if ($profileIsComplete) $reasons[] = "Maximizes your coverage capacity";
@@ -370,7 +370,7 @@ class RecommendationController extends Controller
                  $reasons[] = "Includes Maternity/Child benefits";
              }
         }
-        
+
         if (($profile['has_seniors'] ?? false) || $age > 50) {
              if (str_contains($policyName, 'senior') || str_contains($policyName, 'critical')) {
                  $finalScore += 10;
@@ -432,7 +432,7 @@ class RecommendationController extends Controller
     // ============================
     // DIVERSE SELECTION STRATEGY
     // ============================
-    
+
     /**
      * Select diverse recommendations across multiple dimensions
      */
@@ -444,7 +444,7 @@ class RecommendationController extends Controller
 
         // Always take the best fit
         $selected = collect([$scored->first()]);
-        
+
         // Dimensions to diversify on
         $dimensions = ['company_id', 'insurance_type', 'waiting_period_days'];
 
@@ -455,7 +455,7 @@ class RecommendationController extends Controller
             }
 
             $isDiverse = $this->isDiversePolicy($policy, $selected, $dimensions);
-            
+
             if ($isDiverse) {
                 $selected->push($policy);
             }
@@ -467,7 +467,7 @@ class RecommendationController extends Controller
                 if ($selected->count() >= $count) {
                     break;
                 }
-                
+
                 if (!$selected->contains('id', $policy->id)) {
                     $selected->push($policy);
                 }
@@ -484,17 +484,17 @@ class RecommendationController extends Controller
     {
         foreach ($selected as $existing) {
             $similarityCount = 0;
-            
+
             foreach ($dimensions as $dimension) {
                 // Handle different value types
                 $policyValue = $policy->$dimension;
                 $existingValue = $existing->$dimension;
-                
+
                 // For waiting period, consider ranges rather than exact match
                 if ($dimension === 'waiting_period_days') {
                     $policyRange = $this->getWaitingPeriodRange($policyValue);
                     $existingRange = $this->getWaitingPeriodRange($existingValue);
-                    
+
                     if ($policyRange === $existingRange) {
                         $similarityCount++;
                     }
@@ -504,13 +504,13 @@ class RecommendationController extends Controller
                     }
                 }
             }
-            
+
             // If more than 1 dimension matches, consider it too similar
             if ($similarityCount > 1) {
                 return false;
             }
         }
-        
+
         return true;
     }
 
@@ -534,7 +534,7 @@ class RecommendationController extends Controller
         $age = $profile['age'];
         $healthScore = $profile['health_score'] ?? 70;
         $hasFamily = ($profile['family_members'] ?? 1) > 1;
-        
+
         // Dynamic Weight Definition
         if ($age < 30) {
             $wBudget = 35; $wMedical = 15; $wFinePrint = 10; $wSocial = 25; $wTrust = 15;
@@ -551,7 +551,7 @@ class RecommendationController extends Controller
         // Predictive Underwriting
         $approvalLikelihood = 'High';
         $underwritingPenalty = 0;
-        
+
         $userCond = $profile['conditions'] ?? [];
         $policyExclusions = is_array($policy->exclusions) ? $policy->exclusions : [];
 
@@ -560,7 +560,7 @@ class RecommendationController extends Controller
             $approvalLikelihood = 'Very Low';
             $underwritingPenalty = 40;
             $reasons[] = "High risk of rejection due to policy exclusions";
-        } 
+        }
         elseif ($healthScore < 45 && ($policy->waiting_period_days ?? 0) < 90) {
             $approvalLikelihood = 'Low';
             $underwritingPenalty = 20;
@@ -575,7 +575,7 @@ class RecommendationController extends Controller
         $policyCond = is_array($policy->covered_conditions) ? $policy->covered_conditions : [];
         $isGenericCritical = in_array('Critical Illness', $policyCond);
         $criticalConditions = ['Heart Disease', 'Cancer', 'Kidney Failure', 'Stroke'];
-        
+
         if (!empty($userCond)) {
             $matches = array_intersect($userCond, $policyCond);
             $hasSemanticMatch = $isGenericCritical && !empty(array_intersect($userCond, $criticalConditions));
@@ -601,7 +601,7 @@ class RecommendationController extends Controller
             $budget = $this->parseBudgetRange($profile['budget_range']);
             $max = $budget['max'];
             $isHighTier = in_array($profile['budget_range'], ['50k+', '50K+', '>30000', 'default']);
-            
+
             if ($premium <= $max && $premium >= $max * 0.6) {
                 $weightedScore += $wBudget;
                 if ($profileIsComplete) $reasons[] = "Maximizes your coverage capacity";
@@ -648,7 +648,7 @@ class RecommendationController extends Controller
                  $reasons[] = "Includes Maternity/Child benefits";
              }
         }
-        
+
         if (($profile['has_seniors'] ?? false) || $age > 50) {
              if (str_contains($policyName, 'senior') || str_contains($policyName, 'critical')) {
                  $finalScore += 10;
@@ -667,14 +667,14 @@ class RecommendationController extends Controller
     // ============================
     // ENHANCED COLLABORATIVE FILTERING
     // ============================
-    
+
     /**
      * Multi-dimensional peer similarity with caching
      */
     private function getPeerPopularity(array $profile, User $currentUser): array
     {
         $cacheKey = "peer_popularity_{$currentUser->id}";
-        
+
         return Cache::remember($cacheKey, 1800, function() use ($profile, $currentUser) {
             // Find similar users using multi-dimensional distance
             $peerIds = $this->findSimilarUsers($currentUser, $profile);
@@ -704,7 +704,7 @@ class RecommendationController extends Controller
     {
         $ageMin = max(1, $profile['age'] - 5);
         $ageMax = $profile['age'] + 5;
-        
+
         // Multi-dimensional similarity query
         return User::query()
             ->where('id', '!=', $user->id)

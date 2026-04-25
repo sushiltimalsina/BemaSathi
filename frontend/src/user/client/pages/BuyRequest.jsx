@@ -260,10 +260,10 @@ const BuyRequest = () => {
   useEffect(() => {
     const loadPreview = async () => {
       try {
-        if (!policyId) return;
+        if (!policy?.id) return;
 
         const res = await API.post("/buy/preview", {
-          policy_id: Number(policyId),
+          policy_id: policy.id,
           billing_cycle: billingCycle,
         });
 
@@ -314,7 +314,7 @@ const BuyRequest = () => {
     try {
       const healthData = JSON.parse(sessionStorage.getItem("healthDeclaration") || "null");
       const payRes = await API.post("/payments/esewa", {
-        policy_id: Number(policyId),
+        policy_id: policy.id,
         billing_cycle: billingCycle,
         email: getEmailValue(),
         health_declaration: healthData,
@@ -350,7 +350,7 @@ const BuyRequest = () => {
     try {
       const healthData = JSON.parse(sessionStorage.getItem("healthDeclaration") || "null");
       const payRes = await API.post("/payments/khalti", {
-        policy_id: Number(policyId),
+        policy_id: policy.id,
         billing_cycle: billingCycle,
         email: getEmailValue(),
         health_declaration: healthData,
